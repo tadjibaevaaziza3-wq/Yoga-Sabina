@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: #144243;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #F5F8F8;
+  --color-accent: #FF6B4E;
+  --color-wellness-gold: #FF6B4E;
+
+  --color-background: #F5F8F8;
+  --color-foreground: #144243;
+
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #F5F8F8;
+  --foreground: #144243;
+  --primary: #144243;
+  --secondary: #F5F8F8;
+  --accent: #FF6B4E;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  @apply antialiased;
+}
+
+.glass-card {
+  @apply bg-white border border-primary/5 shadow-2xl shadow-primary/5 rounded-[3rem];
+}
+
+.premium-shadow {
+  box-shadow: 0 40px 100px -20px rgba(20, 66, 67, 0.1);
+}
+
+.btn-coral {
+  @apply bg-[#FF6B4E] text-white hover:bg-[#FF856B] transition-all rounded-full px-8 py-4 font-bold shadow-xl shadow-accent/20 active:scale-95;
+}
+
+.btn-primary {
+  @apply bg-[#144243] text-white hover:bg-[#1B5759] transition-all rounded-full px-8 py-4 font-bold active:scale-95;
 }

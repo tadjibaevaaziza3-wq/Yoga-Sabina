@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum CourseType {
+  ONLINE
+  OFFLINE
+}
+
+enum AssetType {
+  VIDEO
+  AUDIO
+  TEXT
+  PPT
+}
+
+enum PurchaseStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  phone         String?   @unique
+  telegramId    String?   @unique
+  firstName     String?
+  lastName      String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile       Profile?
+  purchases     Purchase[]
+  subscriptions Subscription[]
+  progress      VideoProgress[]
+  consents      LegalConsent[]
+  chatMessages  ChatMessage[]
+  likes         Like[]
+  comments      Comment[]
+  feedbacks     Feedback[]
+}
+
+model Profile {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String?
+  location      String?
+  healthIssues  String?
+  bodyParams    Json?     // Stores history of height, weight, etc.
+  cycleData     Json?     // Stores menstruation calendar events
+  totalYogaTime Int       @default(0) // Total seconds spent doing yoga
+  updatedAt     DateTime  @updatedAt
+}
+
+model Course {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  price         Decimal     @db.Decimal(10, 2)
+  durationDays  Int
+  type          CourseType  @default(ONLINE)
+  coverImage    String?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  lessons       Lesson[]
+  purchases     Purchase[]
+  subscriptions Subscription[]
+  chatMessages  ChatMessage[]
+}
+
+model Lesson {
+  id            String    @id @default(cuid())
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title         String
+  order         Int
+  content       String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  assets        Asset[]
+  progress      VideoProgress[]
+  comments      Comment[]
+  likes         Like[]
+}
+
+model Asset {
+  id            String    @id @default(cuid())
+  lessonId      String
+  lesson        Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type          AssetType
+  url           String
+  fileName      String?
+  duration      Int?      // Duration in seconds for video/audio
+  createdAt     DateTime  @default(now())
+}
+
+model Purchase {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+  courseId      String
+  course        Course         @relation(fields: [courseId], references: [id])
+  amount        Decimal        @db.Decimal(10, 2)
+  status        PurchaseStatus @default(PENDING)
+  provider      String         @default("PAYME")
+  providerTxnId String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Subscription {
+  id            String             @id @default(cuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id])
+  courseId      String
+  course        Course             @relation(fields: [courseId], references: [id])
+  startsAt      DateTime           @default(now())
+  endsAt        DateTime
+  status        SubscriptionStatus @default(ACTIVE)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([endsAt])
+}
+
+model VideoProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  lessonId      String
+  lesson        Lesson    @relation(fields: [lessonId], references: [id])
+  position      Int       @default(0) // Last position in seconds
+  completed     Boolean   @default(false)
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, lessonId])
+}
+
+model LegalConsent {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  version       String
+  agreedAt      DateTime  @default(now())
+  ip            String?
+  userAgent     String?
+
+  @@unique([userId, version])
+}
+
+model ChatMessage {
+  id            String    @id @default(cuid())
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  text          String    @db.Text
+  createdAt     DateTime  @default(now())
+}
+model Comment {
+  id            String    @id @default(cuid())
+  lessonId      String
+  lesson        Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  text          String    @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([lessonId])
+}
+
+model Like {
+  id            String    @id @default(cuid())
+  lessonId      String
+  lesson        Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now())
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
+}
+
+model Feedback {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  rating        Int?      // 1-5 rating
+  text          String    @db.Text
+  createdAt     DateTime  @default(now())
+}

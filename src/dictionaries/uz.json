@@ -1,0 +1,51 @@
+{
+  "common": {
+    "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
+    "logout": "Chiqish",
+    "profile": "Profil",
+    "admin": "Admin",
+    "home": "Asosiy",
+    "courses": "Kurslar",
+    "about": "Biz haqimizda",
+    "contact": "Aloqa",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "buy": "Sotib olish",
+    "payme": "PayMe orqali to'lash"
+  },
+  "landing": {
+    "heroTitle": "Baxtli Men — Bu shunchaki kurs emas",
+    "heroSubtitle": "Salomatlik, muvozanat, hotirjamlik, garmoniya, tabiiy yosharish va go’zallik sari kompleks yo'ldir.",
+    "trainerTitle": "Murabbiy haqida",
+    "features": {
+      "title": "Nima uchun bizni tanlashadi?",
+      "item1": "Kompleks Yondashuv",
+      "item1Desc": "Jismoniy yoga va psixologik terapiya uyg'unligi.",
+      "item2": "Tasdiqlangan Natijalar",
+      "item2Desc": "Surunkali kasalliklardan shaxsiy davolanish tajribasiga asoslangan."
+    }
+  },
+  "auth": {
+    "title": "Xush kelibsiz",
+    "subtitle": "Davom etish uchun tizimga kiring",
+    "name": "Ism",
+    "email": "Email",
+    "phone": "Telefon raqami",
+    "location": "Manzil",
+    "healthIssues": "Sog'lig'ingiz haqida (ixtiyoriy)",
+    "healthIssuesPlaceholder": "Surunkali kasalliklar yoki jarohatlar..."
+  },
+  "courses": {
+    "title": "Bizning Kurslarimiz",
+    "subtitle": "O'zingizga mos dasturni tanlang",
+    "online": "Onlayn Kurslar",
+    "offline": "Oflayn Mashg'ulotlar",
+    "duration": "Davomiyligi",
+    "days": "kun",
+    "lessons": "dars",
+    "uzs": "so'm",
+    "details": "Batafsil ma'lumot",
+    "enroll": "Ro'yxatdan o'tish"
+  }
+}

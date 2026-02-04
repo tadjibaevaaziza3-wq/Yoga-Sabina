@@ -1,0 +1,41 @@
+import { faqData } from "./faq-data"
+
+export type Locale = "uz" | "ru"
+
+export function findBestFAQMatch(query: string, lang: Locale) {
+    const data = faqData[lang]
+    const normalizedQuery = query.toLowerCase().replace(/[?.,!]/g, "")
+    const queryWords = normalizedQuery.split(/\s+/)
+
+    let bestMatch = null
+    let maxScore = 0
+
+    for (const item of data) {
+        let score = 0
+
+        // Count how many keywords from the FAQ item appear in the user's query
+        for (const word of queryWords) {
+            // Check for direct keyword matches
+            if (item.keywords.some(k => word.includes(k) || k.includes(word))) {
+                score += 1
+            }
+        }
+
+        // Bonus for length matching (prevents tiny queries from hitting everything)
+        if (score > 0) {
+            if (score > maxScore) {
+                maxScore = score
+                bestMatch = item
+            }
+        }
+    }
+
+    // Threshold for matching
+    if (maxScore >= 1 && bestMatch) {
+        return bestMatch.answer
+    }
+
+    return lang === "uz"
+        ? "Kechirasiz, bu savolga javob topa olmadim. Iltimos, boshqacharoq so'rab ko'ring yoki murabbiyga murojaat qiling."
+        : "Извините, я не нашел ответа на этот вопрос. Пожалуйста, попробуйте спровосить иначе или обратитесь к тренеру."
+}
