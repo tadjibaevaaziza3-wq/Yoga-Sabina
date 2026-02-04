@@ -37,6 +37,23 @@ enum SubscriptionStatus {
   CANCELED
 }
 
+enum ProductType {
+  COURSE
+  CONSULTATION
+}
+
+enum ConsultationFormat {
+  ONLINE
+  OFFLINE
+}
+
+enum ConsultationStatus {
+  NEW
+  CONFIRMED
+  COMPLETED
+  CANCELED
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String?   @unique
@@ -73,21 +90,23 @@ model Profile {
 }
 
 model Course {
-  id            String      @id @default(cuid())
-  title         String
-  description   String
-  price         Decimal     @db.Decimal(10, 2)
-  durationDays  Int
-  type          CourseType  @default(ONLINE)
-  coverImage    String?
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                 String             @id @default(cuid())
+  title              String
+  description        String
+  price              Decimal            @db.Decimal(10, 2)
+  durationDays       Int
+  type               CourseType         @default(ONLINE)
+  productType        ProductType        @default(COURSE)
+  consultationFormat ConsultationFormat?
+  coverImage         String?
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
-  lessons       Lesson[]
-  purchases     Purchase[]
-  subscriptions Subscription[]
-  chatMessages  ChatMessage[]
+  lessons            Lesson[]
+  purchases          Purchase[]
+  subscriptions      Subscription[]
+  chatMessages       ChatMessage[]
 }
 
 model Lesson {
@@ -118,17 +137,18 @@ model Asset {
 }
 
 model Purchase {
-  id            String         @id @default(cuid())
-  userId        String
-  user          User           @relation(fields: [userId], references: [id])
-  courseId      String
-  course        Course         @relation(fields: [courseId], references: [id])
-  amount        Decimal        @db.Decimal(10, 2)
-  status        PurchaseStatus @default(PENDING)
-  provider      String         @default("PAYME")
-  providerTxnId String?        @unique
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                  String               @id @default(cuid())
+  userId              String
+  user                User                 @relation(fields: [userId], references: [id])
+  courseId            String
+  course              Course               @relation(fields: [courseId], references: [id])
+  amount              Decimal              @db.Decimal(10, 2)
+  status              PurchaseStatus       @default(PENDING)
+  consultationStatus  ConsultationStatus?  // For consultations only
+  provider            String               @default("PAYME")
+  providerTxnId       String?              @unique
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 }
 
 model Subscription {
