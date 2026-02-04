@@ -3,15 +3,15 @@ import { Telegraf, Markup } from 'telegraf'
 const token = process.env.TELEGRAM_BOT_TOKEN
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://baxtli-men.uz'
 
-if (!token) {
-    throw new Error('TELEGRAM_BOT_TOKEN is not defined')
-}
+// Make bot optional - don't throw during build
+let bot: Telegraf | null = null
 
-export const bot = new Telegraf(token)
+if (token) {
+    bot = new Telegraf(token)
 
-bot.start((ctx) => {
-    const name = ctx.from.first_name
-    const welcomeMessage = `
+    bot.start((ctx) => {
+        const name = ctx.from.first_name
+        const welcomeMessage = `
 Salom, ${name}! 👋 
 **Baxtli Men** platformasiga xush kelibsiz.
 
@@ -20,7 +20,7 @@ Men sizga yoga va salomatlik dunyosida yordam beraman. 🧘‍♀️✨
 Kurslarni ko'rish va shug'ullanishni boshlash uchun quyidagi tugmani bosing:
 `
 
-    const welcomeMessageRu = `
+        const welcomeMessageRu = `
 Привет, ${name}! 👋
 Добро пожаловать на платформу **Baxtli Men**.
 
@@ -29,15 +29,20 @@ Kurslarni ko'rish va shug'ullanishni boshlash uchun quyidagi tugmani bosing:
 Нажмите кнопку ниже, чтобы посмотреть курсы и начать заниматься:
 `
 
-    ctx.reply(welcomeMessage, Markup.inlineKeyboard([
-        [Markup.button.webApp('Ilovani ochish / Открыть приложение', `${appUrl}/tma`)]
-    ]))
-})
+        ctx.reply(welcomeMessage, Markup.inlineKeyboard([
+            [Markup.button.webApp('Ilovani ochish / Открыть приложение', `${appUrl}/tma`)]
+        ]))
+    })
+}
 
-// Webhook setup might be needed for production
-// For local dev, we could use polling but Next.js prefers webhooks in serverless context
+export { bot }
 
 export async function sendBroadcast(telegramId: string, type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'AUDIO', content: string, mediaUrl?: string) {
+    if (!bot) {
+        console.warn('Telegram bot not configured - skipping broadcast')
+        return { success: false, error: 'Bot not configured' }
+    }
+
     try {
         switch (type) {
             case 'TEXT':
