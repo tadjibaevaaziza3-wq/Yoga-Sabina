@@ -38,6 +38,9 @@ export function Header({ lang, dictionary }: HeaderProps) {
                     <Link href={`/${lang}/courses`} className="hover:text-primary transition-colors">
                         {dictionary.common.courses}
                     </Link>
+                    <Link href="/consultations" className="hover:text-primary transition-colors text-emerald-700 font-extrabold">
+                        Консультации
+                    </Link>
                     <Link href={`/${lang}/about`} className="hover:text-primary transition-colors">
                         {dictionary.common.about}
                     </Link>
