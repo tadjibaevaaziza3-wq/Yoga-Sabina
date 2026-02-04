@@ -1,7 +1,7 @@
 import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
 import { Header } from "@/components/Header"
 import { Hero } from "@/components/landing/Hero"
-import { Features } from "@/components/landing/Features"
+import { ProgramsSection } from "@/components/landing/ProgramsSection"
 
 export default async function Home({
   params,
@@ -15,7 +15,7 @@ export default async function Home({
     <main className="min-h-screen">
       <Header lang={lang} dictionary={dictionary} />
       <Hero lang={lang} dictionary={dictionary} />
-      <Features lang={lang} dictionary={dictionary} />
+      <ProgramsSection lang={lang} dictionary={dictionary} />
     </main>
   )
 }
