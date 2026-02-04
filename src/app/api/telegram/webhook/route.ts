@@ -3,6 +3,10 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
     try {
+        if (!bot) {
+            return NextResponse.json({ ok: false, error: 'Bot not configured' }, { status: 500 })
+        }
+
         const body = await request.json()
         await bot.handleUpdate(body)
         return NextResponse.json({ ok: true })
