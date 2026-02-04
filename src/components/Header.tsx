@@ -26,22 +26,28 @@ export function Header({ lang, dictionary }: HeaderProps) {
     return (
         <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-b border-primary/5">
             <Container className="py-6 flex items-center justify-between">
-                <Link href={`/${lang}`} className="flex flex-col">
-                    <span className="text-xl font-serif font-black tracking-tight text-primary leading-none">Baxtli Men</span>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/40 leading-none mt-1">Akademiya Yoga</span>
+                <Link href={`/${lang}`} className="flex items-center gap-3">
+                    <Image src="/images/logo.png" alt="Baxtli Men Logo" width={40} height={40} className="w-10 h-10 object-contain" />
+                    <div className="flex flex-col">
+                        <span className="text-xl font-serif font-black tracking-tight text-emerald-900 leading-none">Baxtli Men</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600/40 leading-none mt-1">Akademiya Yoga</span>
+                    </div>
                 </Link>
 
-                <nav className="hidden lg:flex items-center gap-10 text-[13px] font-bold uppercase tracking-widest text-primary/60">
-                    <Link href={`/${lang}`} className="hover:text-primary transition-colors">
+                <nav className="hidden lg:flex items-center gap-10 text-[13px] font-bold uppercase tracking-widest text-emerald-900/60">
+                    <Link href={`/${lang}`} className="hover:text-emerald-900 transition-colors">
                         {dictionary.common.home}
                     </Link>
-                    <Link href={`/${lang}/courses`} className="hover:text-primary transition-colors">
-                        {dictionary.common.courses}
+                    <Link href={`/${lang}/online-courses`} className="hover:text-emerald-900 transition-colors">
+                        Online Kurslar
                     </Link>
-                    <Link href="/consultations" className="hover:text-primary transition-colors text-emerald-700 font-extrabold">
+                    <Link href={`/${lang}/offline-courses`} className="hover:text-emerald-900 transition-colors">
+                        Offline Kurslar
+                    </Link>
+                    <Link href="/consultations" className="hover:text-emerald-900 transition-colors text-emerald-700 font-extrabold">
                         Консультации
                     </Link>
-                    <Link href={`/${lang}/about`} className="hover:text-primary transition-colors">
+                    <Link href={`/${lang}/about`} className="hover:text-emerald-900 transition-colors">
                         {dictionary.common.about}
                     </Link>
                 </nav>
@@ -72,7 +78,7 @@ export function Header({ lang, dictionary }: HeaderProps) {
 
                     <Link
                         href={`/${lang}/login`}
-                        className="btn-primary py-2.5 px-6 text-xs uppercase tracking-widest"
+                        className="py-2.5 px-6 text-xs uppercase tracking-widest bg-emerald-800 hover:bg-emerald-900 text-white rounded-full transition-all font-bold"
                     >
                         {dictionary.common.login}
                     </Link>

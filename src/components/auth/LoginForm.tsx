@@ -6,13 +6,11 @@ import * as z from "zod"
 import { Button } from "../ui/Button"
 import { Input } from "../ui/Input"
 import { Locale } from "@/dictionaries/get-dictionary"
-import Link from "next/link"
-import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 const loginSchema = z.object({
-    email: z.string().email("Invalid email"),
+    login: z.string().min(3, "Login is too short"),
     password: z.string().min(6, "Password is too short"),
 })
 
@@ -21,9 +19,10 @@ type LoginFormValues = z.infer<typeof loginSchema>
 interface LoginFormProps {
     lang: Locale
     dictionary: any
+    isAdmin?: boolean
 }
 
-export function LoginForm({ lang, dictionary }: LoginFormProps) {
+export function LoginForm({ lang, dictionary, isAdmin }: LoginFormProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -31,7 +30,7 @@ export function LoginForm({ lang, dictionary }: LoginFormProps) {
     const form = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
-            email: "",
+            login: "",
             password: "",
         },
     })
@@ -41,14 +40,25 @@ export function LoginForm({ lang, dictionary }: LoginFormProps) {
         setError(null)
 
         try {
-            const { error: authError } = await supabase.auth.signInWithPassword({
-                email: data.email,
-                password: data.password,
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
             })
 
-            if (authError) throw authError
+            const result = await res.json()
 
-            router.push(`/${lang}/account`)
+            if (!result.success) {
+                throw new Error(result.message || "Login failed")
+            }
+
+            // Redirect based on role or context
+            if (isAdmin) {
+                router.push(`/${lang}/admin`)
+            } else {
+                router.push(`/${lang}/account`)
+            }
+            router.refresh()
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -65,19 +75,19 @@ export function LoginForm({ lang, dictionary }: LoginFormProps) {
             )}
             <div className="space-y-2">
                 <label className="text-sm font-bold text-primary/60 ml-2">
-                    {dictionary.auth.email}
+                    {isAdmin ? "Admin Login" : (dictionary.auth.email || "Email / Login")}
                 </label>
                 <Input
-                    {...form.register("email")}
-                    type="email"
-                    placeholder="example@mail.com"
-                    className={form.formState.errors.email ? "border-red-400" : ""}
+                    {...form.register("login")}
+                    type="text"
+                    placeholder={isAdmin ? "admin123123" : "Login or Email"}
+                    className={form.formState.errors.login ? "border-red-400" : ""}
                 />
             </div>
 
             <div className="space-y-2">
                 <label className="text-sm font-bold text-primary/60 ml-2">
-                    Parol
+                    {dictionary.auth.password || "Parol"}
                 </label>
                 <Input
                     {...form.register("password")}
@@ -87,16 +97,19 @@ export function LoginForm({ lang, dictionary }: LoginFormProps) {
                 />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-emerald-800 hover:bg-emerald-900" disabled={loading}>
                 {loading ? "Yuklanmoqda..." : dictionary.common.login}
             </Button>
 
-            <div className="text-center text-sm font-medium text-primary/50">
-                Hisobingiz yo'qmi?{" "}
-                <Link href={`/${lang}/register`} className="text-wellness-gold font-bold hover:underline">
-                    {dictionary.common.register}
-                </Link>
-            </div>
+            {!isAdmin && (
+                <div className="text-center text-sm font-medium text-primary/50">
+                    Hisobingiz yo'qmi?{" "}
+                    <Link href={`/${lang}/register`} className="text-emerald-700 font-bold hover:underline">
+                        {dictionary.common.register}
+                    </Link>
+                </div>
+            )}
         </form>
     )
 }
+import Link from "next/link"

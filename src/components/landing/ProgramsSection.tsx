@@ -68,98 +68,54 @@ export function ProgramsSection({ lang, dictionary }: ProgramsSectionProps) {
                     </p>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex justify-center gap-4 mb-12">
-                    <button
-                        onClick={() => setActiveTab('ALL')}
-                        className={`px-6 py-2 rounded-lg font-semibold transition ${activeTab === 'ALL'
-                                ? 'bg-emerald-800 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        ВСЕ КУРСЫ
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('ONLINE')}
-                        className={`px-6 py-2 rounded-lg font-semibold transition ${activeTab === 'ONLINE'
-                                ? 'bg-emerald-800 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        ОНЛАЙН КУРС
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('OFFLINE')}
-                        className={`px-6 py-2 rounded-lg font-semibold transition ${activeTab === 'OFFLINE'
-                                ? 'bg-emerald-800 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        ОФЛАЙН КУРС
-                    </button>
-                </div>
-
-                {/* Courses Grid */}
-                {loading ? (
-                    <div className="text-center py-12">
-                        <div className="text-gray-500">Загрузка...</div>
-                    </div>
-                ) : (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
-                        {filteredCourses.map((course, index) => (
-                            <motion.div
-                                key={course.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className={`${cardColors[index % cardColors.length]} rounded-3xl p-6 hover:shadow-lg transition-shadow`}
+                {/* Programs Entry Points */}
+                <div className="grid md:grid-cols-2 gap-12 mb-20">
+                    {/* Online Preview */}
+                    <div className="group relative bg-emerald-50 rounded-[3rem] p-12 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-900/10 border border-emerald-100/50">
+                        <div className="relative z-10">
+                            <span className="inline-block bg-white/80 backdrop-blur-md px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest text-emerald-900 mb-8">
+                                💻 Онлайн курслар
+                            </span>
+                            <h3 className="text-4xl font-serif font-black text-emerald-900 mb-6Leading-tight">
+                                Масофавий таълим
+                            </h3>
+                            <p className="text-emerald-900/60 mb-10 text-lg leading-relaxed max-w-md">
+                                Дунёнинг исталган нуқтасидан туриб медитация ва йога билан шуғулланинг.
+                            </p>
+                            <Link
+                                href={`/${lang}/online-courses`}
+                                className="inline-flex items-center gap-4 bg-emerald-900 text-white px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-emerald-800 transition-all shadow-xl shadow-emerald-900/20"
                             >
-                                {/* Badge */}
-                                <div className="inline-block bg-white px-4 py-1 rounded-full text-xs font-semibold text-gray-700 mb-4">
-                                    {course.type === 'ONLINE' ? '💻 ONLINE' : '🏢 OFFLINE'}
-                                </div>
-
-                                {/* Title */}
-                                <h3 className="text-xl font-bold text-gray-900 mb-3 leading-tight">
-                                    {course.title}
-                                </h3>
-
-                                {/* Description */}
-                                <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                                    {course.description}
-                                </p>
-
-                                {/* Features */}
-                                <ul className="text-xs text-gray-700 space-y-2 mb-6">
-                                    <li className="flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                                        Психологическая работа
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                                        Практические упражнения
-                                    </li>
-                                </ul>
-
-                                {/* Price & CTA */}
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-2xl font-bold text-gray-900">
-                                            {(course.price / 1000).toFixed(0)}K
-                                        </p>
-                                        <p className="text-xs text-gray-500">сўм</p>
-                                    </div>
-                                    <Link
-                                        href={`/${lang}/courses/${course.id}`}
-                                        className="w-10 h-10 bg-emerald-800 text-white rounded-full flex items-center justify-center hover:bg-emerald-900 transition"
-                                    >
-                                        →
-                                    </Link>
-                                </div>
-                            </motion.div>
-                        ))}
+                                Барчасини кўриш
+                                <span className="text-xl">→</span>
+                            </Link>
+                        </div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-emerald-200/40 transition-colors" />
                     </div>
-                )}
+
+                    {/* Offline Preview */}
+                    <div className="group relative bg-emerald-900 rounded-[3rem] p-12 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-900/40">
+                        <div className="relative z-10">
+                            <span className="inline-block bg-white/10 backdrop-blur-md px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest text-white mb-8">
+                                🏢 Оффлайн курслар
+                            </span>
+                            <h3 className="text-4xl font-serif font-black text-white mb-6 leading-tight">
+                                Жонли машғулотлар
+                            </h3>
+                            <p className="text-emerald-100/60 mb-10 text-lg leading-relaxed max-w-md">
+                                Тошкентдаги студиямизда профессонал менторлар билан бирга шуғулланинг.
+                            </p>
+                            <Link
+                                href={`/${lang}/offline-courses`}
+                                className="inline-flex items-center gap-4 bg-white text-emerald-900 px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-emerald-50 transition-all shadow-xl shadow-emerald-900/20"
+                            >
+                                Барчасини кўриш
+                                <span className="text-xl">→</span>
+                            </Link>
+                        </div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-800/50 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-emerald-700/60 transition-colors" />
+                    </div>
+                </div>
 
                 {/* Consultation CTA Section - Dark Green */}
                 <div className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-3xl p-12 text-white text-center">

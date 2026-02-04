@@ -47,16 +47,16 @@ export function Hero({ lang, dictionary }: HeroProps) {
 
                         <div className="flex flex-wrap gap-4">
                             <Link
-                                href={`/${lang}/courses`}
-                                className="bg-white text-emerald-900 px-8 py-3 rounded-full font-semibold hover:bg-emerald-50 transition"
+                                href={`/${lang}/online-courses`}
+                                className="bg-white text-emerald-900 px-8 py-3 rounded-full font-bold hover:bg-emerald-50 transition shadow-xl shadow-emerald-900/10"
                             >
-                                Выбрать программу
+                                Online Kurslar
                             </Link>
                             <Link
-                                href="/consultations"
-                                className="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition"
+                                href={`/${lang}/offline-courses`}
+                                className="border-2 border-white text-white px-8 py-3 rounded-full font-bold hover:bg-white/10 transition"
                             >
-                                Индивидуальный сеанс
+                                Offline Kurslar
                             </Link>
                         </div>
                     </motion.div>
