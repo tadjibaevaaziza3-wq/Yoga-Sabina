@@ -1,34 +1,7 @@
 import type { Metadata } from "next";
-// Temporarily disabled Google Fonts due to network issues during build
-// import { Inter, Playfair_Display } from "next/font/google";
 import "../globals.css";
 import { Locale } from "@/dictionaries/get-dictionary";
 import { AIAgent } from "@/components/AIAgent";
-
-// Using system fonts temporarily
-const inter = {
-  variable: "--font-inter",
-  className: "font-sans",
-};
-
-const playfair = {
-  variable: "--font-playfair",
-  className: "font-serif",
-};
-
-// const inter = Inter({
-//   variable: "--font-inter",
-//   subsets: ["latin", "cyrillic"],
-//   fallback: ["system-ui", "arial"],
-//   display: "swap",
-// });
-
-// const playfair = Playfair_Display({
-//   variable: "--font-playfair",
-//   subsets: ["latin", "cyrillic"],
-//   fallback: ["Georgia", "serif"],
-//   display: "swap",
-// });
 
 export const metadata: Metadata = {
   title: {
@@ -48,7 +21,7 @@ export const metadata: Metadata = {
     description: "Ayollar uchun yoga va meditatsiya akademiyasi.",
     images: [
       {
-        url: "/images/hero.png", // Using existing hero image for social preview
+        url: "/images/hero.png",
         width: 1200,
         height: 630,
         alt: "Baxtli Men Academy",
@@ -72,12 +45,13 @@ export default async function RootLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
+  const locale = lang as Locale;
   return (
-    <html lang={lang}>
-      <body className={`${inter.variable} ${playfair.variable} font-sans antialiased text-primary selection:bg-accent selection:text-primary`}>
+    <html lang={locale}>
+      <body className="font-sans antialiased text-primary selection:bg-accent selection:text-primary">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -100,7 +74,7 @@ export default async function RootLayout({
           }}
         />
         {children}
-        <AIAgent lang={lang} />
+        <AIAgent lang={locale} />
       </body>
     </html>
   );
