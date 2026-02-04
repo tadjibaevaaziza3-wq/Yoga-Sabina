@@ -14,7 +14,7 @@ export function Hero({ lang, dictionary }: HeroProps) {
     return (
         <section className="relative bg-gradient-to-r from-emerald-900 to-emerald-800 text-white py-24 overflow-hidden">
             {/* Video Background with Overlay */}
-            <div className="absolute inset-0 overflow-hidden opacity-30">
+            <div className="absolute inset-0 overflow-hidden opacity-30 pointer-events-none">
                 <video
                     autoPlay
                     loop
@@ -24,7 +24,7 @@ export function Hero({ lang, dictionary }: HeroProps) {
                 >
                     <source src="/intro-video.mp4" type="video/mp4" />
                 </video>
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/90 to-emerald-800/90"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 to-emerald-900/90"></div>
             </div>
 
             <Container className="relative z-10">
