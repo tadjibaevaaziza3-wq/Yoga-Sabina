@@ -1,18 +1,34 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+// Temporarily disabled Google Fonts due to network issues during build
+// import { Inter, Playfair_Display } from "next/font/google";
 import "../globals.css";
 import { Locale } from "@/dictionaries/get-dictionary";
 import { AIAgent } from "@/components/AIAgent";
 
-const inter = Inter({
+// Using system fonts temporarily
+const inter = {
   variable: "--font-inter",
-  subsets: ["latin", "cyrillic"],
-});
+  className: "font-sans",
+};
 
-const playfair = Playfair_Display({
+const playfair = {
   variable: "--font-playfair",
-  subsets: ["latin", "cyrillic"],
-});
+  className: "font-serif",
+};
+
+// const inter = Inter({
+//   variable: "--font-inter",
+//   subsets: ["latin", "cyrillic"],
+//   fallback: ["system-ui", "arial"],
+//   display: "swap",
+// });
+
+// const playfair = Playfair_Display({
+//   variable: "--font-playfair",
+//   subsets: ["latin", "cyrillic"],
+//   fallback: ["Georgia", "serif"],
+//   display: "swap",
+// });
 
 export const metadata: Metadata = {
   title: {
@@ -51,14 +67,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { lang: Locale };
+  params: Promise<{ lang: Locale }>;
 }) {
-  const { lang } = params;
+  const { lang } = await params;
   return (
     <html lang={lang}>
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased text-primary selection:bg-accent selection:text-primary`}>
