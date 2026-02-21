@@ -1,14 +1,26 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-export const runtime = "nodejs";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
-export async function GET() {
+import { verifyToken } from '@/lib/auth/server';
+
+async function isAdmin(): Promise<boolean> {
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get('admin_session')?.value;
+    return !!adminSession && !!verifyToken(adminSession);
+}
+
+export async function GET(request: NextRequest) {
     try {
-        // 1. Fetch lessons with like and comment counts
-        // In Prisma, we can use _count for relations
-        const lessons = await (prisma as any).lesson.findMany({
+        if (!await isAdmin()) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Fetch top liked/commented lessons
+        // For now, return mock or aggregate if potential
+        const stats = await prisma.lesson.findMany({
+            take: 5,
             select: {
-                id: true,
                 title: true,
                 _count: {
                     select: {
@@ -18,21 +30,22 @@ export async function GET() {
                 }
             },
             orderBy: {
-                likes: { _count: 'desc' }
-            },
-            take: 10 // Top 10 engaged lessons
-        })
+                likes: {
+                    _count: 'desc'
+                }
+            }
+        });
 
-        const stats = lessons.map((l: any) => ({
-            id: l.id,
-            title: l.title,
-            likes: l._count.likes,
-            comments: l._count.comments
-        }))
+        const formattedStats = stats.map(s => ({
+            title: s.title,
+            likes: s._count.likes,
+            comments: s._count.comments
+        }));
 
-        return NextResponse.json({ success: true, stats })
+        return NextResponse.json({ success: true, stats: formattedStats });
+
     } catch (error: any) {
-        console.error('Engagement Stats error:', error)
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+        console.error('Stats error:', error);
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }

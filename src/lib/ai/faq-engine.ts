@@ -35,7 +35,5 @@ export function findBestFAQMatch(query: string, lang: Locale) {
         return bestMatch.answer
     }
 
-    return lang === "uz"
-        ? "Kechirasiz, bu savolga javob topa olmadim. Iltimos, boshqacharoq so'rab ko'ring yoki murabbiyga murojaat qiling."
-        : "Извините, я не нашел ответа на этот вопрос. Пожалуйста, попробуйте спровосить иначе или обратитесь к тренеру."
+    return null
 }

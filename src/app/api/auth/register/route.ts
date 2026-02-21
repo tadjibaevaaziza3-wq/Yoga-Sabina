@@ -1,21 +1,60 @@
+
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import crypto from 'crypto'
+import { cookies } from 'next/headers'
+
+import { generateToken } from '@/lib/auth/server'
+import { checkRateLimit, getResetTime } from '@/lib/security/rate-limit'
 
 export async function POST(request: Request) {
     try {
-        const { name, email, phone, location, healthIssues, supabaseUserId } = await request.json()
+        // Rate limiting
+        const ip = request.headers.get('x-forwarded-for') || 'unknown'
+        if (!checkRateLimit(`register:${ip}`)) {
+            return NextResponse.json({
+                success: false,
+                error: 'Too many registration attempts. Please try again later.',
+                retryAfter: getResetTime(`register:${ip}`)
+            }, { status: 429 })
+        }
 
-        // 1. Create a User in Prisma
-        // @ts-ignore - Prisma types might need a full build/restart to sync
+        const body = await request.json()
+        const { name, email, phone, location, healthIssues, password } = body
+
+        if (!phone || !password) {
+            return NextResponse.json({ success: false, error: 'Phone and password are required' }, { status: 400 })
+        }
+
+        // Check if user exists
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email },
+                    { phone }
+                ]
+            }
+        })
+
+        if (existingUser) {
+            const field = existingUser.phone === phone ? 'phone' : 'email'
+            return NextResponse.json({ success: false, error: `Account with this ${field} already exists` }, { status: 400 })
+        }
+
+        // Hash password
+        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex')
+
+        // Create user
         const user = await prisma.user.create({
             data: {
-                id: supabaseUserId, // Link to Supabase Auth ID
                 email,
+                password: hashedPassword,
+                phone,
                 firstName: name.split(' ')[0],
                 lastName: name.split(' ').slice(1).join(' '),
-                phone,
                 profile: {
                     create: {
+                        name,
                         location,
                         healthIssues,
                         totalYogaTime: 0,
@@ -24,6 +63,17 @@ export async function POST(request: Request) {
                     }
                 }
             }
+        })
+
+        // Set Auth Cookie with signed token
+        const token = generateToken(user.id)
+        const cookieStore = await cookies()
+        cookieStore.set('auth_token', token, {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
         })
 
         return NextResponse.json({ success: true, user })

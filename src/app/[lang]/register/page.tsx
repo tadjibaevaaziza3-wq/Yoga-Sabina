@@ -1,6 +1,6 @@
 import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
 import { Container } from "@/components/ui/Container"
-import { RegisterForm } from "@/components/auth/RegisterForm"
+import { UnifiedAuthForm } from "@/components/auth/UnifiedAuthForm"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -27,7 +27,7 @@ export default async function RegisterPage({
                         <div className="absolute inset-0 bg-primary/40 backdrop-blur-[2px] p-12 flex flex-col justify-end text-white">
                             <h2 className="text-3xl font-serif mb-4">
                                 {dictionary.landing.heroTitle.split("—")[0]}
-                            </h2 >
+                            </h2>
                             <p className="text-sm opacity-90 leading-relaxed font-medium">
                                 Sog'lom qomat va ruhiy xotirjamlik sari sayohatimizni birga boshlang.
                             </p>
@@ -36,19 +36,19 @@ export default async function RegisterPage({
 
                     {/* Right Side - Form */}
                     <div className="md:w-7/12 p-8 md:p-12 lg:p-16 bg-white">
-                        <div className="mb-10">
-                            <Link href={`/${lang}`} className="mb-8 inline-block">
+                        <div className="mb-10 text-center md:text-left">
+                            <Link href={`/${lang}`} className="mb-8 inline-block mx-auto md:mx-0">
                                 <Image src="/images/logo.png" alt="Logo" width={100} height={30} className="h-6 w-auto" />
                             </Link>
                             <h1 className="text-3xl font-serif text-primary mb-2">
-                                {dictionary.common.register}
+                                {dictionary.auth.title}
                             </h1>
                             <p className="text-primary/50 text-sm font-medium">
-                                Profilingizni yarating va kurslarga kiring
+                                {dictionary.auth.subtitle}
                             </p>
                         </div>
 
-                        <RegisterForm lang={lang} dictionary={dictionary} />
+                        <UnifiedAuthForm lang={lang} dictionary={dictionary} initialMode="register" />
                     </div>
                 </div>
             </Container>

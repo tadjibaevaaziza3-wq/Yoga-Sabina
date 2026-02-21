@@ -86,3 +86,5 @@ export function LegalAgreement({ isOpen, onClose, onAccept, dictionary }: LegalA
         </AnimatePresence>
     )
 }
+
+

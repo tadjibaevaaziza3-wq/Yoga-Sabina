@@ -1,32 +1,39 @@
-'use client'
+"use client"
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Locale } from '@/dictionaries/get-dictionary'
+import { useDictionary } from '../providers/DictionaryProvider'
+import Image from 'next/image'
+import { Container } from '../ui/Container'
 
 interface Course {
     id: string
     title: string
+    titleRu?: string
     description: string
+    descriptionRu?: string
     price: number
     type: 'ONLINE' | 'OFFLINE'
     productType: string
     coverImage?: string
+    features?: any
+    durationDays?: number
+    durationLabel?: string
 }
 
-interface ProgramsSectionProps {
-    lang: Locale
-    dictionary: any
-}
-
-export function ProgramsSection({ lang, dictionary }: ProgramsSectionProps) {
+export function ProgramsSection({
+    onlineBgUrl = "/images/online-bg.jpg",
+    offlineBgUrl = "/images/offline-bg.jpg"
+}: {
+    onlineBgUrl?: string,
+    offlineBgUrl?: string
+}) {
+    const { dictionary, lang } = useDictionary()
     const [courses, setCourses] = useState<Course[]>([])
-    const [activeTab, setActiveTab] = useState<'ALL' | 'ONLINE' | 'OFFLINE'>('ALL')
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Fetch courses from API
         fetch('/api/courses')
             .then(res => res.json())
             .then(data => {
@@ -41,101 +48,133 @@ export function ProgramsSection({ lang, dictionary }: ProgramsSectionProps) {
             })
     }, [])
 
-    const filteredCourses = courses.filter(course => {
-        if (activeTab === 'ALL') return true
-        return course.type === activeTab
-    })
-
-    const cardColors = [
-        'bg-blue-50',
-        'bg-pink-50',
-        'bg-orange-50',
-        'bg-emerald-50',
-        'bg-purple-50'
-    ]
-
     return (
-        <section className="py-20 px-4 bg-white">
-            <div className="max-w-7xl mx-auto">
+        <section className="py-40 bg-[var(--background)] relative overflow-hidden">
+            {/* Background Texture */}
+            <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, var(--accent) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+
+            <Container className="relative z-10">
                 {/* Section Header */}
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        Наши программы
-                    </h2>
-                    <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                        Выберите подходящую программу для начала вашего пути к гармонии.
-                        Каждая программа — это путь к бережной работе с телом и сознанием.
-                    </p>
+                <div className="text-center mb-40">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                    >
+                        <span className="text-[var(--accent)] font-bold uppercase tracking-[0.6em] text-[10px] mb-6 block">
+                            The Collection
+                        </span>
+                        <h2 className="text-6xl md:text-9xl font-editorial font-bold text-[var(--primary)] mb-8 tracking-tighter leading-[0.85]">
+                            {dictionary.courses.title}
+                        </h2>
+                        <div className="w-px h-24 bg-[var(--primary)]/20 mx-auto mt-12"></div>
+                    </motion.div>
                 </div>
 
-                {/* Programs Entry Points */}
-                <div className="grid md:grid-cols-2 gap-12 mb-20">
-                    {/* Online Preview */}
-                    <div className="group relative bg-emerald-50 rounded-[3rem] p-12 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-900/10 border border-emerald-100/50">
-                        <div className="relative z-10">
-                            <span className="inline-block bg-white/80 backdrop-blur-md px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest text-emerald-900 mb-8">
-                                💻 Онлайн курслар
-                            </span>
-                            <h3 className="text-4xl font-serif font-black text-emerald-900 mb-6Leading-tight">
-                                Масофавий таълим
-                            </h3>
-                            <p className="text-emerald-900/60 mb-10 text-lg leading-relaxed max-w-md">
-                                Дунёнинг исталган нуқтасидан туриб медитация ва йога билан шуғулланинг.
-                            </p>
-                            <Link
-                                href={`/${lang}/online-courses`}
-                                className="inline-flex items-center gap-4 bg-emerald-900 text-white px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-emerald-800 transition-all shadow-xl shadow-emerald-900/20"
-                            >
-                                Барчасини кўриш
-                                <span className="text-xl">→</span>
-                            </Link>
-                        </div>
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-emerald-200/40 transition-colors" />
-                    </div>
+                {/* Programs Entry Points - Magazine Style */}
+                <div className="space-y-40">
+                    {/* Online Choice Card */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                        className="group relative"
+                    >
+                        <div className="grid lg:grid-cols-2 gap-20 items-center">
+                            <div className="relative aspect-[4/5] lg:aspect-[3/4] overflow-hidden rounded-[3rem] shadow-2xl">
+                                <Image
+                                    src={onlineBgUrl}
+                                    alt="Online Yoga"
+                                    fill
+                                    className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-[var(--primary)]/10 group-hover:bg-transparent transition-colors duration-700"></div>
+                            </div>
 
-                    {/* Offline Preview */}
-                    <div className="group relative bg-emerald-900 rounded-[3rem] p-12 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-900/40">
-                        <div className="relative z-10">
-                            <span className="inline-block bg-white/10 backdrop-blur-md px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest text-white mb-8">
-                                🏢 Оффлайн курслар
-                            </span>
-                            <h3 className="text-4xl font-serif font-black text-white mb-6 leading-tight">
-                                Жонли машғулотлар
-                            </h3>
-                            <p className="text-emerald-100/60 mb-10 text-lg leading-relaxed max-w-md">
-                                Тошкентдаги студиямизда профессонал менторлар билан бирга шуғулланинг.
-                            </p>
-                            <Link
-                                href={`/${lang}/offline-courses`}
-                                className="inline-flex items-center gap-4 bg-white text-emerald-900 px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-emerald-50 transition-all shadow-xl shadow-emerald-900/20"
-                            >
-                                Барчасини кўриш
-                                <span className="text-xl">→</span>
-                            </Link>
+                            <div className="space-y-10 lg:-ml-24 relative z-10 bg-[var(--background)]/90 backdrop-blur-sm p-12 lg:p-20 rounded-[3rem] shadow-soft border border-[var(--primary)]/5">
+                                <span className="inline-block px-6 py-2 rounded-full border border-[var(--primary)]/20 text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--primary)]">
+                                    Volume 01
+                                </span>
+                                <h3 className="text-5xl md:text-7xl font-editorial font-bold text-[var(--primary)] leading-[0.9] tracking-tight">
+                                    {dictionary.courses.onlineTitle}
+                                </h3>
+                                <p className="text-[var(--primary)]/60 text-xl font-medium leading-relaxed max-w-md tracking-wide">
+                                    {dictionary.courses.onlineDesc}
+                                </p>
+                                <Link
+                                    href={`/${lang}/online-courses`}
+                                    className="inline-flex items-center gap-4 text-[var(--primary)] font-bold uppercase tracking-[0.3em] text-[11px] group/btn mt-8"
+                                >
+                                    <span>{dictionary.courses.details}</span>
+                                    <span className="w-12 h-px bg-[var(--primary)] group-hover/btn:w-20 transition-all duration-300"></span>
+                                </Link>
+                            </div>
                         </div>
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-800/50 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-emerald-700/60 transition-colors" />
-                    </div>
+                    </motion.div>
+
+                    {/* Offline Choice Card - Reversed */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                        className="group relative"
+                    >
+                        <div className="grid lg:grid-cols-2 gap-20 items-center">
+                            <div className="lg:order-2 relative aspect-[4/5] lg:aspect-[3/4] overflow-hidden rounded-[3rem] shadow-2xl">
+                                <Image
+                                    src={offlineBgUrl}
+                                    alt="Offline Yoga"
+                                    fill
+                                    className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-[var(--primary)]/10 group-hover:bg-transparent transition-colors duration-700"></div>
+                            </div>
+
+                            <div className="lg:order-1 space-y-10 lg:-mr-24 relative z-10 bg-[var(--background)]/90 backdrop-blur-sm p-12 lg:p-20 rounded-[3rem] shadow-soft border border-[var(--primary)]/5 text-right items-end flex flex-col">
+                                <span className="inline-block px-6 py-2 rounded-full border border-[var(--primary)]/20 text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--primary)]">
+                                    Volume 02
+                                </span>
+                                <h3 className="text-5xl md:text-7xl font-editorial font-bold text-[var(--primary)] leading-[0.9] tracking-tight">
+                                    {dictionary.courses.offlineTitle}
+                                </h3>
+                                <p className="text-[var(--primary)]/60 text-xl font-medium leading-relaxed max-w-md tracking-wide ml-auto">
+                                    {dictionary.courses.offlineDesc}
+                                </p>
+                                <Link
+                                    href={`/${lang}/offline-courses`}
+                                    className="inline-flex items-center gap-4 text-[var(--primary)] font-bold uppercase tracking-[0.3em] text-[11px] group/btn mt-8 flex-row-reverse"
+                                >
+                                    <span>{dictionary.courses.details}</span>
+                                    <span className="w-12 h-px bg-[var(--primary)] group-hover/btn:w-20 transition-all duration-300"></span>
+                                </Link>
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
 
-                {/* Consultation CTA Section - Dark Green */}
-                <div className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-3xl p-12 text-white text-center">
-                    <h3 className="text-3xl md:text-4xl font-bold mb-4">
-                        Нужна индивидуальная помощь?
+                {/* Consultation CTA Section - Minimalist */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="mt-40 text-center relative"
+                >
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[var(--accent)]/5 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
+
+                    <h3 className="text-4xl md:text-6xl font-editorial font-bold text-[var(--primary)] mb-10 leading-tight">
+                        {lang === 'uz' ? "Individual yordam kerakmi?" : "Нужна индивидуальная помощь?"}
                     </h3>
-                    <p className="text-emerald-100 text-lg mb-8 max-w-2xl mx-auto">
-                        Глубокая работа с психологом в формате индивидуальной сессии.
-                        Онлайн или офлайн — выбирайте удобный формат.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-4">
-                        <Link
-                            href="/consultations"
-                            className="bg-white text-emerald-900 px-8 py-3 rounded-full font-semibold hover:bg-emerald-50 transition"
-                        >
-                            Записаться на консультацию
-                        </Link>
-                    </div>
-                </div>
-            </div>
+                    <Link
+                        href="/consultations"
+                        className="inline-block bg-[var(--primary)] text-white px-16 py-6 rounded-full font-bold uppercase tracking-[0.3em] text-[10px] hover:bg-[var(--primary)]/90 hover:scale-105 transition-all duration-500 shadow-xl shadow-[var(--primary)]/20"
+                    >
+                        {lang === 'uz' ? "Konsultatsiyaga yozilish" : "Записаться на консультацию"}
+                    </Link>
+                </motion.div>
+            </Container>
         </section>
     )
 }

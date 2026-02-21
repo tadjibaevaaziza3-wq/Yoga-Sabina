@@ -1,57 +1,72 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { ProductType } from '@prisma/client'
+import { cookies } from 'next/headers'
 
-// GET /api/admin/consultations - Get all consultation purchases
-export async function GET() {
+import { verifyToken } from '@/lib/auth/server'
+
+async function isAdmin(): Promise<boolean> {
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get('admin_session')?.value;
+    if (!adminSession) return false;
+    return !!verifyToken(adminSession);
+}
+
+export async function GET(request: Request) {
     try {
-        const purchases = await prisma.purchase.findMany({
-            where: {
-                course: {
-                    productType: ProductType.CONSULTATION,
-                },
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        phone: true,
-                        telegramId: true,
-                    },
-                },
-                course: {
-                    select: {
-                        id: true,
-                        title: true,
-                        consultationFormat: true,
-                    },
-                },
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        })
-
-        // Calculate stats
-        const stats = {
-            total: purchases.length,
-            revenue: purchases
-                .filter(p => p.status === 'PAID')
-                .reduce((sum, p) => sum + Number(p.amount), 0),
-            byStatus: {
-                new: purchases.filter(p => p.consultationStatus === 'NEW').length,
-                confirmed: purchases.filter(p => p.consultationStatus === 'CONFIRMED').length,
-                completed: purchases.filter(p => p.consultationStatus === 'COMPLETED').length,
-                canceled: purchases.filter(p => p.consultationStatus === 'CANCELED').length,
-            },
+        if (!await isAdmin()) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
         }
 
-        return NextResponse.json({ success: true, purchases, stats })
+        const { searchParams } = new URL(request.url)
+        const status = searchParams.get('status')
+        const format = searchParams.get('format')
+
+        const where: any = {
+            course: {
+                productType: 'CONSULTATION'
+            }
+        }
+
+        if (status) {
+            where.consultationStatus = status
+        }
+        if (format) {
+            where.course = {
+                ...where.course,
+                consultationFormat: format
+            }
+        }
+
+        const consultations = await prisma.purchase.findMany({
+            where,
+            include: {
+                user: {
+                    include: {
+                        profile: true
+                    }
+                },
+                course: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        })
+
+        // Group by status
+        const byStatus = consultations.reduce((acc, c) => {
+            const status = c.consultationStatus || 'NEW'
+            acc[status] = (acc[status] || 0) + 1
+            return acc
+        }, {} as Record<string, number>)
+
+        return NextResponse.json({
+            success: true,
+            consultations,
+            total: consultations.length,
+            byStatus
+        })
     } catch (error: any) {
-        console.error('Get consultation purchases error:', error)
+        console.error('Error fetching consultations:', error)
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 }

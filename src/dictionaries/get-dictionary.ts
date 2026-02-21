@@ -1,6 +1,7 @@
 import 'server-only'
+import { Locale } from './types'
 
-export type Locale = 'uz' | 'ru'
+export type { Locale }
 
 const dictionaries = {
   uz: () => import('./uz.json').then((module) => module.default),

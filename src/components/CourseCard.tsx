@@ -3,8 +3,8 @@
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Clock, BookOpen, ChevronRight } from "lucide-react"
-import { Locale } from "@/dictionaries/get-dictionary"
+import { ChevronRight, Heart, Sparkles, User, Users } from "lucide-react"
+import { Locale } from "@/dictionaries/types"
 import { cn } from "@/lib/utils"
 
 interface CourseCardProps {
@@ -15,8 +15,10 @@ interface CourseCardProps {
     duration: string
     type: 'ONLINE' | 'OFFLINE'
     imageUrl?: string
+    features?: any
     lang: Locale
     dictionary: any
+    targetAudience?: 'MEN' | 'WOMEN' | 'ALL'
 }
 
 export function CourseCard({
@@ -27,77 +29,142 @@ export function CourseCard({
     duration,
     type,
     imageUrl,
+    features,
     lang,
-    dictionary
+    dictionary,
+    targetAudience
 }: CourseCardProps) {
     const isRecommended = id === "happy-women-club-premium" || id === "face-yoga"
+    const displayFeatures = features && Array.isArray(features) ? features.slice(0, 3) : []
 
-    // Background based on ID or type
-    const getBgColor = () => {
-        if (id.includes('men')) return 'bg-blue-50'
-        if (id.includes('women')) return 'bg-pink-50'
-        if (id.includes('face')) return 'bg-yellow-50'
-        if (id.includes('dance')) return 'bg-purple-50'
-        return 'bg-green-50'
+    // Colors adjusted to match screenshot
+    const styles = {
+        men: {
+            bg: 'bg-[#e0f2fe]', // Light blue
+            header: 'bg-[#0ea5e9]', // Bright blue
+            icon: <Users className="w-12 h-12 text-white/20" />,
+            tag: lang === 'ru' ? 'ДЛЯ МУЖЧИН' : 'ERKAKLAR UCHUN'
+        },
+        women: {
+            bg: 'bg-[#fce7f3]', // Light pink
+            header: 'bg-[#ec4899]', // Pink
+            icon: <Sparkles className="w-12 h-12 text-white/20" />,
+            tag: lang === 'ru' ? 'ЖЕНЩИНАМ' : 'AYOLLARGA'
+        },
+        recommended: {
+            bg: 'bg-[#fefce8]', // Light yellow
+            header: 'bg-[#eab308]', // Yellow
+            icon: <Heart className="w-12 h-12 text-white/20" />,
+            tag: lang === 'ru' ? 'РЕКОМЕНДУЕМ' : 'TAVSIYA ETAMIZ'
+        },
+        general: {
+            bg: 'bg-[#f0fdf4]', // Light green
+            header: 'bg-[#22c55e]', // Green
+            icon: <User className="w-12 h-12 text-white/20" />,
+            tag: type === 'ONLINE' ? (lang === 'ru' ? 'ОНЛАЙН' : 'ONLAYN') : (lang === 'ru' ? 'ОФФЛАЙН' : 'OFFLAYN')
+        }
     }
+
+    let resolvedAudience = targetAudience;
+    if (!targetAudience || targetAudience === 'ALL') {
+        if (id.includes('men') && !id.includes('women')) resolvedAudience = 'MEN';
+        else if (id.includes('women')) resolvedAudience = 'WOMEN';
+    }
+
+    const currentStyle = resolvedAudience === 'MEN' ? styles.men :
+        (resolvedAudience === 'WOMEN' ? styles.women :
+            (isRecommended ? styles.recommended : styles.general))
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
+            whileHover={{ y: -5 }}
             className={cn(
-                "rounded-[2.5rem] overflow-hidden flex flex-col h-full transition-all group border border-primary/5",
-                getBgColor(),
-                isRecommended ? "ring-2 ring-accent/20" : ""
+                "rounded-[2.5rem] overflow-hidden flex flex-col h-full transition-all duration-300 shadow-sm hover:shadow-xl border border-[var(--secondary)] bg-white",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2",
             )}
         >
-            <div className="p-10 flex flex-col flex-1 relative">
-                {isRecommended && (
-                    <div className="absolute top-6 right-8 bg-[#FFD700]/20 text-[#B8860B] text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-[#FFD700]/30 shadow-sm">
-                        REKОMENDUYEM
+            {/* Header Block with Image or Icon */}
+            <div className={cn("h-64 relative overflow-hidden bg-[var(--secondary)]", !imageUrl && currentStyle.header)}>
+                {imageUrl ? (
+                    <Image
+                        src={imageUrl}
+                        alt={title}
+                        fill
+                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                    />
+                ) : (
+                    <div className="flex items-center justify-center h-full">
+                        {currentStyle.icon}
                     </div>
                 )}
 
-                <div className="flex flex-col h-full">
-                    <div className="mb-12">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40 mb-4 block">
-                            {type === 'ONLINE' ? 'ONLAYN KURSLAR' : 'OFFLAYN DASHAR'}
-                        </span>
-                        <h3 className="text-2xl font-serif text-primary leading-tight mb-4">
-                            {title}
-                        </h3>
-                        <p className="text-sm text-primary/60 font-medium mb-8 leading-relaxed line-clamp-3">
-                            {description}
-                        </p>
-                    </div>
+                {/* Overlay Tag */}
+                <div className="absolute top-4 left-6 z-10">
+                    <span className={cn(
+                        "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-lg",
+                        currentStyle.header
+                    )}>
+                        {currentStyle.tag}
+                    </span>
+                </div>
 
-                    <div className="space-y-3 mb-12">
-                        {[1, 2].map((i) => (
-                            <div key={i} className="flex items-start gap-3">
-                                <span className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                </span>
-                                <span className="text-[12px] font-bold text-primary/60 tracking-tight">Kengaytirilgan o'quv dasturi</span>
-                            </div>
-                        ))}
-                    </div>
+                {/* Decorative overlay when image exists */}
+                {imageUrl && <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />}
+            </div>
 
-                    <div className="mt-auto flex items-end justify-between">
-                        <div>
-                            <div className="text-[14px] font-black text-primary/40 uppercase tracking-widest mb-1">{price} UZS</div>
-                            <div className="text-[10px] font-bold text-primary/20 uppercase tracking-widest">30 kunlik kirish</div>
+            <div className="p-8 pb-10 flex flex-col flex-1">
+                <div className="mb-6 flex-1">
+                    <h3 className="text-xl font-bold text-[var(--primary)] leading-tight mb-3">
+                        {title}
+                    </h3>
+                    <p className="text-[13px] text-[var(--primary)]/60 font-medium leading-relaxed line-clamp-3 mb-6">
+                        {description}
+                    </p>
+
+                    {/* Features checklist from screenshot */}
+                    <div className="space-y-2">
+                        {displayFeatures.length > 0 ? (
+                            displayFeatures.map((feat, idx) => (
+                                <div key={idx} className="flex items-start gap-2">
+                                    <div className="w-1 h-1 rounded-full bg-[var(--accent)] mt-1.5 shrink-0" />
+                                    <span className="text-[11px] font-bold text-[var(--primary)]/40 uppercase tracking-wide leading-tight">
+                                        {feat}
+                                    </span>
+                                </div>
+                            ))
+                        ) : (
+                            [1, 2].map((i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                    <div className="w-1 h-1 rounded-full bg-[var(--accent)]" />
+                                    <span className="text-[11px] font-bold text-[var(--primary)]/40 uppercase tracking-wide">
+                                        {lang === 'ru' ? 'Краткое описание бонуса' : 'Afzalliklari haqida qisqacha'}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                <div className="pt-6 border-t border-[var(--secondary)] flex items-center justify-between">
+                    <div>
+                        <div className="text-[16px] font-black text-[var(--primary)] tracking-tight">
+                            {new Intl.NumberFormat(lang === 'uz' ? 'uz-UZ' : 'ru-RU').format(Number(price))} UZS
                         </div>
-
-                        <Link
-                            href={`/${lang}/courses/${id}`}
-                            className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center hover:bg-accent transition-all active:scale-90"
-                        >
-                            <ChevronRight className="w-6 h-6" />
-                        </Link>
                     </div>
+
+                    <Link
+                        href={`/${lang}/courses/${id}`}
+                        className="w-10 h-10 rounded-full bg-[var(--primary)] text-white flex items-center justify-center hover:bg-[var(--primary)] transition-all active:scale-95 shadow-lg shadow-[var(--primary)]/20"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </Link>
                 </div>
             </div>
         </motion.div>
     )
 }
+
+

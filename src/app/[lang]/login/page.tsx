@@ -1,6 +1,6 @@
 import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
 import { Container } from "@/components/ui/Container"
-import { LoginForm } from "@/components/auth/LoginForm"
+import { UnifiedAuthForm } from "@/components/auth/UnifiedAuthForm"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -21,14 +21,14 @@ export default async function LoginPage({
                             <Image src="/images/logo.png" alt="Logo" width={120} height={40} className="h-8 w-auto" />
                         </Link>
                         <h1 className="text-3xl font-serif text-primary mb-2">
-                            {dictionary.common.login}
+                            {dictionary.auth.title}
                         </h1>
                         <p className="text-primary/50 text-sm font-medium">
-                            Xush kelibsiz! Davom etish uchun kiring.
+                            {dictionary.auth.subtitle}
                         </p>
                     </div>
 
-                    <LoginForm lang={lang} dictionary={dictionary} />
+                    <UnifiedAuthForm lang={lang} dictionary={dictionary} initialMode="login" />
                 </div>
             </Container>
         </main>

@@ -5,9 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "../ui/Button"
 import { Input } from "../ui/Input"
-import { Locale } from "@/dictionaries/get-dictionary"
+import { Locale } from "@/dictionaries/types"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 const loginSchema = z.object({
     login: z.string().min(3, "Login is too short"),
@@ -40,25 +42,29 @@ export function LoginForm({ lang, dictionary, isAdmin }: LoginFormProps) {
         setError(null)
 
         try {
-            const res = await fetch("/api/auth/login", {
+            const url = isAdmin ? "/api/admin/login" : "/api/auth/login"
+            const body = isAdmin
+                ? { username: data.login, password: data.password }
+                : { email: data.login, password: data.password }
+
+            const res = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify(body),
             })
 
             const result = await res.json()
 
             if (!result.success) {
-                throw new Error(result.message || "Login failed")
+                throw new Error(result.error || result.message || "Login failed")
             }
 
             // Redirect based on role or context
             if (isAdmin) {
-                router.push(`/${lang}/admin`)
+                window.location.href = `/${lang}/admin`
             } else {
-                router.push(`/${lang}/account`)
+                window.location.href = `/${lang}/account`
             }
-            router.refresh()
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -74,37 +80,48 @@ export function LoginForm({ lang, dictionary, isAdmin }: LoginFormProps) {
                 </div>
             )}
             <div className="space-y-2">
-                <label className="text-sm font-bold text-primary/60 ml-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)]/40 ml-4">
                     {isAdmin ? "Admin Login" : (dictionary.auth.email || "Email / Login")}
                 </label>
                 <Input
                     {...form.register("login")}
                     type="text"
-                    placeholder={isAdmin ? "admin123123" : "Login or Email"}
-                    className={form.formState.errors.login ? "border-red-400" : ""}
+                    placeholder={isAdmin ? "admin123" : "Login or Email"}
+                    className={cn(
+                        "rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6 font-medium",
+                        form.formState.errors.login ? "border-red-400" : ""
+                    )}
                 />
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-bold text-primary/60 ml-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)]/40 ml-4">
                     {dictionary.auth.password || "Parol"}
                 </label>
                 <Input
                     {...form.register("password")}
                     type="password"
                     placeholder="******"
-                    className={form.formState.errors.password ? "border-red-400" : ""}
+                    className={cn(
+                        "rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6 font-medium",
+                        form.formState.errors.password ? "border-red-400" : ""
+                    )}
                 />
             </div>
 
-            <Button type="submit" className="w-full bg-emerald-800 hover:bg-emerald-900" disabled={loading}>
-                {loading ? "Yuklanmoqda..." : dictionary.common.login}
+            <Button type="submit" className="w-full py-6 rounded-2xl bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[var(--primary)]/20 active:scale-[0.98] transition-all" disabled={loading}>
+                {loading ? (
+                    <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        <span>Yuklanmoqda...</span>
+                    </div>
+                ) : dictionary.common.login}
             </Button>
 
             {!isAdmin && (
-                <div className="text-center text-sm font-medium text-primary/50">
+                <div className="text-center text-[10px] font-black uppercase tracking-widest text-[var(--primary)]/40 pt-4">
                     Hisobingiz yo'qmi?{" "}
-                    <Link href={`/${lang}/register`} className="text-emerald-700 font-bold hover:underline">
+                    <Link href={`/${lang}/register`} className="text-[var(--primary)] font-black hover:text-[var(--primary)]/70 transition-colors">
                         {dictionary.common.register}
                     </Link>
                 </div>
@@ -112,4 +129,5 @@ export function LoginForm({ lang, dictionary, isAdmin }: LoginFormProps) {
         </form>
     )
 }
-import Link from "next/link"
+
+

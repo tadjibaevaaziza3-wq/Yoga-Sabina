@@ -27,7 +27,7 @@ export default async function LessonPage({
 
     return (
         <main className="min-h-screen bg-secondary/20 pb-20">
-            <Header lang={lang} dictionary={dictionary} />
+            <Header />
 
             <Container className="py-12">
                 <div className="flex items-center gap-4 mb-8">

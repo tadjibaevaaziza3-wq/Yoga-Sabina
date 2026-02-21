@@ -1,46 +1,204 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #064E3B;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #F0FDF4;
-  --color-accent: #059669;
-  --color-wellness-gold: #D97706;
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-wellness-gold: var(--accent);
 
-  --color-background: #ffffff;
-  --color-foreground: #064E3B;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 
   --font-sans: var(--font-inter);
   --font-serif: var(--font-playfair);
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #064E3B;
-  --primary: #064E3B;
-  --secondary: #F0FDF4;
-  --accent: #059669;
+  /* Modern Boutique Luxury Aesthetic */
+  --background: #f6f9fe;
+  --foreground: #114539;
+  /* Deep Emerald */
+
+  --primary: #114539;
+  --primary-foreground: #ffffff;
+
+  --secondary: #eef2f6;
+  --secondary-foreground: #114539;
+
+  --accent: #d8cfc4;
+  /* Champagne Beige */
+  --accent-foreground: #114539;
+
+  --luxury-beige: #d8cfc4;
+  --card-bg: #ffffff;
+  --border: rgba(17, 69, 57, 0.08);
+  /* Subtle emerald border */
+  --glow: rgba(216, 207, 196, 0.3);
+  /* Warm champagne glow */
+
+  /* Transition & Animation Tokens */
+  --transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Fonts handled by next/font */
+  --font-inter: var(--font-inter);
+  --font-playfair: var(--font-playfair);
+}
+
+/* ─── Luxury Theme ─── */
+/* ─── Luxury Theme ─── */
+:root {
+  color-scheme: light;
+  /* Consistent Luxury Theme Across All Platforms */
+  --background: #f6f9fe;
+  --foreground: #114539;
+  --primary: #114539;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2f6;
+  --accent: #d8cfc4;
+  --card-bg: #ffffff;
+  --border: rgba(17, 69, 57, 0.08);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  transition: background-color var(--transition-slow), color var(--transition-slow);
   @apply antialiased;
 }
 
-.glass-card {
-  @apply bg-white border border-primary/5 shadow-2xl shadow-primary/5 rounded-[3rem];
+[data-theme="user"] header img[alt="Baxtli Men"] {
+  filter: brightness(0) invert(1);
 }
 
-.premium-shadow {
-  box-shadow: 0 40px 100px -20px rgba(20, 66, 67, 0.1);
+/* ─── Utility Classes ─── */
+
+@utility shadow-soft {
+  box-shadow: 0 4px 20px -2px rgba(17, 69, 57, 0.05);
 }
 
-.btn-coral {
-  @apply bg-[#FF6B4E] text-white hover:bg-[#FF856B] transition-all rounded-full px-8 py-4 font-bold shadow-xl shadow-accent/20 active:scale-95;
+@utility shadow-button {
+  box-shadow: 0 8px 30px -4px rgba(17, 69, 57, 0.1);
 }
 
-.btn-primary {
-  @apply bg-[#144243] text-white hover:bg-[#1B5759] transition-all rounded-full px-8 py-4 font-bold active:scale-95;
+@utility premium-shadow {
+  box-shadow: 0 40px 100px -20px rgba(17, 69, 57, 0.08);
+}
+
+@utility glass-card {
+  @apply bg-white/80 backdrop-blur-md border border-[var(--primary)]/5 shadow-soft rounded-[2.5rem];
+}
+
+@utility btn-luxury {
+  @apply bg-[var(--accent)] text-[var(--primary)] hover:opacity-90 transition-all rounded-2xl px-10 py-4 font-bold active:scale-95 shadow-soft;
+}
+
+@utility btn-primary {
+  @apply bg-[var(--primary)] text-white hover:opacity-90 transition-all rounded-2xl px-10 py-4 font-bold active:scale-95 shadow-soft;
+}
+
+@utility font-editorial {
+  font-family: var(--font-playfair);
+  @apply tracking-tight;
+}
+
+/* ─── Ripple Effect ─── */
+
+@keyframes ripple-effect {
+  0% {
+    transform: scale(0);
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-container .ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.2;
+  pointer-events: none;
+  animation: ripple-effect 0.6s ease-out forwards;
+}
+
+/* ─── Skeleton Shimmer ─── */
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@utility skeleton-pulse {
+  background: linear-gradient(90deg,
+      var(--secondary) 25%,
+      var(--border) 50%,
+      var(--secondary) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  border-radius: 1rem;
+}
+
+/* ─── Focus Ring ─── */
+
+@utility focus-ring {
+  @apply outline-none ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--background)];
+}
+
+/* ─── Reduced Motion ─── */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Antigravity Video.js Theme ─── */
+
+.vjs-theme-antigravity .vjs-control-bar {
+  @apply bg-white/10 backdrop-blur-xl border-t border-white/10 h-16 px-4;
+}
+
+.vjs-theme-antigravity .vjs-big-play-button {
+  @apply bg-[var(--accent)] border-none w-24 h-24 rounded-full shadow-2xl shadow-[var(--accent)]/40 transition-all active:scale-95;
+}
+
+.vjs-theme-antigravity .vjs-play-progress {
+  @apply bg-[var(--accent)];
+}
+
+.vjs-theme-antigravity .vjs-load-progress {
+  @apply bg-white/20;
+}
+
+.vjs-theme-antigravity .vjs-slider {
+  @apply bg-white/10;
+}
+
+.vjs-theme-antigravity .vjs-volume-level {
+  @apply bg-[var(--accent)];
+}
+
+.vjs-theme-antigravity .vjs-progress-control:hover .vjs-progress-holder {
+  @apply h-1.5;
 }

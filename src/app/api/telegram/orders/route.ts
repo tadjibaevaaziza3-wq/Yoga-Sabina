@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { generatePaymeUrl } from '@/lib/payments/payme'
+import { generateClickUrl } from '@/lib/payments/click'
 
 export async function POST(request: Request) {
     try {
-        const { telegramId, firstName, lastName, photoUrl, courseId, amount } = await request.json()
+        const { telegramId, firstName, lastName, courseId, amount, provider } = await request.json()
 
         if (!telegramId || !courseId) {
             return NextResponse.json({ success: false, error: 'Missing data' }, { status: 400 })
@@ -20,33 +22,38 @@ export async function POST(request: Request) {
                     telegramId: String(telegramId),
                     firstName,
                     lastName,
-                    profile: {
-                        create: {
-                            totalYogaTime: 0,
-                        }
-                    }
+                    role: 'USER'
                 }
             })
         }
 
         // 2. Create a PENDING purchase
+        const numericAmount = typeof amount === 'string' ? Number(amount.replace(/[^0-9]/g, "")) : Number(amount)
+
         const purchase = await prisma.purchase.create({
             data: {
                 userId: user.id,
                 courseId: courseId,
-                amount: amount,
+                amount: numericAmount,
                 status: 'PENDING',
-                provider: 'PAYME'
+                provider: provider === 'CLICK' ? 'CLICK' : 'PAYME'
             }
         })
 
-        // 3. Optional: Notify admin or log the lead
-        console.log(`New lead from Telegram: User ${telegramId} interested in course ${courseId}`)
+        // 3. Generate Payment URL
+        let paymentUrl = ""
+        if (provider === 'CLICK') {
+            paymentUrl = await generateClickUrl(numericAmount, { merchant_trans_id: purchase.id })
+        } else {
+            paymentUrl = await generatePaymeUrl(numericAmount * 100, {
+                order_id: purchase.id
+            })
+        }
 
         return NextResponse.json({
             success: true,
             orderId: purchase.id,
-            paymentUrl: `https://test.paycom.uz/checkout/...` // Mock payment URL
+            paymentUrl
         })
     } catch (error: any) {
         console.error('TMA Order error:', error)
