@@ -24,10 +24,14 @@ interface Course {
 
 export function ProgramsSection({
     onlineBgUrl = "/images/online-bg.jpg",
-    offlineBgUrl = "/images/offline-bg.jpg"
+    offlineBgUrl = "/images/offline-bg.jpg",
+    consultationBgUrl = "/images/consultation-bg.jpg",
+    isConsultationEnabled = true
 }: {
     onlineBgUrl?: string,
-    offlineBgUrl?: string
+    offlineBgUrl?: string,
+    consultationBgUrl?: string,
+    isConsultationEnabled?: boolean
 }) {
     const { dictionary, lang } = useDictionary()
     const [courses, setCourses] = useState<Course[]>([])
@@ -153,27 +157,48 @@ export function ProgramsSection({
                             </div>
                         </div>
                     </motion.div>
+                    {/* Consultation Choice Card (Volume 03) */}
+                    {isConsultationEnabled && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.8 }}
+                            className="group relative"
+                        >
+                            <div className="grid lg:grid-cols-2 gap-20 items-center">
+                                <div className="relative aspect-[4/5] lg:aspect-[3/4] overflow-hidden rounded-[3rem] shadow-2xl">
+                                    <Image
+                                        src={consultationBgUrl}
+                                        alt="Consultation"
+                                        fill
+                                        className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-[var(--primary)]/10 group-hover:bg-transparent transition-colors duration-700"></div>
+                                </div>
+
+                                <div className="space-y-10 lg:-ml-24 relative z-10 bg-[var(--background)]/90 backdrop-blur-sm p-12 lg:p-20 rounded-[3rem] shadow-soft border border-[var(--primary)]/5">
+                                    <span className="inline-block px-6 py-2 rounded-full border border-[var(--primary)]/20 text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--primary)]">
+                                        Volume 03
+                                    </span>
+                                    <h3 className="text-4xl md:text-6xl font-editorial font-bold text-[var(--primary)] leading-[0.9] tracking-tight">
+                                        {lang === 'uz' ? 'Individual Konsultatsiya' : 'Индивидуальная Консультация'}
+                                    </h3>
+                                    <p className="text-[var(--primary)]/60 text-xl font-medium leading-relaxed max-w-md tracking-wide">
+                                        {lang === 'uz' ? "Sizning shaxsiy ehtiyojlaringizga moslashtirilgan yakkama-yakka yordam." : "Индивидуальная помощь, адаптированная к вашим личным потребностям."}
+                                    </p>
+                                    <Link
+                                        href={`/${lang}/consultations`}
+                                        className="inline-flex items-center gap-4 text-[var(--primary)] font-bold uppercase tracking-[0.3em] text-[11px] group/btn mt-8"
+                                    >
+                                        <span>{lang === 'uz' ? 'Batafsil' : 'Подробнее'}</span>
+                                        <span className="w-12 h-px bg-[var(--primary)] group-hover/btn:w-20 transition-all duration-300"></span>
+                                    </Link>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
                 </div>
-
-                {/* Consultation CTA Section - Minimalist */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="mt-40 text-center relative"
-                >
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[var(--accent)]/5 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
-
-                    <h3 className="text-4xl md:text-6xl font-editorial font-bold text-[var(--primary)] mb-10 leading-tight">
-                        {lang === 'uz' ? "Individual yordam kerakmi?" : "Нужна индивидуальная помощь?"}
-                    </h3>
-                    <Link
-                        href="/consultations"
-                        className="inline-block bg-[var(--primary)] text-white px-16 py-6 rounded-full font-bold uppercase tracking-[0.3em] text-[10px] hover:bg-[var(--primary)]/90 hover:scale-105 transition-all duration-500 shadow-xl shadow-[var(--primary)]/20"
-                    >
-                        {lang === 'uz' ? "Konsultatsiyaga yozilish" : "Записаться на консультацию"}
-                    </Link>
-                </motion.div>
             </Container>
         </section>
     )

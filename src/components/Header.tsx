@@ -14,7 +14,7 @@ import { User } from "@supabase/supabase-js"
 import { NotificationCenter } from "./NotificationCenter"
 import { ChangePasswordModal } from "./user/ChangePasswordModal"
 
-export function Header({ minimal = false, isAdmin = false }: { minimal?: boolean, isAdmin?: boolean }) {
+export function Header({ minimal = false, isAdmin = false, isConsultationEnabled = true }: { minimal?: boolean, isAdmin?: boolean, isConsultationEnabled?: boolean }) {
     const { dictionary, lang } = useDictionary()
     const pathname = usePathname()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -61,7 +61,7 @@ export function Header({ minimal = false, isAdmin = false }: { minimal?: boolean
     const navLinks = [
         { href: `/${lang}/online-courses`, label: dictionary.courses.online },
         { href: `/${lang}/offline-courses`, label: dictionary.courses.offline },
-        { href: `/${lang}/consultations`, label: dictionary.common.consultations || "Konsultatsiyalar" },
+        ...(isConsultationEnabled ? [{ href: `/${lang}/consultations`, label: dictionary.common.consultations || "Konsultatsiyalar" }] : []),
         { href: `/${lang}/about`, label: dictionary.common.about },
     ]
 

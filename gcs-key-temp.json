@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "ai-telco-forecast",
+  "private_key_id": "unknown",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7OwlWHa4TatBE\nZHN5T/A53uGGKt1E7IlUU9WHEbU7VuiPXfYCK+yCdzItZ5Fl29BukYk3yWXOLb09\nFaG4+wVfCC6yAm67+pOuaSnvmqZhjbmhaxuEnE0oMX4dQZi4xf4U7DIx5xfXIFjb\nyNJEZyG05qCk9X2Jjx5e4mixDnFLpyaen8eudaXMjEDijQbfHk4PS6zh5F0mVRj6\nB+Fqth7rHnHMte7zFEs1GQGXbFpuhbWXGYh8EGSFoT20zG1bFFCj9LEkibzmIEDa\neJqNL8ypphLRFvjycPw0ZRxtvjCPjzm7W77lDNqVm/MRUSOwRNfuX8juxLzyUTDt\nwTLScPAbAgMBAAECggEAT5elPGqZmb+KkchyHlwRL0jEbpjCP46eQq7w0t6AQJ2N\nd4TmE75AaKXrOsoQUVDEpnxP7Ns84A0pqVIM0epEOkXsM9g84sR/C2HBZg5ENKxf\nAXPa2uDnG/MOPbmpBsOEY7iVDgnDZLxniecxG8sL1S9Fk1qY52Vj78on3zzYhOPq\nVlgnfw535+fLAZNai//m6WvicP5f+6b6qM7NkxkBD4F3sV8EiekCpv2IcMR6gBzs\nA4Hk7Ebl03W2qepSkI+aiLZRiNBkkh/EY5EWLAyJkbZdw2zDOO54sk/FCcx29WC6\nuvnS5vQCYnq7fNrQ5vP58x/uBugthVju/Xg4N3aGQQKBgQD25qpQ2AzK2Cz5Md5X\ngC3azeN2jpq5Q+PpY1TqHW/zHCrCP3qpU8emSdTjsKnSN9mXVdihgYwuf4xVkIY/\nuxZPGOESCVAeUhGD6GuBmbXzW3GbEh8+h9IfsY/XVLXmLWt99edjytw93DyH/7DC\n9dVchLq5DsBZGDbiEw7HRUagowKBgQDCIWxjG3RehDK0uvO/N+H6igviZ7dPCO8y\nwGcePrICatggcAXix2v9wZ7oSoq1KOT6MbBEPktxEVU+4yvuO4UzMld828SUAaiS\nf9bUr6yqfx+ImaNQXLYmMrPUInb0GhotFx6WtkybfQKqsibsKUf2Qb+D4ptEJ6ui\nj4DI/G9SKQKBgGCoszrNKkzrTsgMLuiApPMJMajDcW1gV8SR/7db6Oz7NP4xDdtm\nkj3Wn8K38fP7q3Lkx9eKuQ+nHZCN8RDYNIaozcxa2wPTy0mh3xywyZvUO+ESuiqn\nz6pawF5jqoa/d1qrv3fA/nI1W3k+r7vTtEDxMYyrasA2i538Kgf3ZgwTAoGAfz+F\nWllOp/2jdw/sYfTxbVY7gAZYA7hpgizX6t1RtX/vdyO21/W79bOKw9zImwLZRJ55\nWeIzdUPVSsmBrEDbiLmA21j6u8Fyi8S8PuGAHqoBM3rxr+V1iAhIE88bhdnuOowj\nAssv+PLcbQhCz/r6aEjNgG9oKkYOhAybIv7NDECgYEAgbUphwFlkpnCekaGZO4TnyeQtRfNUNjRlMu+T+9CWFILTrGUfcoQvkIj9Kn6Yp6zYuH1OwVUf9lOyheQ2UlVWFFI7fBYgkbfnsZyI7rhyixYbxdzYKG2Ebe5w8yCVOC4wXjpJyUF6crs9ugHNOThTT/ldU61BHDQ79O+woaqNID8=\n-----END PRIVATE KEY-----",
+  "client_email": "firebase-adminsdk-fbsvc@ai-telco-forecast.iam.gserviceaccount.com",
+  "client_id": "unknown",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40ai-telco-forecast.iam.gserviceaccount.com"
+}

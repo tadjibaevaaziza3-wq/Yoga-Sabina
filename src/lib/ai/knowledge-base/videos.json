@@ -1,0 +1,92 @@
+{
+    "men-yoga-therapy": {
+        "title": "Onlayn: Tana yogaterapiyasi — Standart (erkaklar uchun)",
+        "summary": "Erkaklar uchun maxsus tayyorlangan ushbu kurs endokrin tizim, qon aylanishi va umurtqa pog'onasi salomatligini tiklashga xizmat qiladi. Kurs davomida gemorroy, prostatit kabi muammolarni bartaraf etuvchi mashqlar o'rgatiladi.",
+        "topics": [
+            "erkaklar",
+            "yoga terapiya",
+            "endokrin tizim",
+            "gormonlar",
+            "qon aylanishi",
+            "limfa tizimi",
+            "oshqozon-ichak",
+            "buyrak",
+            "umurtqa pog'onasi",
+            "bug'inlar",
+            "bukchayish",
+            "osteoxondroz",
+            "gryja",
+            "bel og'rig'i",
+            "nerv tizimi",
+            "libido",
+            "prostatit",
+            "gemorroy"
+        ],
+        "transcript": "Ushbu darsda biz erkaklar salomatligining kaliti bo'lgan endokrin tizimi va gormonlar ustida ishlaymiz. Har bir harakat va nafas olish texnikasi qon aylanishini yaxshilashga qaratilgan. Ayniqsa, umurtqa pog'onasi va bel sohasidagi gryja hamda osteoxondrozni davolash uchun sekin va aniq mashqlar ko'rsatiladi. Bu nafaqat jismoniy, balki asab tizimini ham mustahkamlaydi."
+    },
+    "happy-women-club-standard": {
+        "title": "Onlayn: Baxtli ayollar klubi — Standart",
+        "summary": "Ayollar uchun gormonal yoga, ayollik energiyasini oshirish va psixologik amaliyotlar toplami. Hayz tsikli davrida to'g'ri yoga qilish va organizmni parvarishlash bo'yicha maslahatlar.",
+        "topics": [
+            "ayollar",
+            "gormonal yoga",
+            "ayollik energiyasi",
+            "hayz davri",
+            "tsikl",
+            "limfodrenaj",
+            "psixologiya",
+            "parhez",
+            "suv ichish",
+            "ideal qomat",
+            "yoshlik"
+        ],
+        "transcript": "Gormonal yoga orqali biz ayol kishining ichki balansini tiklaymiz. Hayz ko'rgan kunlarda teskari holatlarni bajarmaslik juda muhim, aks holda qon aylanishiga zarar yetishi mumkin. Biz ko'proq tinchlantiruvchi va og'riqni qoldiruvchi asanalarga e'tibor qaratamiz. Ayollik energiyasini oshirish uchun meditatsiya amaliyotlari kursimizning ajralmas qismidir."
+    },
+    "face-yoga": {
+        "title": "Tabiiy yosharish (Yuz yogasi) — 3v1",
+        "summary": "Yuz mashqlari, осанка (qomat) va tos uchun asanalar bilan birga teypirovaniye texnikasini o'z ichiga olgan kurs. Tabiiy go'zallik va yoshlikni saqlab qolish uchun.",
+        "topics": [
+            "yuz yogasi",
+            "yosharish",
+            "go'zallik",
+            "ajinlar",
+            "shishlar",
+            "osanka",
+            "tos",
+            "teypirovaniye",
+            "asimmetriya",
+            "terini parvarishlash"
+        ],
+        "transcript": "Yuz - bu bizning salomatligimiz ko'zgusi. Ushbu darsda biz nafaqat yuz mushaklari, balki qomat (osanka) ustida ham ishlaymiz. Chunki to'g'ri qomat bo'lmasa, yuzda ham ajinlar erta tushadi. Teypirovaniye yordamida esa biz limfa oqishini kuchaytirib, yuzdagi shishlardan xalos bo'lamiz."
+    },
+    "back-pain-special": {
+        "title": "Bel va Umurtqa salomatligi darsi",
+        "summary": "Bel og'rig'i, gryja va osteoxondrozda qo'llaniladigan xavfsiz mashqlar. Umurtqani cho'zish va disklar orasidagi masofani ochish usullari.",
+        "topics": [
+            "bel og'rig'i",
+            "gryja",
+            "osteoxondroz",
+            "protruziya",
+            "umurtqa",
+            "tana tiklanishi",
+            "xavfsiz mashqlar",
+            "meditsina"
+        ],
+        "transcript": "Og'riqli nuqtalar bilan ishlaganda eng asosiysi - keskin harakat qilmaslik. Nafasni chiqarayotganda sekin egilamiz. Agar sizda gryja bo'lsa, 'Marjariasana' (Mushuk-Sigir) mashqini juda ehtiyotkorlik bilan bajaring. Bu mashqlar umurtqa pog'onasining moslashuvchanligini oshirib, og'riqlarni kamaytiradi."
+    },
+    "meditation-stress-recovery": {
+        "title": "Stressdan chiqish va Ruhiy xotirjamlik",
+        "summary": "Psixologik praktika va tinchlantiruvchi yoga amaliyoti. Uyquni yaxshilash va asabiylikdan qutilish yo'llari.",
+        "topics": [
+            "stress",
+            "asabiylik",
+            "uyqusizlik",
+            "xotirjamlik",
+            "meditatsiya",
+            "ruhiyat",
+            "psixologiya",
+            "nafas mashqlari"
+        ],
+        "transcript": "Kun davomida to'plangan stress tanangizda 'bloklar' hosil qiladi. Shuning uchun biz chuqur qorin bilan nafas olishni mashq qilamiz. Bu parasimpatik asab tizimini ishga tushirib, sizni xotirjamlik holatiga o'tkazadi. Kechki uyqudan oldin meditatsiya qilishni unutmang."
+    }
+}

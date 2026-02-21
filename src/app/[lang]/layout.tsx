@@ -4,6 +4,7 @@ import { Locale, getDictionary } from "@/dictionaries/get-dictionary";
 import { AIAgentWrapper } from "@/components/AIAgentWrapper";
 import { DictionaryProvider } from "@/components/providers/DictionaryProvider";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import { FooterWrapper } from "@/components/FooterWrapper";
 import { HeaderWrapper } from "@/components/HeaderWrapper";
 import { Toaster } from "sonner";
@@ -126,7 +127,9 @@ export default async function RootLayout({
     },
     "sameAs": [
       "https://instagram.com/sabinapolatova",
-      "https://t.me/baxtlimen"
+      "https://t.me/baxtlimen",
+      "https://www.youtube.com/@sabina_yogauz",
+      "https://sabinapolatova.taplink.ws"
     ],
     "contactPoint": {
       "@type": "ContactPoint",
@@ -135,16 +138,21 @@ export default async function RootLayout({
     }
   };
 
+  const consultationSetting = await prisma.systemSetting.findUnique({
+    where: { key: 'IS_CONSULTATION_ENABLED' }
+  });
+  const isConsultationEnabled = consultationSetting?.value !== 'false';
+
   return (
     <html lang={locale} className="light" style={{ colorScheme: 'light' }} suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased text-primary selection:bg-accent selection:text-primary min-h-screen`} suppressHydrationWarning>
         <StructuredData data={orgSchema} id="org-schema" />
         <DictionaryProvider dictionary={dictionary} lang={locale}>
           <TrackingProvider>
-            <HeaderWrapper />
+            <HeaderWrapper isConsultationEnabled={isConsultationEnabled} />
             {children}
             <Toaster position="top-center" richColors />
-            <FooterWrapper />
+            <FooterWrapper isConsultationEnabled={isConsultationEnabled} />
             <AIAgentWrapper lang={locale} />
           </TrackingProvider>
         </DictionaryProvider>

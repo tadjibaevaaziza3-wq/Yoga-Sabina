@@ -9,6 +9,7 @@ import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
 import { prisma } from "@/lib/prisma"
 
 // Force Rebuild
+export const dynamic = 'force-dynamic';
 export default async function Home(props: { params: Promise<{ lang: string }> }) {
   const { lang } = await props.params
   const dictionary = await getDictionary(lang as Locale)
@@ -17,8 +18,9 @@ export default async function Home(props: { params: Promise<{ lang: string }> })
     where: {
       key: {
         in: [
+          'IS_CONSULTATION_ENABLED',
           'FRONTEND_HERO_PHOTO', 'FRONTEND_TRAINER_PHOTO', 'FRONTEND_MAIN_VIDEO', 'FRONTEND_VIDEO_BANNER',
-          'FRONTEND_PROGRAMS_ONLINE_BG', 'FRONTEND_PROGRAMS_OFFLINE_BG',
+          'FRONTEND_PROGRAMS_ONLINE_BG', 'FRONTEND_PROGRAMS_OFFLINE_BG', 'FRONTEND_PROGRAMS_CONSULTATION_BG',
           'FRONTEND_INSTA_1', 'FRONTEND_INSTA_2', 'FRONTEND_INSTA_3', 'FRONTEND_INSTA_4'
         ]
       }
@@ -36,6 +38,8 @@ export default async function Home(props: { params: Promise<{ lang: string }> })
   const videoBannerUrl = getSetting('FRONTEND_VIDEO_BANNER', '/images/hero.png')
   const onlineBgUrl = getSetting('FRONTEND_PROGRAMS_ONLINE_BG', '/images/online-bg.jpg')
   const offlineBgUrl = getSetting('FRONTEND_PROGRAMS_OFFLINE_BG', '/images/offline-bg.jpg')
+  const consultationBgUrl = getSetting('FRONTEND_PROGRAMS_CONSULTATION_BG', '/images/consultation-bg.jpg')
+  const isConsultationEnabled = getSetting('IS_CONSULTATION_ENABLED', 'true') === 'true'
 
   const insta1Url = getSetting('FRONTEND_INSTA_1', 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600&h=600&auto=format&fit=crop')
   const insta2Url = getSetting('FRONTEND_INSTA_2', 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&h=600&auto=format&fit=crop')
@@ -48,7 +52,12 @@ export default async function Home(props: { params: Promise<{ lang: string }> })
       <TrainerSection photoUrl={trainerPhotoUrl} />
       <AboutSection />
       <IntroSection videoUrl={mainVideoUrl} bannerUrl={videoBannerUrl} />
-      <ProgramsSection onlineBgUrl={onlineBgUrl} offlineBgUrl={offlineBgUrl} />
+      <ProgramsSection
+        onlineBgUrl={onlineBgUrl}
+        offlineBgUrl={offlineBgUrl}
+        consultationBgUrl={consultationBgUrl}
+        isConsultationEnabled={isConsultationEnabled}
+      />
       <InstagramSection post1Url={insta1Url} post2Url={insta2Url} post3Url={insta3Url} post4Url={insta4Url} />
       <FAQSection lang={lang} />
     </main>

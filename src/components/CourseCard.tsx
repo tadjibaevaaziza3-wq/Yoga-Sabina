@@ -150,7 +150,7 @@ export function CourseCard({
 
                 <div className="pt-6 border-t border-[var(--secondary)] flex items-center justify-between">
                     <div>
-                        <div className="text-[16px] font-black text-[var(--primary)] tracking-tight">
+                        <div suppressHydrationWarning className="text-[16px] font-black text-[var(--primary)] tracking-tight">
                             {new Intl.NumberFormat(lang === 'uz' ? 'uz-UZ' : 'ru-RU').format(Number(price))} UZS
                         </div>
                     </div>
