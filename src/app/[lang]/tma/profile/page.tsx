@@ -70,6 +70,20 @@ export default function TMAProfile() {
         );
     }
 
+    if (!userData) {
+        return (
+            <div className="min-h-screen bg-[#f6f9fe] flex flex-col items-center justify-center gap-4 px-6">
+                <div className="w-16 h-16 rounded-[1.5rem] bg-white shadow-soft flex items-center justify-center border border-[#114539]/5">
+                    <User className="w-8 h-8 text-[#114539]/30" />
+                </div>
+                <p className="text-sm font-bold text-[#114539]/50 text-center">Profil ma'lumotlari yuklanmadi.<br />Iltimos, qayta urinib ko'ring.</p>
+                <button onClick={() => window.location.reload()} className="btn-luxury px-8 py-3 text-[10px] uppercase tracking-widest">
+                    Qayta yuklash
+                </button>
+            </div>
+        );
+    }
+
     return (
         <main className="pb-32 bg-[#f6f9fe] min-h-screen">
             <Container className="pt-12 px-6 space-y-10">
@@ -173,7 +187,7 @@ export default function TMAProfile() {
                     <button className="w-full flex items-center justify-center gap-3 py-5 rounded-2xl border border-red-500/10 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/5 transition-all">
                         <LogOut className="w-4 h-4" /> Akkauntdan chiqish
                     </button>
-                    <p className="text-[8px] text-[#114539]/20 text-center font-bold uppercase tracking-widest mt-6">Telegram ID: {userData.telegramId}</p>
+                    <p className="text-[8px] text-[#114539]/20 text-center font-bold uppercase tracking-widest mt-6">Telegram ID: {userData?.telegramId || 'N/A'}</p>
                 </div>
             </Container>
 

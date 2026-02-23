@@ -2,6 +2,7 @@ import type { Metadata, ResolvingMetadata } from "next";
 import "../globals.css";
 import { Locale, getDictionary } from "@/dictionaries/get-dictionary";
 import { AIAgentWrapper } from "@/components/AIAgentWrapper";
+import { CookieBanner } from "@/components/CookieBanner";
 import { DictionaryProvider } from "@/components/providers/DictionaryProvider";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -138,10 +139,15 @@ export default async function RootLayout({
     }
   };
 
-  const consultationSetting = await prisma.systemSetting.findUnique({
-    where: { key: 'IS_CONSULTATION_ENABLED' }
-  });
-  const isConsultationEnabled = consultationSetting?.value !== 'false';
+  let isConsultationEnabled = true;
+  try {
+    const consultationSetting = await prisma.systemSetting.findUnique({
+      where: { key: 'IS_CONSULTATION_ENABLED' }
+    });
+    isConsultationEnabled = consultationSetting?.value !== 'false';
+  } catch {
+    // SystemSetting table may not exist yet — default to enabled
+  }
 
   return (
     <html lang={locale} className="light" style={{ colorScheme: 'light' }} suppressHydrationWarning>
@@ -154,6 +160,7 @@ export default async function RootLayout({
             <Toaster position="top-center" richColors />
             <FooterWrapper isConsultationEnabled={isConsultationEnabled} />
             <AIAgentWrapper lang={locale} />
+            <CookieBanner />
           </TrackingProvider>
         </DictionaryProvider>
       </body>

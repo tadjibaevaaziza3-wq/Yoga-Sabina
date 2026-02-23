@@ -71,8 +71,15 @@ import { verifyToken } from '@/lib/auth/server';
 async function isAdmin(): Promise<boolean> {
     const cookieStore = await cookies();
     const adminSession = cookieStore.get('admin_session')?.value;
-    if (!adminSession) return false;
-    return !!verifyToken(adminSession);
+    if (!adminSession) {
+        console.log('[Admin API] No admin_session cookie found');
+        return false;
+    }
+    const result = verifyToken(adminSession);
+    if (!result) {
+        console.log('[Admin API] verifyToken returned null. Cookie length:', adminSession.length);
+    }
+    return !!result;
 }
 
 /**
@@ -83,6 +90,7 @@ export async function GET(request: NextRequest) {
     try {
         // Check admin access
         if (!await isAdmin()) {
+            console.log('[Admin API] Courses GET: Unauthorized');
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }

@@ -40,7 +40,6 @@ export async function GET(
             return NextResponse.json({ error: 'No active subscription or purchase' }, { status: 403 })
         }
 
-        // Fetch messages with user info
         const messages = await prisma.courseChat.findMany({
             where: { courseId },
             include: {
@@ -49,7 +48,8 @@ export async function GET(
                         id: true,
                         email: true,
                         firstName: true,
-                        lastName: true
+                        lastName: true,
+                        avatar: true
                     }
                 }
             },
@@ -108,7 +108,6 @@ export async function POST(
             return NextResponse.json({ error: 'No active subscription or purchase' }, { status: 403 })
         }
 
-        // Create message
         const chatMessage = await prisma.courseChat.create({
             data: {
                 courseId,
@@ -121,7 +120,8 @@ export async function POST(
                         id: true,
                         email: true,
                         firstName: true,
-                        lastName: true
+                        lastName: true,
+                        avatar: true
                     }
                 }
             }

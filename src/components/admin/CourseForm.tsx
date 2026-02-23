@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PhotoUpload from './PhotoUpload';
 import CourseModulesEditor from './CourseModulesEditor';
-import { Loader2, Plus, Trash2, Save, X, ImageIcon, Video, BookOpen, DollarSign, MapPin, Check } from 'lucide-react';
+import { Loader2, Plus, Trash2, Save, X, ImageIcon, Video, BookOpen, DollarSign, MapPin, Check, Languages } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface CourseFormProps {
@@ -76,6 +76,29 @@ export default function CourseForm({ courseId, initialData }: CourseFormProps) {
 
     const [activeTab, setActiveTab] = useState<'general' | 'modules' | 'seo'>('general');
     const [modules, setModules] = useState<any[]>(initialData?.modules || []);
+    const [translating, setTranslating] = useState<string | null>(null);
+
+    // Translation helper
+    const translateField = async (sourceField: string, targetField: string, from: 'uz' | 'ru', to: 'uz' | 'ru') => {
+        const sourceValue = (formData as any)[sourceField]
+        if (!sourceValue?.trim()) return
+        setTranslating(targetField)
+        try {
+            const res = await fetch('/api/admin/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: sourceValue, from, to })
+            })
+            const data = await res.json()
+            if (data.success && data.translated) {
+                setFormData(prev => ({ ...prev, [targetField]: data.translated }))
+            }
+        } catch (err) {
+            console.error('Translation failed:', err)
+        } finally {
+            setTranslating(null)
+        }
+    }
 
     // SEO Helper
     const updateSEO = (field: string, value: string) => {
@@ -115,9 +138,9 @@ export default function CourseForm({ courseId, initialData }: CourseFormProps) {
                 console.error("API error response:", data);
                 alert(`Xatolik: ${data.error}\n\n${data.details ? JSON.stringify(data.details, null, 2) : ''}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving course:', error);
-            alert('Saqlashda xatolik yuz berdi');
+            alert(`Saqlashda xatolik yuz berdi: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -187,9 +210,29 @@ export default function CourseForm({ courseId, initialData }: CourseFormProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-40 ml-1">
-                                    Nomi (RU)
-                                </label>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-40 ml-1">
+                                        Nomi (RU)
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => translateField('title', 'titleRu', 'uz', 'ru')}
+                                        disabled={translating === 'titleRu'}
+                                        className="text-[9px] font-black text-blue-500 hover:text-blue-700 flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        {translating === 'titleRu' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                                        UZ→RU
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => translateField('titleRu', 'title', 'ru', 'uz')}
+                                        disabled={translating === 'title'}
+                                        className="text-[9px] font-black text-emerald-500 hover:text-emerald-700 flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        {translating === 'title' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                                        RU→UZ
+                                    </button>
+                                </div>
                                 <input
                                     type="text"
                                     value={formData.titleRu}
@@ -216,9 +259,29 @@ export default function CourseForm({ courseId, initialData }: CourseFormProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-40 ml-1">
-                                    Tavsif (RU)
-                                </label>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-40 ml-1">
+                                        Tavsif (RU)
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => translateField('description', 'descriptionRu', 'uz', 'ru')}
+                                        disabled={translating === 'descriptionRu'}
+                                        className="text-[9px] font-black text-blue-500 hover:text-blue-700 flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        {translating === 'descriptionRu' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                                        UZ→RU
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => translateField('descriptionRu', 'description', 'ru', 'uz')}
+                                        disabled={translating === 'description'}
+                                        className="text-[9px] font-black text-emerald-500 hover:text-emerald-700 flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        {translating === 'description' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                                        RU→UZ
+                                    </button>
+                                </div>
                                 <textarea
                                     rows={4}
                                     value={formData.descriptionRu}
@@ -471,9 +534,14 @@ export default function CourseForm({ courseId, initialData }: CourseFormProps) {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-40 ml-1">
-                                Manzil (RU)
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-40 ml-1">
+                                    Manzil (RU)
+                                </label>
+                                <button type="button" onClick={() => translateField('location', 'locationRu', 'uz', 'ru')} disabled={translating === 'locationRu'} className="text-[9px] font-black text-blue-500 hover:text-blue-700 flex items-center gap-1 disabled:opacity-50">
+                                    {translating === 'locationRu' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />} UZ→RU
+                                </button>
+                            </div>
                             <input
                                 type="text"
                                 value={formData.locationRu}
@@ -499,9 +567,14 @@ export default function CourseForm({ courseId, initialData }: CourseFormProps) {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-40 ml-1">
-                                Jadval (RU)
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] opacity-40 ml-1">
+                                    Jadval (RU)
+                                </label>
+                                <button type="button" onClick={() => translateField('schedule', 'scheduleRu', 'uz', 'ru')} disabled={translating === 'scheduleRu'} className="text-[9px] font-black text-blue-500 hover:text-blue-700 flex items-center gap-1 disabled:opacity-50">
+                                    {translating === 'scheduleRu' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />} UZ→RU
+                                </button>
+                            </div>
                             <input
                                 type="text"
                                 value={formData.scheduleRu}

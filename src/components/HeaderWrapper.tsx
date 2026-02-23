@@ -11,7 +11,12 @@ export const HeaderWrapper = ({ isConsultationEnabled = true }: { isConsultation
         pathname?.includes("/my-courses") ||
         pathname?.includes("/learn") ||
         pathname?.includes("/dashboard") ||
-        pathname?.includes("/profile");
+        pathname?.includes("/profile") ||
+        pathname?.includes("/kpi") ||
+        pathname?.includes("/chat") ||
+        pathname?.includes("/settings") ||
+        pathname?.includes("/activity") ||
+        pathname?.includes("/courses");
 
     const isMinimal = isTma || isAdmin || isUserPanel;
 

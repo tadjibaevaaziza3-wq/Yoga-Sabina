@@ -209,6 +209,15 @@ export function BroadcastTool() {
     const [sending, setSending] = useState(false)
     const [status, setStatus] = useState<string | null>(null)
 
+    // User search states
+    const [userSearch, setUserSearch] = useState('')
+    const [searchResults, setSearchResults] = useState<any[]>([])
+    const [searchLoading, setSearchLoading] = useState(false)
+    const [selectedUser, setSelectedUser] = useState<any>(null)
+
+    // Export states
+    const [exporting, setExporting] = useState(false)
+
     useEffect(() => {
         let isMounted = true
         if (target === 'COURSE' && courses.length === 0) {
@@ -218,13 +227,98 @@ export function BroadcastTool() {
                     if (isMounted && data.success && Array.isArray(data.courses)) {
                         setCourses(data.courses)
                     } else if (isMounted && Array.isArray(data)) {
-                        setCourses(data) // Backward compatibility if API returns raw array
+                        setCourses(data)
                     }
                 })
                 .catch(err => console.error("Failed to fetch courses", err))
         }
         return () => { isMounted = false }
     }, [target, courses.length])
+
+    // Debounced user search
+    useEffect(() => {
+        if (userSearch.length < 2) {
+            setSearchResults([])
+            return
+        }
+        const timer = setTimeout(async () => {
+            setSearchLoading(true)
+            try {
+                const res = await fetch(`/api/admin/users?search=${encodeURIComponent(userSearch)}`)
+                const data = await res.json()
+                if (data.success) setSearchResults(data.users || [])
+            } catch (err) {
+                console.error('User search failed:', err)
+            } finally {
+                setSearchLoading(false)
+            }
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [userSearch])
+
+    const selectUser = (user: any) => {
+        setSelectedUser(user)
+        setTelegramId(user.telegramId || '')
+        setUserSearch('')
+        setSearchResults([])
+    }
+
+    const exportCSV = async (type: 'registered' | 'subscribed') => {
+        setExporting(true)
+        try {
+            const res = await fetch('/api/admin/users')
+            const data = await res.json()
+            if (!data.success) return
+
+            let users = data.users || []
+            if (type === 'subscribed') {
+                users = users.filter((u: any) => u.subscriptions?.some((s: any) => s.status === 'ACTIVE'))
+            }
+
+            const headers = ['#', 'Ism', 'Telefon', 'Email', 'Telegram ID', 'Telegram Username', "Ro'yxatdan o'tgan sana"]
+            if (type === 'subscribed') {
+                headers.push('Kurs nomi', 'Obuna boshlanishi', 'Obuna tugashi', 'Status')
+            }
+
+            const rows = users.flatMap((u: any, i: number) => {
+                const baseRow = [
+                    i + 1,
+                    u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : (u.profile?.fullName || 'N/A'),
+                    u.phone || u.profile?.phone || 'N/A',
+                    u.email || 'N/A',
+                    u.telegramId || 'N/A',
+                    u.telegramUsername || 'N/A',
+                    new Date(u.createdAt).toLocaleDateString('uz-UZ')
+                ]
+
+                if (type === 'subscribed') {
+                    const activeSubs = u.subscriptions?.filter((s: any) => s.status === 'ACTIVE') || []
+                    if (activeSubs.length === 0) return []
+                    return activeSubs.map((s: any) => [
+                        ...baseRow,
+                        s.course?.title || 'N/A',
+                        s.startDate ? new Date(s.startDate).toLocaleDateString('uz-UZ') : 'N/A',
+                        s.endDate ? new Date(s.endDate).toLocaleDateString('uz-UZ') : 'N/A',
+                        s.status
+                    ])
+                }
+                return [baseRow]
+            })
+
+            const csvContent = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `${type}_users_${new Date().toISOString().split('T')[0]}.csv`
+            a.click()
+            URL.revokeObjectURL(url)
+        } catch (err) {
+            console.error('Export failed:', err)
+        } finally {
+            setExporting(false)
+        }
+    }
 
     const handleSend = async () => {
         if (!content) return
@@ -241,6 +335,8 @@ export function BroadcastTool() {
                 setStatus(`Muvaffaqiyatli: ${data.successCount} ta foydalanuvchiga yuborildi`)
                 setContent('')
                 setMediaUrl('')
+                setSelectedUser(null)
+                setTelegramId('')
             } else {
                 setStatus(`Xatolik: ${data.error}`)
             }
@@ -253,6 +349,24 @@ export function BroadcastTool() {
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in duration-300">
+            {/* Export Buttons */}
+            <div className="flex flex-wrap gap-4">
+                <button
+                    onClick={() => exportCSV('registered')}
+                    disabled={exporting}
+                    className="flex items-center gap-2 px-6 py-3 bg-white border border-[var(--primary)]/10 text-[var(--primary)] rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[var(--primary)]/5 transition-all shadow-soft disabled:opacity-50"
+                >
+                    📥 Barcha foydalanuvchilar (CSV)
+                </button>
+                <button
+                    onClick={() => exportCSV('subscribed')}
+                    disabled={exporting}
+                    className="flex items-center gap-2 px-6 py-3 bg-[var(--primary)]/5 border border-[var(--primary)]/10 text-[var(--primary)] rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[var(--primary)]/10 transition-all shadow-soft disabled:opacity-50"
+                >
+                    📥 Faol obunachilar (CSV)
+                </button>
+            </div>
+
             <div className="grid lg:grid-cols-2 gap-8">
                 <div className="space-y-6">
                     <div>
@@ -308,13 +422,14 @@ export function BroadcastTool() {
                         </label>
                         <select
                             value={target}
-                            onChange={(e) => setTarget(e.target.value)}
+                            onChange={(e) => { setTarget(e.target.value); setSelectedUser(null); setTelegramId('') }}
                             className="w-full bg-[var(--card-bg)] rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 border border-[var(--border)] transition-all appearance-none font-bold text-[var(--foreground)] shadow-sm cursor-pointer"
                         >
-                            <option value="ALL">Barcha Dastur Foydalanuvchilari</option>
+                            <option value="ALL">Barcha Foydalanuvchilarga</option>
+                            <option value="SUBSCRIBED">Faqat Faol Obunachilar</option>
                             <option value="LEADS">Faqat qiziqqanlar (Sotib olmaganlar)</option>
                             <option value="COURSE">Ma'lum bitta kurs o'quvchilari</option>
-                            <option value="SPECIFIC">Bitta foydalanuvchi (ID)</option>
+                            <option value="SPECIFIC">Bitta foydalanuvchi (Qidirish)</option>
                         </select>
 
                         {target === 'COURSE' && (
@@ -334,15 +449,59 @@ export function BroadcastTool() {
                         )}
 
                         {target === 'SPECIFIC' && (
-                            <div className="animate-in fade-in slide-in-from-top-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/50 mt-4 mb-2 block">Telegram ID</label>
-                                <input
-                                    type="text"
-                                    value={telegramId}
-                                    onChange={(e) => setTelegramId(e.target.value)}
-                                    placeholder="e.g. 123456789"
-                                    className="w-full bg-[var(--card-bg)] rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 border border-[var(--border)] transition-all font-bold text-[var(--foreground)] shadow-inner"
-                                />
+                            <div className="animate-in fade-in slide-in-from-top-2 space-y-3">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/50 mt-4 mb-2 block">Foydalanuvchini qidiring</label>
+
+                                {selectedUser ? (
+                                    <div className="flex items-center justify-between bg-[var(--primary)]/5 rounded-xl p-4 border border-[var(--primary)]/10">
+                                        <div>
+                                            <p className="text-sm font-bold text-[var(--primary)]">
+                                                {selectedUser.firstName ? `${selectedUser.firstName} ${selectedUser.lastName || ''}`.trim() : selectedUser.profile?.fullName || 'Nomsiz'}
+                                            </p>
+                                            <p className="text-[11px] text-[var(--foreground)]/40">
+                                                {selectedUser.phone || selectedUser.telegramUsername ? `@${selectedUser.telegramUsername}` : `ID: ${selectedUser.telegramId}`}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => { setSelectedUser(null); setTelegramId('') }}
+                                            className="text-xs text-red-500 font-bold uppercase tracking-wider hover:bg-red-50 px-3 py-1 rounded-lg transition"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={userSearch}
+                                            onChange={(e) => setUserSearch(e.target.value)}
+                                            placeholder="Ism, telefon, Telegram ID..."
+                                            className="w-full bg-[var(--card-bg)] rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 border border-[var(--border)] transition-all font-bold text-[var(--foreground)] shadow-inner"
+                                        />
+                                        {searchLoading && (
+                                            <Loader2 className="w-4 h-4 text-[var(--primary)] animate-spin absolute right-4 top-1/2 -translate-y-1/2" />
+                                        )}
+
+                                        {searchResults.length > 0 && (
+                                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[var(--border)] rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                                                {searchResults.map((user) => (
+                                                    <button
+                                                        key={user.id}
+                                                        onClick={() => selectUser(user)}
+                                                        className="w-full text-left px-4 py-3 hover:bg-[var(--secondary)] transition-colors border-b border-[var(--border)] last:border-0"
+                                                    >
+                                                        <p className="text-sm font-bold text-[var(--primary)]">
+                                                            {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.profile?.fullName || 'Nomsiz'}
+                                                        </p>
+                                                        <p className="text-[11px] text-[var(--foreground)]/40">
+                                                            {[user.phone, user.telegramUsername ? `@${user.telegramUsername}` : null, user.telegramId].filter(Boolean).join(' · ')}
+                                                        </p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -356,7 +515,8 @@ export function BroadcastTool() {
                         <ul className="space-y-2 text-xs text-[var(--primary)]/70 font-semibold relative z-10">
                             <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] shrink-0 mt-1" /> Telegramdagi foydalanuvchilar qutisiga to'g'ridan-to'g'ri xabar boradi.</li>
                             <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] shrink-0 mt-1" /> Ovozli, Video yoki Rasm (Media URL kiritilsa) yuboriladi.</li>
-                            <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] shrink-0 mt-1" /> Kurs ishtirokchilari rejimida dars qoldirib ketganlarga eslatma jo'natish qulay.</li>
+                            <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] shrink-0 mt-1" /> CSV eksport: barcha foydalanuvchilar yoki faqat obunachilar bilan.</li>
+                            <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] shrink-0 mt-1" /> Foydalanuvchini qidirish: ism, telefon yoki Telegram ID bo'yicha.</li>
                         </ul>
                     </div>
 

@@ -64,12 +64,13 @@ export default function VideoUpload({
         setUploadStatus({ progress: 0, status: 'uploading', message: 'Signed URL olinmoqda...' });
 
         try {
+            const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
             // 1. Get Signed URL
             const res = await fetch('/api/admin/videos/upload-url', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fileName: `${Date.now()}-${file.name.replace(/\s+/g, '-')}`,
+                    fileName,
                     contentType: file.type,
                 }),
             });
@@ -79,7 +80,7 @@ export default function VideoUpload({
                 throw new Error(errorData.error || 'Upload URL xatosi');
             }
 
-            const { url } = await res.json();
+            const { url, publicUrl } = await res.json();
 
             // 2. Upload to GCS using XHR to track progress
             const xhr = new XMLHttpRequest();
@@ -95,9 +96,8 @@ export default function VideoUpload({
 
             xhr.onload = () => {
                 if (xhr.status === 200 || xhr.status === 201) {
-                    const finalUrl = `https://storage.googleapis.com/${process.env.NEXT_PUBLIC_GCS_UPLOAD_BUCKET || 'antigravity-videos-yoga'}/${file.name}`;
                     setUploadStatus({ progress: 100, status: 'success', message: 'Muvaffaqiyatli yuklandi!' });
-                    if (onUploadComplete) onUploadComplete(file.name, finalUrl);
+                    if (onUploadComplete) onUploadComplete(fileName, publicUrl);
                     setFile(null);
                 } else {
                     setUploadStatus({ progress: 0, status: 'error', message: 'Cloud xatosi' });

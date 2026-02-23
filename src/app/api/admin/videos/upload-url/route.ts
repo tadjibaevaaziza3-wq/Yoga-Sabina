@@ -24,13 +24,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing fileName or contentType' }, { status: 400 });
         }
 
-        // Security check: Only allow video formats
-        if (!contentType.startsWith('video/')) {
-            return NextResponse.json({ error: 'Only video files are allowed' }, { status: 400 });
+        // Security check: Allow video, audio, and common document formats
+        const allowedPrefixes = ['video/', 'audio/', 'image/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument'];
+        const isAllowed = allowedPrefixes.some(prefix => contentType.startsWith(prefix)) ||
+            ['application/zip', 'application/x-rar-compressed'].includes(contentType);
+
+        if (!isAllowed) {
+            return NextResponse.json({ error: 'Faqat video, audio va hujjat fayllari ruxsat etilgan' }, { status: 400 });
         }
 
-        const url = await getUploadUrl(fileName, contentType);
-        return NextResponse.json({ url });
+        const { url, publicUrl } = await getUploadUrl(fileName, contentType);
+        return NextResponse.json({ url, publicUrl });
     } catch (error: any) {
         console.error('Failed to generate upload URL:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

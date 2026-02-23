@@ -99,7 +99,9 @@ export function CheckoutForm({ item, lang, type, dictionary }: CheckoutFormProps
                 ? '/api/payments/manual/create'
                 : paymentMethod === 'click'
                     ? '/api/payments/click/create'
-                    : '/api/payments/payme/create'
+                    : paymentMethod === 'payme'
+                        ? '/api/payments/payme/create'
+                        : '/api/payments/mock/create'
 
             const res = await fetch(endpoint, {
                 method: 'POST',

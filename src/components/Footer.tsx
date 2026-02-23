@@ -60,14 +60,16 @@ export function Footer({ isConsultationEnabled = true }: { isConsultationEnabled
                                 {isConsultationEnabled && (
                                     <li><a href={`/${lang}/consultations`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{dictionary.common.consultations || "Konsultatsiyalar"}</a></li>
                                 )}
+                                <li><a href={`/${lang}/about`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{dictionary.common.about}</a></li>
                             </ul>
                         </div>
                         <div>
-                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary)]/40 mb-8">{dictionary.common.about}</h4>
+                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary)]/40 mb-8">{lang === 'uz' ? "Huquqiy" : "Правовая информация"}</h4>
                             <ul className="space-y-4">
-                                <li><a href={`/${lang}/about`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{dictionary.common.about}</a></li>
-                                <li><a href="#" className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{lang === 'uz' ? "Ommaviy oferta" : "Публичная оферта"}</a></li>
-                                <li><a href="#" className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{lang === 'uz' ? "Maxfiylik siyosati" : "Политика конфиденциальности"}</a></li>
+                                <li><a href={`/${lang}/privacy`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{lang === 'uz' ? "Maxfiylik siyosati" : "Политика конфиденциальности"}</a></li>
+                                <li><a href={`/${lang}/terms`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{lang === 'uz' ? "Foydalanish shartlari" : "Условия использования"}</a></li>
+                                <li><a href={`/${lang}/security`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{lang === 'uz' ? "Xavfsizlik" : "Безопасность"}</a></li>
+                                <li><a href={`/${lang}/cookie-settings`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{lang === 'uz' ? "Cookie sozlamalari" : "Настройки cookie"}</a></li>
                             </ul>
                         </div>
                     </div>

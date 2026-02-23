@@ -1,9 +1,10 @@
 /**
- * RAG Engine v2 — Gemini Embedding-Based Knowledge Retrieval
+ * RAG Engine v3 — Concierge-Grade Knowledge Retrieval
  * 
- * Replaces keyword search with cosine-similarity over Gemini embeddings.
- * Supports dynamic KB updates from admin (add video transcripts at runtime).
- * Falls back to keyword search if embedding fails.
+ * Embedding-based search + Gemini response generation.
+ * Subscription-aware response depth.
+ * Persona-driven Sabina coaching style.
+ * Admin/trainer contact fallback.
  */
 
 import { Locale } from "./faq-engine"
@@ -19,13 +20,28 @@ interface KnowledgeBaseEntry {
     summary: string
     topics: string[]
     transcript: string
-    embedding?: number[]  // Cached embedding vector
+    embedding?: number[]
 }
 
 interface SearchResult {
     title: string
     text: string
     score: number
+}
+
+interface QueryOptions {
+    isSubscribed?: boolean
+    userName?: string | null
+    conversationHistory?: { role: string, content: string }[]
+    gender?: string | null
+    age?: number | null
+    healthIssues?: string | null
+    isPregnant?: boolean
+    // Emotional Intelligence
+    emotionalToneInstructions?: string
+    userMemoryContext?: string
+    // Subscription context
+    subscribedCourseName?: string | null
 }
 
 // ─── State ───
@@ -79,33 +95,60 @@ function cosineSimilarity(a: number[], b: number[]): number {
 
 export class RAGEngine {
 
-    /**
-     * Query the knowledge base using embedding similarity + keyword fallback.
-     * Returns a Gemini-generated response in Sabina's persona.
-     */
-    static async query(userQuery: string, lang: Locale): Promise<string> {
+    static async query(userQuery: string, lang: Locale, options: QueryOptions = {}): Promise<string> {
         loadKB()
         console.log(`[RAG] Query (${lang}): "${userQuery}"`)
 
-        // 1. Try embedding-based search
-        const results = await this.semanticSearch(userQuery)
+        // 1. Semantic search with gender filtering
+        let results = await this.semanticSearch(userQuery)
 
-        // 2. Fallback to keyword search if no embedding results
-        if (results.length === 0) {
-            const keywordResult = this.keywordSearch(userQuery)
-            if (keywordResult) {
-                return this.generateResponse(keywordResult, userQuery, lang)
-            }
-            return this.noResultResponse(lang)
+        // Filter results by gender awareness
+        if (options.gender) {
+            results = this.filterByGender(results, options.gender)
         }
 
-        // 3. Use best result for response generation
-        return this.generateResponse(results[0], userQuery, lang)
+        // 2. Fallback to keyword search
+        if (results.length === 0) {
+            let keywordResult = this.keywordSearch(userQuery)
+            // Gender filter for keyword results too
+            if (keywordResult && options.gender) {
+                const filtered = this.filterByGender([keywordResult], options.gender)
+                keywordResult = filtered.length > 0 ? filtered[0] : null
+            }
+            if (keywordResult) {
+                return this.generateResponse(keywordResult, userQuery, lang, options)
+            }
+            return this.noResultResponse(lang, options)
+        }
+
+        // 3. Use best result
+        return this.generateResponse(results[0], userQuery, lang, options)
     }
 
     /**
-     * Semantic search using Gemini embeddings.
+     * Filter RAG results to avoid recommending wrong-gender courses.
+     * e.g. don't recommend men's yoga to a woman and vice versa.
      */
+    private static filterByGender(results: SearchResult[], gender: string): SearchResult[] {
+        const maleKeywords = ['erkaklar', 'мужчин', 'men\'s', 'prostatit', 'простатит']
+        const femaleKeywords = ['ayollar', 'женщин', 'women\'s', 'hayz', 'менструал']
+
+        return results.filter(r => {
+            const titleLower = r.title.toLowerCase()
+            const textLower = r.text.toLowerCase()
+            const combined = titleLower + ' ' + textLower
+
+            if (gender === 'female') {
+                // Female user: exclude explicitly male courses
+                if (maleKeywords.some(k => combined.includes(k))) return false
+            } else if (gender === 'male') {
+                // Male user: exclude explicitly female courses
+                if (femaleKeywords.some(k => combined.includes(k))) return false
+            }
+            return true
+        })
+    }
+
     private static async semanticSearch(query: string): Promise<SearchResult[]> {
         const queryEmbedding = await getEmbedding(query)
         if (queryEmbedding.length === 0) return []
@@ -113,7 +156,6 @@ export class RAGEngine {
         const results: SearchResult[] = []
 
         for (const [id, entry] of Object.entries(videoKB)) {
-            // Get or compute embedding for this entry
             if (!entry.embedding || entry.embedding.length === 0) {
                 const text = `${entry.title}. ${entry.summary}. ${entry.topics.join(", ")}`
                 entry.embedding = await getEmbedding(text)
@@ -121,24 +163,16 @@ export class RAGEngine {
 
             if (entry.embedding.length > 0) {
                 const score = cosineSimilarity(queryEmbedding, entry.embedding)
-                if (score > 0.5) { // Threshold for relevance
-                    results.push({
-                        title: entry.title,
-                        text: entry.summary,
-                        score
-                    })
+                if (score > 0.5) {
+                    results.push({ title: entry.title, text: entry.summary, score })
                 }
             }
         }
 
-        // Sort by score descending
         results.sort((a, b) => b.score - a.score)
-        return results.slice(0, 3) // Top 3 results
+        return results.slice(0, 3)
     }
 
-    /**
-     * Keyword-based search (fallback).
-     */
     private static keywordSearch(query: string): SearchResult | null {
         const cleanQuery = query.toLowerCase().replace(/[.,!?;:]/g, '')
         const tokens = cleanQuery.split(/\s+/).filter(t => t.length > 2)
@@ -164,72 +198,106 @@ export class RAGEngine {
     }
 
     /**
-     * Generate a natural response in Sabina's persona using Gemini.
+     * Generate a Gemini response in Sabina's persona with subscription-awareness.
      */
-    private static async generateResponse(result: SearchResult, query: string, lang: Locale): Promise<string> {
+    private static async generateResponse(result: SearchResult, query: string, lang: Locale, options: QueryOptions): Promise<string> {
         try {
+            const { isSubscribed = false, userName, conversationHistory = [], gender, age, healthIssues, isPregnant, emotionalToneInstructions, userMemoryContext } = options
+
+            // Build conversation context
+            const historyContext = conversationHistory.length > 0
+                ? `\n\nPrevious conversation:\n${conversationHistory.map(m => `${m.role}: ${m.content.substring(0, 150)}`).join('\n')}`
+                : ''
+
+            const greeting = userName ? (lang === 'uz' ? `Foydalanuvchi ismi: ${userName}.` : `Имя пользователя: ${userName}.`) : ''
+
+            // Build personalization context based on gender, age, health
+            let personalizationContext = ''
+            if (gender || age || healthIssues || isPregnant) {
+                const parts: string[] = []
+                if (gender) parts.push(lang === 'uz' ? `Jinsi: ${gender === 'male' ? 'erkak' : 'ayol'}` : `Пол: ${gender === 'male' ? 'мужчина' : 'женщина'}`)
+                if (age) parts.push(lang === 'uz' ? `Yoshi: ${age}` : `Возраст: ${age}`)
+                if (healthIssues) parts.push(lang === 'uz' ? `Sog'liq muammolari: ${healthIssues}` : `Проблемы со здоровьем: ${healthIssues}`)
+                if (isPregnant) parts.push(lang === 'uz' ? 'Homilador' : 'Беременна')
+                personalizationContext = `\n${lang === 'uz' ? 'Foydalanuvchi haqida' : 'О пользователе'}: ${parts.join(', ')}.\n${lang === 'uz' ? 'Maslahatlarni shu ma\'lumotlarga asoslanib shaxsiylshtir. Tegishli kursni tavsiya qil.' : 'Персонализируй советы на основе этих данных. Рекомендуй подходящий курс.'}`
+            }
+
+            // Emotional Intelligence context
+            let emotionalContext = ''
+            if (emotionalToneInstructions) {
+                emotionalContext = `\n\n--- EMOTIONAL INTELLIGENCE ---\nAdapt your response tone based on the user's detected emotional state:\n${emotionalToneInstructions}\n\nResponse structure: (1) Emotional alignment, (2) Personalized insight, (3) Clear recommendation, (4) Gentle motivation, (5) Optional course suggestion.\n---`
+            }
+
+            // Behavior Memory context
+            let memoryCtx = ''
+            if (userMemoryContext) {
+                memoryCtx = `\n${userMemoryContext}`
+            }
+
+            const subscriptionContext = isSubscribed
+                ? (lang === 'uz'
+                    ? `Foydalanuvchi obunachi${options.subscribedCourseName ? ` — "${options.subscribedCourseName}" kursiga obuna` : ''}. Batafsil, chuqur va shaxsiy maslahatlar ber. Video darslarga havola qil, mashqlarni qadamma-qadam tushuntir. MUHIM: Foydalanuvchi obuna bo'lgan kursga mos maslahat ber, boshqa jinsdagi kurslarni tavsiya QILMA.`
+                    : `Пользователь — подписчик${options.subscribedCourseName ? ` курса "${options.subscribedCourseName}"` : ''}. Давай подробные, глубокие и персональные советы. Ссылайся на видеоуроки, объясняй упражнения пошагово. ВАЖНО: Рекомендуй контент из курса пользователя, НЕ рекомендуй курсы другого пола.`)
+                : (lang === 'uz'
+                    ? "Foydalanuvchi hali obuna emas. Foydali, lekin qisqa maslahat ber. Javob oxirida obuna bo'lishni va administrator (@Sabina_Radjapovna) bilan bog'lanishni tavsiya qil."
+                    : "Пользователь ещё не подписан. Давай полезный, но краткий совет. В конце ответа рекомендуй подписаться и связаться с администратором (@Sabina_Radjapovna).")
+
             const persona = lang === 'uz'
-                ? "Sen Sabina Polatova — tajribali yoga terapeuti. Javoblaringda iliq, ishonchli va motivatsion bo'l. Foydalanuvchi savoli va malumotga asoslanib javob ber."
-                : "Ты — Сабина Полатова, опытный йога-терапевт. Отвечай тепло, уверенно и мотивирующе. Отвечай на основе вопроса пользователя и найденной информации."
+                ? `Sen Sabina Polatova — 7+ yillik tajribali yoga terapevti va "Baxtli Men" platformasining asoschisi. Sen iliq, ishonchli, motivatsion va professional. Yoga, salomatlik, tana terapiyasi haqida maslahat berasan. ${greeting} ${subscriptionContext}${personalizationContext}${emotionalContext}${memoryCtx}`
+                : `Ты — Сабина Полатова, опытный йога-терапевт с 7+ лет стажа и основатель платформы "Baxtli Men". Ты тёплая, уверенная, мотивирующая и профессиональная. Даёшь советы по йоге, здоровью, телесной терапии. ${greeting} ${subscriptionContext}${personalizationContext}${emotionalContext}${memoryCtx}`
 
-            const prompt = `${persona}
+            const prompt = `${persona}${historyContext}
 
-Вопрос пользователя: "${query}"
+${lang === 'uz' ? 'Foydalanuvchi savoli' : 'Вопрос пользователя'}: "${query}"
 
-Найденная информация из базы знаний:
-Урок: "${result.title}"
-Содержание: ${result.text}
+${lang === 'uz' ? "Ma'lumotlar bazasidan topilgan dars" : 'Найденный урок из базы знаний'}:
+"${result.title}" — ${result.text}
 
-Дай краткий, полезный ответ (3-5 предложений). Упомяни название урока. Не выдумывай факты.${lang === 'uz' ? " Javobni o'zbek tilida ber." : " Отвечай на русском языке."}`
+${lang === 'uz'
+                    ? `Qisqa va foydali javob ber (3-6 gap). Dars nomini ayt. Fakt to'qima. Javobni o'zbek tilida ber.`
+                    : `Дай краткий полезный ответ (3-6 предложений). Упомяни название урока. Не выдумывай факты. Отвечай на русском.`}
+${!isSubscribed ? (lang === 'uz' ? "\nJavob oxirida obuna yoki administrator bilan bog'lanishni tavsiya qil." : "\nВ конце рекомендуй подписаться или связаться с администратором.") : ''}`
 
             const response = await geminiFlashModel.generateContent({
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
+                generationConfig: { temperature: 0.7, maxOutputTokens: 700 }
             })
 
             return response.response.text().trim()
         } catch (e) {
             console.error("[RAG] Response generation failed:", e)
-            // Fallback to template response
-            return this.templateResponse(result, lang)
+            return this.templateResponse(result, lang, options)
         }
     }
 
-    private static templateResponse(data: SearchResult, lang: Locale): string {
+    private static templateResponse(data: SearchResult, lang: Locale, options: QueryOptions = {}): string {
+        const ctaSuffix = !options.isSubscribed
+            ? (lang === 'uz' ? "\n\n✨ Batafsil mashqlar uchun kurslarimizga obuna bo'ling! Administrator: @Sabina_Radjapovna" : "\n\n✨ Подпишитесь на курсы для детальных упражнений! Администратор: @Sabina_Radjapovna")
+            : ""
+
         if (lang === 'uz') {
-            return `🧘‍♂️ **Murabbiy Maslahati:**\n\nMen sizga mos darsni topdim: **"${data.title}"**.\n\n📄 **Mazmuni:** ${data.text}\n\nMashqni platformamizda ko'ring va bajaring! 🙏`
+            return `🧘‍♂️ **Murabbiy Maslahati:**\n\nMen sizga mos darsni topdim: **"${data.title}"**.\n\n📄 **Mazmuni:** ${data.text}\n\nMashqni platformamizda ko'ring va bajaring! 🙏${ctaSuffix}`
         }
-        return `🧘‍♂️ **Совет Тренера:**\n\nЯ нашла подходящий урок: **"${data.title}"**.\n\n📄 **Содержание:** ${data.text}\n\nРекомендую посмотреть и выполнить на нашей платформе! 🙏`
+        return `🧘‍♂️ **Совет Тренера:**\n\nЯ нашла подходящий урок: **"${data.title}"**.\n\n📄 **Содержание:** ${data.text}\n\nРекомендую посмотреть и выполнить на нашей платформе! 🙏${ctaSuffix}`
     }
 
-    private static noResultResponse(lang: Locale): string {
+    private static noResultResponse(lang: Locale, options: QueryOptions = {}): string {
         return lang === 'uz'
-            ? "Kechirasiz, darslarimiz orasidan bu savolga mos video topa olmadim. Iltimos, savolni boshqacharoq bering yoki murabbiyga murojaat qiling. 🙏"
-            : "Извините, я не нашла подходящего видео среди наших уроков. Попробуйте перефразировать вопрос или обратитесь к тренеру. 🙏"
+            ? "Kechirasiz, darslarimiz orasidan bu savolga mos video topa olmadim 🙏\n\nLekin sizga yordam berishni xohlayman! Quyidagilarni sinab ko'ring:\n\n📞 Murabbiy Sabina bilan bog'laning: @Sabina_Radjapovna\n💬 Savolni boshqacharoq bering\n📚 Kurslar ro'yxatini ko'ring\n\nSabina barcha savollarga javob beradi! ✨"
+            : "Извините, я не нашла подходящего видео среди наших уроков 🙏\n\nНо я хочу помочь! Попробуйте:\n\n📞 Связаться с тренером Сабиной: @Sabina_Radjapovna\n💬 Перефразировать вопрос\n📚 Посмотреть список курсов\n\nСабина ответит на все вопросы! ✨"
     }
 
     // ─── Admin Methods ───
 
-    /**
-     * Add a new entry to the knowledge base (called from admin API).
-     */
     static async addEntry(id: string, entry: Omit<KnowledgeBaseEntry, 'embedding'>): Promise<void> {
         loadKB()
-
-        // Generate embedding
         const text = `${entry.title}. ${entry.summary}. ${entry.topics.join(", ")}`
         const embedding = await getEmbedding(text)
-
         videoKB[id] = { ...entry, embedding }
-
-        // Persist to disk
         this.persistKB()
         console.log(`[RAG] Added KB entry: ${id} (${entry.title})`)
     }
 
-    /**
-     * Remove an entry from the knowledge base.
-     */
     static removeEntry(id: string): void {
         loadKB()
         delete videoKB[id]
@@ -237,29 +305,20 @@ export class RAGEngine {
         console.log(`[RAG] Removed KB entry: ${id}`)
     }
 
-    /**
-     * List all KB entries (for admin UI).
-     */
     static listEntries(): { id: string, title: string, summary: string, topics: string[] }[] {
         loadKB()
         return Object.entries(videoKB).map(([id, entry]) => ({
-            id,
-            title: entry.title,
-            summary: entry.summary,
-            topics: entry.topics,
+            id, title: entry.title, summary: entry.summary, topics: entry.topics,
         }))
     }
 
     private static persistKB(): void {
         try {
-            // Strip embeddings before saving (recalculated on load)
             const toSave: Record<string, Omit<KnowledgeBaseEntry, 'embedding'>> = {}
             for (const [id, entry] of Object.entries(videoKB)) {
                 toSave[id] = {
-                    title: entry.title,
-                    summary: entry.summary,
-                    topics: entry.topics,
-                    transcript: entry.transcript,
+                    title: entry.title, summary: entry.summary,
+                    topics: entry.topics, transcript: entry.transcript,
                 }
             }
             fs.writeFileSync(KB_PATH, JSON.stringify(toSave, null, 2), "utf-8")

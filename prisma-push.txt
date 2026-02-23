@@ -1,0 +1,45 @@
+﻿node.exe : warn The con
+figuration property `pa
+ckage.json#prisma` is d
+eprecated and will be r
+emoved in Prisma 7. Ple
+ase migrate to a Prisma
+ config file (e.g., `pr
+isma.config.ts`).
+строка:1 знак:1
++ & "C:\Program Files\n
+odejs/node.exe" "C:\Pro
+gram Files\nodejs/node_
+mo ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (warn The conf   
+ ig...ma.config.ts`    
+).:String) [], Rem    o
+teException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+For more information, s
+ee: https://pris.ly/pri
+sma-config
+
+Environment variables l
+oaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-southeast-1.pooler.supabase.com:5432"
+
+Your database is now in sync with your Prisma schema. Done in 6.92s
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[GEPERM: operation not permitted, rename 'C:\Users\user\Documents\yoga\baxtli-men\
+node_modules\.prisma\client\query_engine-windows.dll.node.tmp5460' -> 
+'C:\Users\user\Documents\yoga\baxtli-men\node_modules\.prisma\client\query_engin
+e-windows.dll.node'
+

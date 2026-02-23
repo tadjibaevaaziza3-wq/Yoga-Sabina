@@ -11,7 +11,12 @@ export const FooterWrapper = ({ isConsultationEnabled = true }: { isConsultation
         pathname?.includes("/my-courses") ||
         pathname?.includes("/learn") ||
         pathname?.includes("/dashboard") ||
-        pathname?.includes("/profile");
+        pathname?.includes("/profile") ||
+        pathname?.includes("/kpi") ||
+        pathname?.includes("/chat") ||
+        pathname?.includes("/settings") ||
+        pathname?.includes("/activity") ||
+        pathname?.includes("/courses");
 
     if (isTma || isAdmin || isUserPanel) return null;
 

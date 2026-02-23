@@ -3,6 +3,17 @@ import { prisma } from '@/lib/prisma'
 import { validateTelegramData } from '@/lib/telegram/auth'
 import { generateToken } from '@/lib/auth/server'
 import { cookies } from 'next/headers'
+import bcrypt from 'bcrypt'
+import { sendTelegramMessage } from '@/lib/telegram/bot'
+
+function generateRandomPassword(length: number = 10): string {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+    let retVal = ""
+    for (let i = 0, n = charset.length; i < length; ++i) {
+        retVal += charset.charAt(Math.floor(Math.random() * n))
+    }
+    return retVal
+}
 
 export async function POST(request: Request) {
     try {
@@ -82,6 +93,24 @@ export async function POST(request: Request) {
                     metadata: { telegramId: telegramIdStr }
                 }
             })
+        }
+
+        // 2.5 Handle Password Recovery
+        if (validated.start_param === 'recovery') {
+            const newPassword = generateRandomPassword()
+            const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { password: hashedPassword }
+            })
+
+            const lang = user.language || 'uz'
+            const recoveryMessage = lang === 'ru'
+                ? `🔑 Ваши данные для входа восстановлены!\n\n**Новый пароль:** \`${newPassword}\`\n\nПожалуйста, измените этот пароль после входа в личный кабинет для обеспечения безопасности.`
+                : `🔑 Sizning kirish ma'lumotlaringiz tiklandi!\n\n**Yangi parolingiz:** \`${newPassword}\`\n\nIltimos, xavfsizlikni ta'minlash uchun shaxshiy kabinetingizga kirganingizdan so'ng parolni o'zgartirishni unutmang.`
+
+            await sendTelegramMessage(telegramIdStr, recoveryMessage)
         }
 
         // 3. Generate Session Token

@@ -72,8 +72,18 @@ export async function getLocalUser() {
 }
 
 export async function isAdmin(): Promise<boolean> {
-    const cookieStore = await cookies();
-    const adminSession = cookieStore.get('admin_session')?.value;
-    if (!adminSession) return false;
-    return !!verifyToken(adminSession);
+    try {
+        // First try DB-backed admin auth
+        const { getAdminFromSession } = await import('./admin-auth')
+        const admin = await getAdminFromSession()
+        if (admin) return true
+
+        // Fallback: legacy token check
+        const cookieStore = await cookies();
+        const adminSession = cookieStore.get('admin_session')?.value;
+        if (!adminSession) return false;
+        return !!verifyToken(adminSession);
+    } catch {
+        return false
+    }
 }

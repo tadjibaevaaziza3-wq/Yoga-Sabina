@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface DynamicWatermarkProps {
     userId: string;
     phone: string;
-    containerRef: React.RefObject<HTMLDivElement>;
+    containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const DynamicWatermark: React.FC<DynamicWatermarkProps> = ({ userId, phone, containerRef }) => {

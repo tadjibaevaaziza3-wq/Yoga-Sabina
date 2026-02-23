@@ -45,14 +45,50 @@ export function AdminCourseManagement() {
         setFilteredCourses(result);
     }, [filter, showInactive, searchTerm, courses]);
 
+    const [error, setError] = useState<string | null>(null);
+
     const fetchCourses = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`/api/admin/courses?all=true`);
-            const data = await response.json();
-            if (data.success) setCourses(data.courses);
+            setError(null);
+            const response = await fetch(`/api/admin/courses`);
+
+            if (response.status === 401) {
+                setError("Sessiya muddati tugagan. Iltimos, qayta kiring.");
+                return;
+            }
+
+            if (response.status === 302 || response.redirected) {
+                setError("Sessiya muddati tugagan. Sahifani yangilang.");
+                return;
+            }
+
+            if (!response.ok) {
+                setError(`Server xatoligi: ${response.status}`);
+                return;
+            }
+
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                console.error('Invalid JSON response:', text.substring(0, 200));
+                setError("Server noto'g'ri javob qaytardi. Qayta kiring.");
+                return;
+            }
+
+            if (data.success && Array.isArray(data.courses)) {
+                setCourses(data.courses);
+            } else if (Array.isArray(data)) {
+                setCourses(data);
+            } else {
+                console.error('Unexpected courses response:', data);
+                setError(data.error || "Kurslar yuklanmadi");
+            }
         } catch (error) {
             console.error('Error fetching courses:', error);
+            setError("Tarmoq xatoligi. Internet aloqasini tekshiring.");
         } finally {
             setLoading(false);
         }
@@ -89,6 +125,17 @@ export function AdminCourseManagement() {
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {error && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-red-600">{error}</p>
+                        <p className="text-xs text-red-400 mt-1">Kurslarni yuklashda muammo yuz berdi</p>
+                    </div>
+                    <button onClick={fetchCourses} className="px-6 py-2 bg-red-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition">
+                        Qayta urinish
+                    </button>
+                </div>
+            )}
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>

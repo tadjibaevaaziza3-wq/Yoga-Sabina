@@ -46,20 +46,7 @@
   --font-playfair: var(--font-playfair);
 }
 
-/* ─── Luxury Theme ─── */
-/* ─── Luxury Theme ─── */
-:root {
-  color-scheme: light;
-  /* Consistent Luxury Theme Across All Platforms */
-  --background: #f6f9fe;
-  --foreground: #114539;
-  --primary: #114539;
-  --primary-foreground: #ffffff;
-  --secondary: #eef2f6;
-  --accent: #d8cfc4;
-  --card-bg: #ffffff;
-  --border: rgba(17, 69, 57, 0.08);
-}
+/* ─── Base Styles ─── */
 
 body {
   background: var(--background);
@@ -201,4 +188,147 @@ body {
 
 .vjs-theme-antigravity .vjs-progress-control:hover .vjs-progress-holder {
   @apply h-1.5;
+}
+
+/* ─── User Panel Light Luxury Theme ─── */
+
+[data-theme="user"] {
+  --background: #ffffff;
+  --card-bg: #ffffff;
+  --border: rgba(17, 69, 57, 0.08);
+  /* 8% dark green */
+  --surface-warm: #f4fbf8;
+  /* Very Light Green */
+  --surface-gold: #e8f4f0;
+  /* Light Green */
+  --accent-gold: var(--primary);
+  /* Dark Green #114539 */
+  --accent-rose: #d1efe4;
+  /* Mint Green */
+}
+
+[data-theme="user"] .animate-slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes xpRing {
+  from {
+    stroke-dashoffset: 283;
+  }
+}
+
+@keyframes gentlePulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
+}
+
+@keyframes streakGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 169, 110, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 20px 4px rgba(201, 169, 110, 0.15);
+  }
+}
+
+[data-theme="user"] .animate-fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+[data-theme="user"] .animate-xp-ring {
+  animation: xpRing 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+[data-theme="user"] .animate-gentle-pulse {
+  animation: gentlePulse 3s ease-in-out infinite;
+}
+
+[data-theme="user"] .animate-streak-glow {
+  animation: streakGlow 2s ease-in-out infinite;
+}
+
+/* Video watermark overlay */
+.video-watermark {
+  position: absolute;
+  pointer-events: none;
+  z-index: 30;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.12);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  user-select: none;
+  animation: watermarkDrift 12s ease-in-out infinite alternate;
+}
+
+@keyframes watermarkDrift {
+  0% {
+    top: 15%;
+    left: 10%;
+  }
+
+  25% {
+    top: 60%;
+    left: 70%;
+  }
+
+  50% {
+    top: 30%;
+    left: 50%;
+  }
+
+  75% {
+    top: 70%;
+    left: 20%;
+  }
+
+  100% {
+    top: 20%;
+    left: 60%;
+  }
+}
+
+/* Disable right-click on video */
+[data-theme="user"] video {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Safe area bottom for iOS */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }

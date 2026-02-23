@@ -1,8 +1,7 @@
 import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
-import { Container } from "@/components/ui/Container"
-import MyCourses from "@/components/user/MyCourses"
-import { createServerClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { getLocalUser } from "@/lib/auth/server"
+import MyCourses from "@/components/user/MyCourses"
 
 export default async function MyCoursesPage({
     params,
@@ -10,35 +9,27 @@ export default async function MyCoursesPage({
     params: Promise<{ lang: Locale }>
 }) {
     const { lang } = await params
-    const dictionary = await getDictionary(lang)
 
-    // Check authentication
-    const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getLocalUser()
 
     if (!user) {
         redirect(`/${lang}/login?redirect=/${lang}/my-courses`)
     }
 
     return (
-        <main className="min-h-screen bg-[var(--background)]">
+        <div className="space-y-8">
+            <div>
+                <h1 className="text-3xl font-serif font-black text-[var(--foreground)] mb-2">
+                    {lang === 'uz' ? "Mening Kurslarim" : "Мои Курсы"}
+                </h1>
+                <p className="text-sm text-[var(--foreground)]/40 font-medium">
+                    {lang === 'uz'
+                        ? "Sotib olingan kurslaringiz va o'quv jarayoni"
+                        : "Ваши приобретённые курсы и прогресс обучения"}
+                </p>
+            </div>
 
-            <section className="pt-32 pb-20">
-                <Container>
-                    <div className="mb-12">
-                        <h1 className="text-4xl md:text-5xl font-serif font-black text-[var(--foreground)] mb-4">
-                            {lang === 'uz' ? "Mening kurslarim" : "Мои курсы"}
-                        </h1>
-                        <p className="text-lg text-[var(--foreground)]/60">
-                            {lang === 'uz'
-                                ? "Sotib olingan kurslaringiz va o'quv jarayoni"
-                                : "Ваши приобретенные курсы и прогресс обучения"}
-                        </p>
-                    </div>
-
-                    <MyCourses lang={lang} />
-                </Container>
-            </section>
-        </main>
+            <MyCourses lang={lang} />
+        </div>
     )
 }

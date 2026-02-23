@@ -63,6 +63,7 @@ enum SubscriptionStatus {
 
 enum AssetType {
   VIDEO
+  AUDIO
   DOCUMENT
   IMAGE
 }
@@ -119,67 +120,84 @@ enum PostType {
 }
 
 model User {
-  id               String   @id @default(cuid())
-  userNumber       Int      @unique @default(autoincrement())
-  email            String?  @unique
-  phone            String?  @unique
-  telegramId       String?  @unique
-  telegramUsername String?
-  telegramPhotoUrl String?
-  password         String? // Hashed password
-  firstName        String?
-  lastName         String?
-  role             UserRole @default(USER)
-  avatar           String? // Store emoji or photo URL
+  id                  String   @id @default(cuid())
+  userNumber          Int      @unique @default(autoincrement())
+  email               String?  @unique
+  phone               String?  @unique
+  telegramId          String?  @unique
+  telegramUsername    String?
+  telegramPhotoUrl    String?
+  password            String? // Hashed password
+  firstName           String?
+  lastName            String?
+  role                UserRole @default(USER)
+  avatar              String? // Store emoji or photo URL
+  isBlocked           Boolean  @default(false)
+  forcePasswordChange Boolean  @default(false)
+
+  // AI Engagement & Retention
+  engagementScore   Float    @default(0)
+  segment           String   @default("cold") // cold, warm, hot, vip
+  totalSessions     Int      @default(0)
+  totalWatchTime    Int      @default(0) // seconds
+  lastActivityType  String?  // lesson_view, checkout, etc.
+  lastLoginAt       DateTime?
 
   // Unified System Fields
   registrationSource RegistrationSource @default(WEB)
   region             Region             @default(UZ)
   language           String             @default("uz")
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
-  profile          Profile?
-  purchases        Purchase[]
-  subscriptions    Subscription[]
-  progress         VideoProgress[]
-  consents         LegalConsent[]
-  chatMessages     ChatMessage[]
-  likes            Like[]
-  comments         Comment[]
-  feedbacks        Feedback[]
-  agreements       UserAgreement[]
-  videoAccessLogs  VideoAccessLog[]
-  courseChats      CourseChat[]
-  videoComments    VideoComment[]
-  enhancedProgress EnhancedVideoProgress[]
-  eventLogs        EventLog[]
-  userDevices      UserDevice[]
-  activeStream     ActiveStream?
-  triggerLogs      TriggerLog[]
-  checkIns         CheckIn[]
-  notifications    Notification[]
+  profile             Profile?
+  purchases           Purchase[]
+  subscriptions       Subscription[]
+  progress            VideoProgress[]
+  consents            LegalConsent[]
+  chatMessages        ChatMessage[]
+  likes               Like[]
+  comments            Comment[]
+  feedbacks           Feedback[]
+  agreements          UserAgreement[]
+  videoAccessLogs     VideoAccessLog[]
+  courseChats         CourseChat[]
+  videoComments       VideoComment[]
+  enhancedProgress    EnhancedVideoProgress[]
+  eventLogs           EventLog[]
+  userDevices         UserDevice[]
+  activeStream        ActiveStream?
+  triggerLogs         TriggerLog[]
+  checkIns            CheckIn[]
+  notifications       Notification[]
+  favoriteLessons     FavoriteLesson[]
+  aiConversations     AiConversation[]
+  bodyMeasurements    BodyMeasurement[]
+  passwordResetTokens PasswordResetToken[]
+  automationQueue     UserAutomationQueue[]
 }
 
 model Profile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   name          String?
   location      String?
   region        String? // Added for TGU tracking
   healthIssues  String?
   bodyParams    Json? // Stores history of height, weight, etc.
   cycleData     Json? // Stores menstruation calendar events
-  totalYogaTime Int      @default(0) // Total seconds spent doing yoga
-  
+  totalYogaTime Int       @default(0) // Total seconds spent doing yoga
+  gender        String? // 'male', 'female'
+  birthDate     DateTime?
+
   // Gamification
   currentStreak    Int       @default(0)
   longestStreak    Int       @default(0)
   lastActivityDate DateTime? // To calculate streaks
-  achievements     Json?     // Array of unlocked achievement IDs [{id: "first_lesson", date: "..."}]
+  achievements     Json? // Array of unlocked achievement IDs [{id: "first_lesson", date: "..."}]
 
-  updatedAt     DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 }
 
 model CheckIn {
@@ -187,8 +205,8 @@ model CheckIn {
   userId           String
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   moodRating       Int
-  symptoms         String?  // Text description or comma-separated tags
-  aiRecommendation Json?    // { recommendedId: string, type: 'lesson'|'course', reason: string }
+  symptoms         String? // Text description or comma-separated tags
+  aiRecommendation Json? // { recommendedId: string, type: 'lesson'|'course', reason: string }
   createdAt        DateTime @default(now())
 
   @@index([userId])
@@ -260,7 +278,7 @@ model Module {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  lessons     Lesson[]
+  lessons Lesson[]
 
   @@index([courseId])
 }
@@ -276,13 +294,15 @@ model Lesson {
   description   String?
   descriptionRu String?
   order         Int
-  duration      Int?     // Duration in seconds
+  duration      Int? // Duration in seconds
   isFree        Boolean  @default(false)
   videoUrl      String?
-  audioUrl      String?  // Separate audio track
-  pdfUrl        String?  // Rich media like PDF/PPT
+  audioUrl      String? // Separate audio track
+  pdfUrl        String? // Rich media like PDF/PPT
   content       String?
-  createdAt     DateTime @default(now())
+  thumbnailUrl    String?
+  searchKeywords  String?  // Comma-separated keywords for search
+  createdAt       DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   assets           Asset[]
@@ -291,6 +311,7 @@ model Lesson {
   likes            Like[]
   videoComments    VideoComment[]
   enhancedProgress EnhancedVideoProgress[]
+  favoritedBy      FavoriteLesson[]
 }
 
 model Asset {
@@ -322,11 +343,11 @@ model Purchase {
   consultationStatus ConsultationStatus? // For consultations only
   provider           String              @default("PAYME")
   providerTxnId      String?             @unique
-  screenshotUrl      String?             // For manual bank transfers
+  screenshotUrl      String? // For manual bank transfers
   verifiedByAdmin    Boolean             @default(false)
-  performTime        DateTime?           // Time when payment was performed
-  cancelTime         DateTime?           // Time when payment was canceled
-  reason             Int?                // PayMe cancellation reason code
+  performTime        DateTime? // Time when payment was performed
+  cancelTime         DateTime? // Time when payment was canceled
+  reason             Int? // PayMe cancellation reason code
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -394,14 +415,26 @@ model Like {
   @@unique([lessonId, userId])
 }
 
-model Feedback {
+model FavoriteLesson {
   id        String   @id @default(cuid())
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message   String
-  rating    Int?
-  isApproved Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@unique([lessonId, userId])
+  @@index([userId])
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message    String
+  rating     Int?
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
 }
 
 model LegalConsent {
@@ -449,7 +482,7 @@ model Notification {
   titleRu   String?
   message   String
   messageRu String?
-  link      String?  // Optional deep link (e.g., /courses/xyz)
+  link      String? // Optional deep link (e.g., /courses/xyz)
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -492,14 +525,16 @@ model SignedUrlCache {
 
 // Course Chat - Real-time messaging for course subscribers
 model CourseChat {
-  id        String   @id @default(cuid())
-  courseId  String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  courseId      String
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message       String
+  senderRole    String   @default("USER") // USER or ADMIN
+  attachmentUrl String?  // Optional file/image/video URL
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([courseId, createdAt])
 }
@@ -551,37 +586,74 @@ model EnhancedVideoProgress {
 // NEW ANALYTICS MODELS
 
 model EventLog {
-  id              String   @id @default(cuid())
+  id              String             @id @default(cuid())
   userId          String?
-  user            User?    @relation(fields: [userId], references: [id])
-  event           String   // app_open, course_view, video_heartbeat, etc.
+  user            User?              @relation(fields: [userId], references: [id])
+  event           String // app_open, course_view, video_heartbeat, etc.
   platform        RegistrationSource @default(WEB)
-  metadata        Json?    // { courseId, videoId, device, ip }
-  durationSeconds Int?     // Time spent during this event
-  createdAt       DateTime @default(now())
+  metadata        Json? // { courseId, videoId, device, ip }
+  durationSeconds Int? // Time spent during this event
+  createdAt       DateTime           @default(now())
 
   @@index([userId])
   @@index([event])
   @@index([createdAt])
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN_ROLE
+}
+
 model AdminUser {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // Hashed
-  role      UserRole @default(ADMIN)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String           @id @default(cuid())
+  username      String           @unique
+  email         String?          @unique
+  passwordHash  String
+  displayName   String
+  avatar        String?
+  role          AdminRole        @default(ADMIN_ROLE)
+  permissions   Json             @default("[]")
+  isActive      Boolean          @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  createdById   String?
+  createdBy     AdminUser?       @relation("AdminCreatedBy", fields: [createdById], references: [id])
+  createdAdmins AdminUser[]      @relation("AdminCreatedBy")
+  actionLogs    AdminActionLog[]
+}
+
+// NEW MODELS FOR APP CMS & AI KNOWLEDGE (Phase 2)
+
+model AppContent {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., 'tma_welcome_video', 'about_us_text'
+  type        String   // 'TEXT', 'VIDEO', 'IMAGE', 'JSON'
+  value       String?  @db.Text
+  mediaUrl    String?
+  description String?  // For admin reference
+  updatedAt   DateTime @updatedAt
+}
+
+model AiTraining {
+  id          String   @id @default(cuid())
+  type        String   // 'SYSTEM_PROMPT', 'KNOWLEDGE_DOC', 'RULE'
+  title       String
+  content     String   @db.Text
+  isActive    Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
 }
 
 model UserDevice {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId  String   // fingerprint: OS + Model + ID
+  deviceId  String // fingerprint: OS + Model + ID
   userAgent String?
   ipAddress String?
   lastSeen  DateTime @default(now())
+
   @@unique([userId, deviceId])
 }
 
@@ -595,15 +667,15 @@ model ActiveStream {
 // CENTRAL CONTENT SYSTEM MODELS
 
 model Article {
-  id          String        @id @default(cuid())
-  title       Json          // {uz: "", ru: ""}
-  content     Json          // Rich text content
-  coverImage  String?
-  slug        String?       @unique
-  status      ContentStatus @default(DRAFT)
-  publishAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id         String        @id @default(cuid())
+  title      Json // {uz: "", ru: ""}
+  content    Json // Rich text content
+  coverImage String?
+  slug       String?       @unique
+  status     ContentStatus @default(DRAFT)
+  publishAt  DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   @@index([status, publishAt])
 }
@@ -615,7 +687,7 @@ model Post {
   mediaUrl      String?
   ctaLink       String?
   ctaText       String?
-  targetSegment String?       // "ALL", "SUBSCRIBERS", "FREE_USERS"
+  targetSegment String? // "ALL", "SUBSCRIBERS", "FREE_USERS"
   region        Region        @default(GLOBAL)
   status        ContentStatus @default(DRAFT)
   createdAt     DateTime      @default(now())
@@ -627,13 +699,16 @@ model Trigger {
   name            String
   conditionType   TriggerConditionType
   delayMinutes    Int                  @default(0)
-  messageTemplate Json                 // {text: "", image: "", buttons: []}
+  messageTemplate Json // {text: "", image: "", buttons: []}
   channel         TriggerChannel       @default(TELEGRAM)
   isActive        Boolean              @default(false)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
-  logs            TriggerLog[]
+  logs           TriggerLog[]
+  automationLogs AutomationLog[]
+  steps          AutomationStep[]
+  queue          UserAutomationQueue[]
 }
 
 model TriggerLog {
@@ -642,13 +717,59 @@ model TriggerLog {
   trigger   Trigger       @relation(fields: [triggerId], references: [id], onDelete: Cascade)
   userId    String
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sentAt    DateTime      @default(now())
-  status    TriggerStatus @default(SENT)
-  metadata  Json?
+  sentAt      DateTime      @default(now())
+  status      TriggerStatus @default(SENT)
+  metadata    Json?
+  messageText String?       @db.Text
+  aiGenerated Boolean       @default(false)
+  opened      Boolean       @default(false)
+  returned    Boolean       @default(false)
+  variant     String?       // A or B
 
   @@index([triggerId])
   @@index([userId])
   @@index([sentAt])
+}
+
+model AutomationStep {
+  id          String   @id @default(cuid())
+  triggerId   String
+  trigger     Trigger  @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  stepOrder   Int
+  delayDays   Int      @default(1)
+  contentType String   @default("text") // text, video, audio
+  contentText String?  @db.Text
+  contentUrl  String?  // GCS URL for video/audio
+  createdAt   DateTime @default(now())
+
+  // AI Personalization
+  aiEnabled   Boolean  @default(false)
+  basePrompt  String?  @db.Text
+  tone        String   @default("friendly") // soft, motivational, strict, friendly
+  goal        String   @default("return")   // return, resubscribe, purchase
+  variant     String?  // A or B for A/B testing
+
+  queue UserAutomationQueue[]
+
+  @@index([triggerId])
+}
+
+model UserAutomationQueue {
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  triggerId        String
+  trigger          Trigger       @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  automationStepId String
+  automationStep   AutomationStep @relation(fields: [automationStepId], references: [id], onDelete: Cascade)
+  scheduledAt      DateTime
+  sentAt           DateTime?
+  status           TriggerStatus @default(PENDING)
+  createdAt        DateTime      @default(now())
+
+  @@index([userId])
+  @@index([scheduledAt])
+  @@index([status])
 }
 
 model Coupon {
@@ -660,13 +781,13 @@ model Coupon {
   usedCount     Int          @default(0)
   expiresAt     DateTime?
   isActive      Boolean      @default(true)
-  
-  courseId      String?      // If null, valid for all courses
-  course        Course?      @relation(fields: [courseId], references: [id])
-  
-  purchases     Purchase[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+
+  courseId String? // If null, valid for all courses
+  course   Course? @relation(fields: [courseId], references: [id])
+
+  purchases Purchase[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@index([code])
 }
@@ -680,3 +801,97 @@ model SystemSetting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// AI Concierge Conversation History
+model AiConversation {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String // fallback for anonymous users
+  role      String // 'user' | 'assistant'
+  content   String
+  topic     String? // 'faq', 'medical', 'access', 'general', 'sales'
+  metadata  Json? // subscription status, intent, user context
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([sessionId, createdAt])
+}
+
+// Body Measurement Tracking
+model BodyMeasurement {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  weight    Float? // kg
+  height    Float? // cm
+  belly     Float? // cm
+  hip       Float? // cm
+  chest     Float? // cm
+  waist     Float? // cm
+  notes     String?
+  mood      Int? // 1-5 scale
+  energy    Int? // 1-5 scale
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model AdminActionLog {
+  id        String    @id @default(cuid())
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime  @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+model AutomationLog {
+  id        String   @id @default(cuid())
+  triggerId String
+  trigger   Trigger  @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  userId    String
+  action    String
+  result    String?
+  createdAt DateTime @default(now())
+
+  @@index([triggerId])
+  @@index([createdAt])
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  titleRu     String?
+  message     String   @db.Text
+  messageRu   String?  @db.Text
+  type        String   @default("INFO") // INFO, MEETING, PROMO, URGENT
+  imageUrl    String?
+  sendVia     String[] @default(["PANEL"]) // PANEL, TELEGRAM
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

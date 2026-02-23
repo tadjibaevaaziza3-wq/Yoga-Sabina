@@ -28,16 +28,30 @@ export async function getRecommendations(userId: string) {
     if (daysSinceLastActivity > 3) retentionScore -= 20;
     if (daysSinceLastActivity > 7) retentionScore -= 50;
 
-    // 4. Fetch available courses that user hasn't bought yet
-    const userPurchases = await prisma.purchase.findMany({
-        where: { userId, status: 'PAID' },
-        select: { courseId: true }
-    });
-    const purchasedIds = userPurchases.map(p => p.courseId);
+    // 4. Fetch available courses that user hasn't bought or subscribed to yet
+    const [userPurchases, userSubscriptions] = await Promise.all([
+        prisma.purchase.findMany({
+            where: { userId, status: 'PAID' },
+            select: { courseId: true }
+        }),
+        prisma.subscription.findMany({
+            where: {
+                userId,
+                status: 'ACTIVE',
+                endsAt: { gte: new Date() }
+            },
+            select: { courseId: true }
+        })
+    ]);
+
+    const ownedCourseIds = [
+        ...userPurchases.map(p => p.courseId),
+        ...userSubscriptions.map(s => s.courseId)
+    ];
 
     const availableCourses = await prisma.course.findMany({
         where: {
-            id: { notIn: purchasedIds },
+            id: { notIn: ownedCourseIds },
             isActive: true,
             status: 'PUBLISHED'
         }

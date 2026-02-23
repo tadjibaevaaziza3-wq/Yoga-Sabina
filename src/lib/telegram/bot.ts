@@ -38,7 +38,7 @@ Kurslarni ko'rish va shug'ullanishni boshlash uchun quyidagi tugmani bosing:
 
     // Basic help command
     bot.help((ctx) => {
-        ctx.reply('Yordam uchun administratorga bog\'laning: @baxtli_men_admin')
+        ctx.reply('Yordam uchun administratorga bog\'laning: @Sabina_Radjapovna')
     })
 
     // Launch logic is handled by webhook or polling externally, 

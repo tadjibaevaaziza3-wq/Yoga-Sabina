@@ -17,6 +17,7 @@ import { getLocalUser } from '@/lib/auth/server';
 import { generateSignedUrl, logVideoAccess } from '@/lib/security/signed-urls';
 import { checkRateLimit, getRemainingRequests, getResetTime } from '@/lib/security/rate-limit';
 import { generateWatermarkText } from '@/lib/security/watermark';
+import { checkSessionLimit } from '@/lib/security/session-limiter';
 import { z } from 'zod';
 
 const requestSchema = z.object({
@@ -42,6 +43,24 @@ export async function POST(request: NextRequest) {
                     { status: 401 }
                 );
             }
+        }
+
+        // Check concurrent session limit (max 2 devices) — skip if DB unavailable
+        try {
+            const sessionCheck = await checkSessionLimit(user.id);
+            if (!sessionCheck.allowed) {
+                return NextResponse.json(
+                    {
+                        error: 'Too many active sessions',
+                        message: `Maximum ${sessionCheck.maxDevices} concurrent sessions allowed. You have ${sessionCheck.activeDevices} active devices.`,
+                        activeDevices: sessionCheck.activeDevices,
+                        maxDevices: sessionCheck.maxDevices,
+                    },
+                    { status: 429 }
+                );
+            }
+        } catch (sessionErr) {
+            console.warn('[get-signed-url] Session limit check failed, proceeding:', sessionErr instanceof Error ? sessionErr.message : sessionErr);
         }
 
         // Get request body
@@ -164,9 +183,23 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Error generating signed URL:', error);
+        console.error('[get-signed-url] Error:', error);
+        if (error instanceof Error) {
+            console.error('[get-signed-url] Stack:', error.stack);
+        }
+
+        // Detect Prisma connection errors
+        const errMsg = error instanceof Error ? error.message : String(error);
+        const errCode = (error as any)?.code;
+        if (errCode === 'P1001' || errMsg.includes("Can't reach database")) {
+            return NextResponse.json(
+                { error: 'Service temporarily unavailable', message: 'Database connection issue. Please try again in a moment.' },
+                { status: 503 }
+            );
+        }
+
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: 'Internal server error', details: errMsg },
             { status: 500 }
         );
     }

@@ -1,11 +1,9 @@
 import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
 import { Container } from "@/components/ui/Container"
 import { Header } from "@/components/Header"
-import { coursesData } from "@/lib/data/courses"
-import { consultationsData } from "@/lib/data/consultations"
 import { CheckoutForm } from "@/components/checkout/CheckoutForm"
 import { redirect } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { prisma } from "@/lib/prisma"
 
 export default async function CheckoutPage({
     params,
@@ -18,12 +16,36 @@ export default async function CheckoutPage({
     const { id, type } = await searchParams
     const dictionary = await getDictionary(lang)
 
-    // Validate Item
+    // Validate Item from Database
     let item: any = null
-    if (type === 'course') {
-        item = coursesData[lang].find(c => c.id === id)
-    } else if (type === 'consultation') {
-        item = consultationsData[lang].find(c => c.id === id)
+    try {
+        if (type === 'course') {
+            const course = await prisma.course.findUnique({
+                where: { id: id, productType: 'COURSE' }
+            })
+            if (course) {
+                item = {
+                    ...course,
+                    title: lang === 'ru' && course.titleRu ? course.titleRu : course.title,
+                    description: lang === 'ru' && course.descriptionRu ? course.descriptionRu : course.description,
+                    price: Number(course.price)
+                }
+            }
+        } else if (type === 'consultation') {
+            const consultation = await prisma.course.findFirst({
+                where: { id: id, productType: 'CONSULTATION' }
+            })
+            if (consultation) {
+                item = {
+                    ...consultation,
+                    title: lang === 'ru' && consultation.titleRu ? consultation.titleRu : consultation.title,
+                    description: lang === 'ru' && consultation.descriptionRu ? consultation.descriptionRu : consultation.description,
+                    price: Number(consultation.price)
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching checkout item:', error)
     }
 
     if (!item) {

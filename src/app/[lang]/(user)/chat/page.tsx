@@ -1,8 +1,9 @@
 import { getLocalUser } from "@/lib/auth/server"
 import { redirect } from "next/navigation"
 import { UserChatManager } from "@/components/user/UserChatManager"
-import { Header } from "@/components/Header"
 import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
+import { SubscriptionGate } from "@/components/user/SubscriptionGate"
+import { checkUserAccess } from "@/lib/db/access"
 
 export default async function UserChatPage({
     params,
@@ -16,25 +17,21 @@ export default async function UserChatPage({
         redirect(`/${lang}/login`)
     }
 
-    const dictionary = await getDictionary(lang)
+    const hasSubscription = await checkUserAccess(user.id)
 
     return (
-        <main className="min-h-screen bg-[var(--background)]">
-            <Header />
-            <div className="pt-32 pb-20">
-                <div className="max-w-[1400px] mx-auto px-6">
-                    <header className="mb-8">
-                        <h1 className="text-4xl font-serif font-black text-[var(--foreground)] mb-2">
-                            {lang === 'uz' ? 'Mening Chatlarim' : 'Мои Чаты'}
-                        </h1>
-                        <p className="text-sm font-bold text-[var(--primary)]/40 uppercase tracking-widest">
-                            {lang === 'uz' ? 'Kursdoshlar va administratorlar bilan muloqot' : 'Общение с сокурсниками и администраторами'}
-                        </p>
-                    </header>
-
-                    <UserChatManager currentUserId={user.id} lang={lang} />
-                </div>
-            </div>
-        </main>
+        <div className="space-y-6">
+            <SubscriptionGate isSubscribed={hasSubscription} lang={lang} featureName={lang === 'uz' ? "AI Chat" : "AI Чат"}>
+                <header className="mb-6">
+                    <h1 className="text-2xl font-serif font-black text-[var(--foreground)] mb-1">
+                        {lang === 'uz' ? 'AI Yordamchi' : 'AI Помощник'}
+                    </h1>
+                    <p className="text-xs text-[var(--foreground)]/30 font-medium">
+                        {lang === 'uz' ? 'Sabina terapevt bilan shaxsiy maslahat' : 'Персональная консультация с тренером Сабиной'}
+                    </p>
+                </header>
+                <UserChatManager currentUserId={user.id} lang={lang} />
+            </SubscriptionGate>
+        </div>
     )
 }

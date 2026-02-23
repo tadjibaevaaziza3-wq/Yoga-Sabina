@@ -32,6 +32,7 @@ export default function CourseModulesEditor({ modules, setModules }: { modules: 
                     lessons: [...(m.lessons || []), {
                         id: `temp-lesson-${Date.now()}`,
                         title: 'Yangi Dars',
+                        description: '',
                         duration: 0,
                         isFree: false
                     }]
@@ -216,6 +217,57 @@ export default function CourseModulesEditor({ modules, setModules }: { modules: 
                                                                                         <button type="button" onClick={() => removeLesson(module.id, lesson.id)} className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg">
                                                                                             <Trash2 className="w-4 h-4" />
                                                                                         </button>
+                                                                                    </div>
+
+                                                                                    {/* Lesson Details */}
+                                                                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pl-12 lg:pl-16">
+                                                                                        <div className="md:col-span-4 space-y-2">
+                                                                                            <label className="text-[10px] font-black uppercase tracking-widest opacity-50 ml-1">
+                                                                                                Dars tavsifi (UZ)
+                                                                                            </label>
+                                                                                            <textarea
+                                                                                                value={lesson.description || ''}
+                                                                                                onChange={(e) => updateLesson(module.id, lesson.id, 'description', e.target.value)}
+                                                                                                className="w-full px-4 py-3 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl focus:outline-none text-sm min-h-[80px]"
+                                                                                                placeholder="Dars haqida qisqacha ma'lumot..."
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div className="md:col-span-4 space-y-2">
+                                                                                            <label className="text-[10px] font-black uppercase tracking-widest opacity-50 ml-1">
+                                                                                                Dars tavsifi (RU)
+                                                                                            </label>
+                                                                                            <textarea
+                                                                                                value={lesson.descriptionRu || ''}
+                                                                                                onChange={(e) => updateLesson(module.id, lesson.id, 'descriptionRu', e.target.value)}
+                                                                                                className="w-full px-4 py-3 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl focus:outline-none text-sm min-h-[80px]"
+                                                                                                placeholder="Краткое описание урока..."
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div className="md:col-span-2 space-y-2">
+                                                                                            <label className="text-[10px] font-black uppercase tracking-widest opacity-50 ml-1">
+                                                                                                Davomiyligi (sec)
+                                                                                            </label>
+                                                                                            <input
+                                                                                                type="number"
+                                                                                                value={lesson.duration || 0}
+                                                                                                onChange={(e) => updateLesson(module.id, lesson.id, 'duration', parseInt(e.target.value))}
+                                                                                                className="w-full px-4 py-3 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl focus:outline-none text-sm font-bold"
+                                                                                                placeholder="Daxomiyligi"
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div className="md:col-span-2 space-y-2 flex flex-col justify-end pb-3">
+                                                                                            <label className="flex items-center gap-3 cursor-pointer group">
+                                                                                                <div
+                                                                                                    onClick={() => updateLesson(module.id, lesson.id, 'isFree', !lesson.isFree)}
+                                                                                                    className={`w-10 h-6 rounded-full p-1 transition-all ${lesson.isFree ? 'bg-emerald-500' : 'bg-[var(--foreground)]/10'}`}
+                                                                                                >
+                                                                                                    <div className={`w-4 h-4 bg-white rounded-full transition-all ${lesson.isFree ? 'translate-x-4' : 'translate-x-0'}`} />
+                                                                                                </div>
+                                                                                                <span className="text-[10px] font-black uppercase tracking-widest opacity-50">
+                                                                                                    Free Preview
+                                                                                                </span>
+                                                                                            </label>
+                                                                                        </div>
                                                                                     </div>
 
                                                                                     {/* Media Uploads */}

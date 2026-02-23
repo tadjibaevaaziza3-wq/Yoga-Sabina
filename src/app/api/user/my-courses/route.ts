@@ -6,75 +6,167 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createServerClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth/server';
+
+async function getUser() {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('auth_token')?.value
+    if (!token) return null
+    const userId = verifyToken(token)
+    if (!userId) return null
+    return userId
+}
 
 export async function GET(request: NextRequest) {
     try {
         // Get authenticated user
-        const supabase = await createServerClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const userId = await getUser();
 
-        if (authError || !user) {
+        if (!userId) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
-        // Get user's active subscriptions with course details
-        const subscriptions = await prisma.subscription.findMany({
-            where: {
-                userId: user.id,
-                status: 'ACTIVE',
-                endsAt: {
-                    gte: new Date(),
+        // Get user's active subscriptions and paid purchases
+        const [subscriptions, purchases] = await Promise.all([
+            prisma.subscription.findMany({
+                where: {
+                    userId: userId,
+                    status: 'ACTIVE',
+                    endsAt: {
+                        gte: new Date(),
+                    },
                 },
-            },
-            include: {
-                course: {
-                    select: {
-                        id: true,
-                        title: true,
-                        titleRu: true,
-                        description: true,
-                        descriptionRu: true,
-                        coverImage: true,
-                        type: true,
-                        _count: {
-                            select: {
-                                lessons: true,
+                include: {
+                    course: {
+                        select: {
+                            id: true,
+                            title: true,
+                            titleRu: true,
+                            description: true,
+                            descriptionRu: true,
+                            coverImage: true,
+                            type: true,
+                            _count: {
+                                select: {
+                                    lessons: true,
+                                },
                             },
                         },
                     },
                 },
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            }),
+            prisma.purchase.findMany({
+                where: {
+                    userId: userId,
+                    status: 'PAID',
+                },
+                include: {
+                    course: {
+                        select: {
+                            id: true,
+                            title: true,
+                            titleRu: true,
+                            description: true,
+                            descriptionRu: true,
+                            coverImage: true,
+                            type: true,
+                            _count: {
+                                select: {
+                                    lessons: true,
+                                },
+                            },
+                        },
+                    },
+                },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            })
+        ]);
+
+        // Combine and unique by courseId
+        const activeCourses = [
+            ...subscriptions.map(s => ({ ...s, isSubscription: true })),
+            ...purchases.map(p => ({ ...p, isSubscription: false }))
+        ];
+
+        // Deduplicate: if a user has both a subscription and a purchase for the same course
+        const uniqueCourses = activeCourses.reduce((acc, current) => {
+            const x = acc.find(item => item.courseId === current.courseId);
+            if (!x) {
+                return acc.concat([current]);
+            } else {
+                return acc;
+            }
+        }, [] as any[]);
 
         // Get progress for each course
         const coursesWithProgress = await Promise.all(
-            subscriptions.map(async (sub) => {
-                // Get total lessons
-                const totalLessons = sub.course._count.lessons;
+            uniqueCourses.map(async (item) => {
+                const totalLessons = item.course._count.lessons;
 
-                // Get completed lessons (we'll consider a lesson completed if user watched >80%)
-                // For now, we'll just return 0 as we haven't implemented progress tracking yet
-                const completedLessons = 0;
+                // Get completed lessons for this specific course
+                const lessonIds = await prisma.lesson.findMany({
+                    where: { courseId: item.courseId },
+                    select: { id: true }
+                }).then(lessons => lessons.map(l => l.id));
+
+                const progressRecords = await prisma.enhancedVideoProgress.findMany({
+                    where: {
+                        userId: userId,
+                        lessonId: { in: lessonIds }
+                    },
+                    orderBy: {
+                        lastWatched: 'desc'
+                    }
+                });
+
+                const completedLessons = progressRecords.filter(p => p.completed || (p.progress > (p.duration || 0) * 0.9)).length;
+                const lastWatchedRecord = progressRecords[0]; // Already ordered by lastWatched desc
+
+                let lastWatchedLesson = null;
+                if (lastWatchedRecord) {
+                    lastWatchedLesson = await prisma.lesson.findUnique({
+                        where: { id: lastWatchedRecord.lessonId },
+                        select: {
+                            id: true,
+                            title: true,
+                            titleRu: true
+                        }
+                    }) as any;
+
+                    if (lastWatchedLesson) {
+                        lastWatchedLesson.lastWatched = lastWatchedRecord.lastWatched;
+                        lastWatchedLesson.progress = lastWatchedRecord.progress;
+                        lastWatchedLesson.duration = lastWatchedRecord.duration;
+                    }
+                }
 
                 return {
-                    subscription: {
-                        id: sub.id,
-                        startsAt: sub.startsAt,
-                        endsAt: sub.endsAt,
-                    },
-                    course: sub.course,
+                    subscription: item.isSubscription ? {
+                        id: item.id,
+                        startsAt: item.startsAt,
+                        endsAt: item.endsAt,
+                    } : null,
+                    purchase: !item.isSubscription ? {
+                        id: item.id,
+                        amount: item.amount,
+                        createdAt: item.createdAt,
+                    } : null,
+                    course: item.course,
                     progress: {
                         total: totalLessons,
                         completed: completedLessons,
                         percentage: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
                     },
+                    lastWatchedLesson,
                 };
             })
         );

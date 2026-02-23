@@ -116,40 +116,27 @@ export default function TMADashboard() {
             <Container className="pt-8 px-6 space-y-8">
                 {/* Branding Header */}
                 <header className="flex flex-col items-center text-center space-y-4">
-                    <div className="relative w-20 h-20">
-                        <Image
-                            src="/images/logo.png"
-                            alt="Logo"
-                            fill
-                            className="object-contain"
-                        />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-black text-[#114539] tracking-tight uppercase">Baxtli Men</h1>
-                        <div className="h-0.5 w-12 bg-[#114539] mx-auto my-1"></div>
-                        <p className="text-[10px] font-bold text-[#114539]/60 tracking-[0.2em] uppercase">{t.tagline}</p>
+                    <div className="w-full flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="relative w-10 h-10">
+                                <Image src="/images/logo.png" alt="Logo" fill className="object-contain" />
+                            </div>
+                            <div className="text-left">
+                                <h1 className="text-lg font-black text-[#114539] tracking-tight uppercase leading-none">Baxtli Men</h1>
+                                <p className="text-[9px] font-bold text-[#114539]/50 tracking-[0.2em] uppercase">{t.tagline}</p>
+                            </div>
+                        </div>
+                        {user?.name && (
+                            <div className="text-right">
+                                <p className="text-[9px] font-bold text-[#114539]/40 uppercase tracking-widest">Salom,</p>
+                                <p className="text-sm font-black text-[#114539] leading-none">{user.name.split(' ')[0]}</p>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Dashboard Hero Banner */}
-                    <div className="relative w-full h-[320px] rounded-[3rem] overflow-hidden shadow-2xl border border-white/20 mt-4 group">
-                        <Image
-                            src={banners.BANNER_TMA_DASHBOARD}
-                            alt="Sabina Polatova"
-                            fill
-                            className="object-cover object-top transition-transform duration-[2s] group-hover:scale-110"
-                            priority
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#114539]/80 via-transparent to-transparent"></div>
-                        <div className="absolute bottom-10 left-10 right-10 flex flex-col items-center">
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5 }}
-                                className="px-4 py-2 bg-white/20 backdrop-blur-md rounded-full border border-white/20 mb-3"
-                            >
-                                <span className="text-[10px] font-bold text-white uppercase tracking-widest">Premium Yoga Platform</span>
-                            </motion.div>
-                        </div>
+                    {/* Premium Badge */}
+                    <div className="w-full bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-[#114539]/5 shadow-soft">
+                        <span className="text-[9px] font-bold text-[#114539]/50 uppercase tracking-[0.3em]">✦ Premium Yoga Platform</span>
                     </div>
                 </header>
 
@@ -205,129 +192,102 @@ export default function TMADashboard() {
                     </Link>
                 )}
 
-                {/* 4 Categories Grid - Hero Entry Point */}
-                <section className="grid grid-cols-1 gap-6">
-                    <Link href={`/${lang}/tma/courses?filter=ONLINE`} className="block group">
-                        <motion.div
-                            whileTap={{ scale: 0.98 }}
-                            className="relative h-48 rounded-[2.5rem] overflow-hidden shadow-xl border border-white/20"
-                        >
-                            <Image
-                                src="/images/courses/woman-premium.jpg"
-                                alt="Online"
-                                fill
-                                className="object-cover object-[center_35%] transition-transform duration-700 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#114539] via-[#114539]/40 to-transparent"></div>
-                            <div className="absolute bottom-0 left-0 p-8 w-full flex justify-between items-end">
-                                <div className="space-y-1">
-                                    <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-2">
-                                        <Video className="w-5 h-5 text-white" />
+                {/* 2×2 Categories Grid */}
+                <section className="grid grid-cols-2 gap-3">
+                    {/* Online Courses */}
+                    <Link href={`/${lang}/tma/courses?filter=ONLINE`} className="col-span-2 block group">
+                        <motion.div whileTap={{ scale: 0.98 }} className="relative h-36 rounded-[2rem] overflow-hidden shadow-lg border border-white/10">
+                            <Image src="/images/courses/woman-premium.jpg" alt="Online" fill className="object-cover object-[center_35%] transition-transform duration-700 group-active:scale-105" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#114539]/80 via-[#114539]/30 to-transparent" />
+                            <div className="absolute inset-0 p-5 flex items-end">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Video className="w-3.5 h-3.5 text-white/70" />
+                                        <span className="text-[9px] font-bold text-white/60 uppercase tracking-[0.2em]">{lang === 'ru' ? 'онлайн' : 'online'}</span>
                                     </div>
-                                    <h3 className="text-2xl font-editorial font-bold text-white leading-tight">{t.categories.online}</h3>
-                                </div>
-                                <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                    <ChevronRight className="w-6 h-6 text-white" />
+                                    <h3 className="text-xl font-editorial font-bold text-white leading-tight">{t.categories.online}</h3>
                                 </div>
                             </div>
                         </motion.div>
                     </Link>
 
+                    {/* Offline */}
                     <Link href={`/${lang}/tma/courses?filter=OFFLINE`} className="block group">
-                        <motion.div
-                            whileTap={{ scale: 0.98 }}
-                            className="relative h-48 rounded-[2.5rem] overflow-hidden shadow-xl border border-white/20"
-                        >
-                            <Image
-                                src="/images/studios/doyoga.jpg"
-                                alt="Offline"
-                                fill
-                                className="object-cover object-[center_40%] transition-transform duration-700 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#114539] via-[#114539]/40 to-transparent"></div>
-                            <div className="absolute bottom-0 left-0 p-8 w-full flex justify-between items-end">
-                                <div className="space-y-1">
-                                    <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-2">
-                                        <Users className="w-5 h-5 text-white" />
-                                    </div>
-                                    <h3 className="text-2xl font-editorial font-bold text-white leading-tight">{t.categories.offline}</h3>
-                                </div>
-                                <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                    <ChevronRight className="w-6 h-6 text-white" />
+                        <motion.div whileTap={{ scale: 0.98 }} className="relative h-36 rounded-[2rem] overflow-hidden shadow-lg border border-white/10">
+                            <Image src="/images/studios/doyoga.jpg" alt="Offline" fill className="object-cover object-[center_40%] transition-transform duration-700 group-active:scale-105" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#114539]/80 to-[#114539]/20" />
+                            <div className="absolute inset-0 p-4 flex items-end">
+                                <div>
+                                    <Users className="w-3.5 h-3.5 text-white/70 mb-1" />
+                                    <h3 className="text-sm font-editorial font-bold text-white leading-tight">{t.categories.offline}</h3>
                                 </div>
                             </div>
                         </motion.div>
                     </Link>
 
-                    {banners.IS_CONSULTATION_ENABLED !== "false" && (
+                    {/* Consultations */}
+                    {banners.IS_CONSULTATION_ENABLED !== "false" ? (
                         <Link href={`/${lang}/tma/courses?filter=CONSULTATION`} className="block group">
-                            <motion.div
-                                whileTap={{ scale: 0.98 }}
-                                className="relative h-48 rounded-[2.5rem] overflow-hidden shadow-xl border border-white/20"
-                            >
-                                <Image
-                                    src={banners.FRONTEND_TRAINER_PHOTO}
-                                    alt="Consultations"
-                                    fill
-                                    className="object-cover object-[center_25%] transition-transform duration-700 group-hover:scale-110"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#114539] via-[#114539]/40 to-transparent"></div>
-                                <div className="absolute bottom-0 left-0 p-8 w-full flex justify-between items-end">
-                                    <div className="space-y-1">
-                                        <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-2">
-                                            <MessageCircle className="w-5 h-5 text-white" />
-                                        </div>
-                                        <h3 className="text-2xl font-editorial font-bold text-white leading-tight">{t.categories.consultations}</h3>
-                                    </div>
-                                    <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                        <ChevronRight className="w-6 h-6 text-white" />
+                            <motion.div whileTap={{ scale: 0.98 }} className="relative h-36 rounded-[2rem] overflow-hidden shadow-lg border border-white/10">
+                                <Image src={banners.FRONTEND_TRAINER_PHOTO} alt="Consultations" fill className="object-cover object-[center_25%] transition-transform duration-700 group-active:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#114539]/80 to-[#114539]/20" />
+                                <div className="absolute inset-0 p-4 flex items-end">
+                                    <div>
+                                        <MessageCircle className="w-3.5 h-3.5 text-white/70 mb-1" />
+                                        <h3 className="text-sm font-editorial font-bold text-white leading-tight">{t.categories.consultations}</h3>
                                     </div>
                                 </div>
                             </motion.div>
                         </Link>
-                    )}
-
-                    <a href="https://t.me/sabina_polatova" target="_blank" rel="noopener noreferrer" className="block group">
-                        <motion.div
-                            whileTap={{ scale: 0.98 }}
-                            className="relative h-48 rounded-[2.5rem] overflow-hidden shadow-xl border border-white/20"
-                        >
-                            <Image
-                                src={banners.FRONTEND_VIDEO_BANNER}
-                                alt="Contact"
-                                fill
-                                className="object-cover object-[center_15%] transition-transform duration-500 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#114539] via-[#114539]/40 to-transparent"></div>
-                            <div className="absolute bottom-0 left-0 p-8 w-full flex justify-between items-end">
-                                <div className="space-y-1">
-                                    <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-2">
-                                        <Send className="w-5 h-5 text-white" />
+                    ) : (
+                        <a href="https://t.me/sabina_polatova" target="_blank" rel="noopener noreferrer" className="block group">
+                            <motion.div whileTap={{ scale: 0.98 }} className="relative h-36 rounded-[2rem] overflow-hidden shadow-lg border border-white/10">
+                                <Image src={banners.FRONTEND_VIDEO_BANNER} alt="Contact" fill className="object-cover object-[center_15%] transition-transform duration-700 group-active:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#114539]/80 to-[#114539]/20" />
+                                <div className="absolute inset-0 p-4 flex items-end">
+                                    <div>
+                                        <Send className="w-3.5 h-3.5 text-white/70 mb-1" />
+                                        <h3 className="text-sm font-editorial font-bold text-white leading-tight">{t.categories.contact}</h3>
                                     </div>
-                                    <h3 className="text-2xl font-editorial font-bold text-white leading-tight">{t.categories.contact}</h3>
                                 </div>
-                                <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                    <ChevronRight className="w-6 h-6 text-white" />
-                                </div>
+                            </motion.div>
+                        </a>
+                    )}
+                </section>
+
+                {/* Contact Admin - always show */}
+                {banners.IS_CONSULTATION_ENABLED !== "false" && (
+                    <a href="https://t.me/sabina_polatova" target="_blank" rel="noopener noreferrer" className="block">
+                        <motion.div whileTap={{ scale: 0.98 }} className="flex items-center gap-4 bg-white rounded-2xl p-5 border border-[#114539]/5 shadow-sm">
+                            <div className="w-10 h-10 rounded-xl bg-[#114539]/5 flex items-center justify-center">
+                                <Send className="w-4 h-4 text-[#114539]" />
                             </div>
+                            <div className="flex-1">
+                                <p className="text-xs font-black text-[#114539] uppercase tracking-widest">{t.categories.contact}</p>
+                                <p className="text-[9px] text-[#114539]/40 font-bold">@sabina_polatova</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-[#114539]/30" />
                         </motion.div>
                     </a>
-                </section>
+                )}
             </Container>
 
 
-            {/* Bottom Nav Bar - Premium Floating */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[70%] max-w-sm bg-[#114539] text-white rounded-[2rem] p-4 shadow-2xl z-50 flex justify-around items-center bg-opacity-95 backdrop-blur-xl border border-white/10">
-                <Link href={`/${lang}/tma/dashboard`} className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
-                    <motion.div whileTap={{ scale: 0.9 }}>
-                        <BookOpen className="w-5 h-5" />
-                    </motion.div>
+            {/* Bottom Nav Bar */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[80%] max-w-xs bg-[#0d2e28]/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl z-50 flex items-center border border-white/10 overflow-hidden">
+                <Link href={`/${lang}/tma/dashboard`} className="flex-1 flex flex-col items-center gap-1 py-4 bg-white/10">
+                    <BookOpen className="w-5 h-5" />
+                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-90">{t.dashboard}</span>
                 </Link>
-                <div className="w-[1px] h-6 bg-white/5"></div>
-                <Link href={`/${lang}/tma/courses`} className="w-12 h-12 rounded-2xl flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity">
-                    <motion.div whileTap={{ scale: 0.9 }}>
-                        <Star className="w-5 h-5" />
-                    </motion.div>
+                <div className="w-[1px] h-10 bg-white/10" />
+                <Link href={`/${lang}/tma/courses`} className="flex-1 flex flex-col items-center gap-1 py-4 opacity-50 hover:opacity-80 transition-opacity">
+                    <Star className="w-5 h-5" />
+                    <span className="text-[8px] font-bold uppercase tracking-widest">{t.courses}</span>
+                </Link>
+                <div className="w-[1px] h-10 bg-white/10" />
+                <Link href={`/${lang}/tma/profile`} className="flex-1 flex flex-col items-center gap-1 py-4 opacity-50 hover:opacity-80 transition-opacity">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>
+                    <span className="text-[8px] font-bold uppercase tracking-widest">{t.profile}</span>
                 </Link>
             </div>
         </main>

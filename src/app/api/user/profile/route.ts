@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest) {
 
     try {
         const body = await request.json()
-        const { firstName, lastName, avatar } = body
+        const { firstName, lastName, avatar, gender, birthDate } = body
 
         const updatedUser = await prisma.user.update({
             where: { id: user.id },
@@ -42,11 +42,18 @@ export async function PATCH(request: NextRequest) {
             }
         })
 
-        // Also update profile name if it exists to keep in sync
-        if (firstName) {
-            await prisma.profile.update({
+        // Build profile update data
+        const profileData: any = {}
+        if (firstName) profileData.name = `${firstName} ${lastName || ''}`.trim()
+        if (gender !== undefined) profileData.gender = gender
+        if (birthDate !== undefined) profileData.birthDate = birthDate ? new Date(birthDate) : null
+
+        // Update profile if there's anything to update
+        if (Object.keys(profileData).length > 0) {
+            await prisma.profile.upsert({
                 where: { userId: user.id },
-                data: { name: `${firstName} ${lastName || ''}`.trim() }
+                update: profileData,
+                create: { userId: user.id, ...profileData }
             })
         }
 

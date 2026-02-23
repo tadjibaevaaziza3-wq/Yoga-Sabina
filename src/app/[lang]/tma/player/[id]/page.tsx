@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { SecurePlayer } from '@/components/video/SecurePlayer';
 import { useRouter, useParams } from 'next/navigation';
 import { ChevronLeft, Info, Share2, Heart, Lock, Activity, Clock } from 'lucide-react';
@@ -16,6 +16,7 @@ export default function TMAPlayerPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
+    const progressSaveTimer = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const fetchVideo = async () => {
@@ -41,10 +42,28 @@ export default function TMAPlayerPage() {
         fetchVideo();
     }, [id]);
 
-    const handleProgress = (progress: number, duration: number) => {
-        // Log progress to backend every 10 seconds or on significant jumps
-        console.log(`Progress: ${progress}/${duration}`);
-    };
+    const handleProgress = useCallback((progress: number, duration: number) => {
+        // Debounce: save at most once every 10 seconds
+        if (progressSaveTimer.current) return;
+        progressSaveTimer.current = setTimeout(async () => {
+            progressSaveTimer.current = null;
+            if (!id || isNaN(duration) || duration === 0) return;
+            try {
+                await fetch('/api/lessons/progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        lessonId: id,
+                        watchedSeconds: Math.floor(progress),
+                        totalSeconds: Math.floor(duration),
+                        completed: progress / duration > 0.9,
+                    }),
+                });
+            } catch (err) {
+                console.error('Progress save error:', err);
+            }
+        }, 10000);
+    }, [id]);
 
     if (loading) {
         return (

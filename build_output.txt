@@ -1,0 +1,86 @@
+﻿тЦ▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+node.exe : тЪа The "mid
+dleware" file conventio
+n is deprecated. Please
+ use "proxy" instead. L
+earn more: https://next
+js.org/docs/messages/mi
+ddleware-to-proxy
+строка:1 знак:1
++ & "C:\Program Files\n
+odejs/node.exe" "C:\Pro
+gram Files\nodejs/node_
+mo ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (тЪа The "midd   
+ le...leware-to-pro    
+xy:String) [], Rem    o
+teException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+  Creating an optimized production build ...
+тЬУ Compiled successfully in 26.8s
+  Running TypeScript ...
+Failed to compile.
+
+./src/app/api/auth/tele
+gram/route.ts:108:37
+Type error: Cannot find
+ name 'lang'.
+
+[0m [90m 106 |[39m  
+           })
+ [90m 107 |[39m
+[31m[1m>[22m[39m[9
+0m 108 |[39m          
+   [36mconst[39m reco
+veryMessage [33m=[39m
+ lang [33m===[39m [3
+2m'ru'[39m
+ [90m     |[39m      
+                       
+        [31m[1m^[22m
+[39m
+ [90m 109 |[39m      
+           [33m?[39m 
+[32m`ЁЯФС ╨Т╨░╤И╨╕ ╨┤╨
+░╨╜╨╜╤Л╨╡ ╨┤╨╗╤П ╨▓╤Е╨╛
+╨┤╨░ ╨▓╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓
+╨╗╨╡╨╜╤Л!\n\n**╨Э╨╛╨▓╤Л
+╨╣ ╨┐╨░╤А╨╛╨╗╤М:** \`${
+newPassword}\`\n\n╨Я╨╛╨
+╢╨░╨╗╤Г╨╣╤Б╤В╨░, ╨╕╨╖╨╝
+╨╡╨╜╨╕╤В╨╡ ╤Н╤В╨╛╤В ╨┐╨
+░╤А╨╛╨╗╤М ╨┐╨╛╤Б╨╗╨╡ ╨▓
+╤Е╨╛╨┤╨░ ╨▓ ╨╗╨╕╤З╨╜╤Л╨
+╣ ╨║╨░╨▒╨╕╨╜╨╡╤В ╨┤╨╗╤П
+ ╨╛╨▒╨╡╤Б╨┐╨╡╤З╨╡╨╜╨╕╤П
+ ╨▒╨╡╨╖╨╛╨┐╨░╤Б╨╜╨╛╤Б╤В
+╨╕.`[39m
+ [90m 110 |[39m      
+           [33m:[39m 
+[32m`ЁЯФС Sizning kiri
+sh ma'lumotlaringiz tik
+landi!\n\n**Yangi parol
+ingiz:** \`${newPasswor
+d}\`\n\nIltimos, xavfsi
+zlikni ta'minlash uchun
+ shaxshiy kabinetingizg
+a kirganingizdan so'ng 
+parolni o'zgartirishni 
+unutmang.`[39m
+ [90m 111 |[39m[0m
+Next.js build worker ex
+ited with code: 1 and s
+ignal: null

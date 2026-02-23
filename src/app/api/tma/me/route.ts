@@ -30,6 +30,9 @@ export async function GET() {
                     }
                 },
                 subscriptions: true,
+                purchases: {
+                    where: { status: 'PAID' }
+                },
                 enhancedProgress: {
                     take: 5,
                     orderBy: { updatedAt: 'desc' },
@@ -55,6 +58,7 @@ export async function GET() {
                 phone: user.phone,
                 profile: user.profile,
                 subscriptions: user.subscriptions,
+                purchases: user.purchases,
                 recentProgress: user.enhancedProgress
             }
         });

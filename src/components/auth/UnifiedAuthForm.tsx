@@ -11,6 +11,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
+import { Eye, EyeOff } from "lucide-react"
 
 const loginSchema = z.object({
     login: z.string().min(3, "Login is too short"),
@@ -39,6 +40,8 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
     const [mode, setMode] = useState<'login' | 'register'>(initialMode)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [showLoginPassword, setShowLoginPassword] = useState(false)
+    const [showRegisterPassword, setShowRegisterPassword] = useState(false)
 
     const loginForm = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
@@ -67,6 +70,10 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
             })
             const result = await res.json()
             if (!result.success) throw new Error(result.error || "Login failed")
+            if (result.forcePasswordChange) {
+                window.location.href = `/${lang}/change-password`
+                return
+            }
             window.location.href = `/${lang}/account`
         } catch (err: any) {
             setError(err.message)
@@ -159,15 +166,25 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
                                     {lang === 'uz' ? "Parolni unutdingizmi?" : "Забыли пароль?"}
                                 </a>
                             </div>
-                            <Input
-                                {...loginForm.register("password")}
-                                type="password"
-                                placeholder="******"
-                                error={!!loginForm.formState.errors.password}
-                                errorMessage={loginForm.formState.errors.password?.message}
-                                id="login-password"
-                                className="rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6"
-                            />
+                            <div className="relative">
+                                <Input
+                                    {...loginForm.register("password")}
+                                    type={showLoginPassword ? "text" : "password"}
+                                    placeholder="******"
+                                    error={!!loginForm.formState.errors.password}
+                                    errorMessage={loginForm.formState.errors.password?.message}
+                                    id="login-password"
+                                    className="rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6 pr-12"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--primary)]/40 hover:text-[var(--primary)] transition-colors p-1"
+                                    aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
+                            </div>
                         </div>
                         <Button type="submit" disabled={loading} className="w-full py-6 rounded-2xl bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white text-[11px] font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 active:scale-95 transition-all">
                             {loading ? (
@@ -227,15 +244,25 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)]/40 ml-4">Parol</label>
-                            <Input
-                                {...registerForm.register("password")}
-                                type="password"
-                                placeholder="******"
-                                error={!!registerForm.formState.errors.password}
-                                errorMessage={registerForm.formState.errors.password?.message}
-                                id="register-password"
-                                className="rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6"
-                            />
+                            <div className="relative">
+                                <Input
+                                    {...registerForm.register("password")}
+                                    type={showRegisterPassword ? "text" : "password"}
+                                    placeholder="******"
+                                    error={!!registerForm.formState.errors.password}
+                                    errorMessage={registerForm.formState.errors.password?.message}
+                                    id="register-password"
+                                    className="rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6 pr-12"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--primary)]/40 hover:text-[var(--primary)] transition-colors p-1"
+                                    aria-label={showRegisterPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showRegisterPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
+                            </div>
                         </div>
                         <Button type="submit" disabled={loading} className="w-full py-6 rounded-2xl bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white text-[11px] font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 active:scale-95 transition-all">
                             {loading ? (

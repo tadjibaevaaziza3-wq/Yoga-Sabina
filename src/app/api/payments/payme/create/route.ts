@@ -10,7 +10,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
         }
 
-        const { courseId, amount, type, provider } = await request.json()
+        const { courseId, amount, type, provider, couponId } = await request.json()
 
         // Sync/Find user in Prisma
         let dbUser = await prisma.user.findUnique({ where: { id: user.id } })
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
             dbUser = await prisma.user.create({
                 data: {
                     id: user.id,
-                    email: user.email,
+                    email: user.email || '',
                     role: 'USER'
                 }
             })
@@ -32,13 +32,14 @@ export async function POST(request: Request) {
                 userId: user.id,
                 courseId: courseId,
                 amount: amount,
+                couponId: couponId,
                 status: 'PENDING',
                 provider: provider.toUpperCase()
             }
         })
 
         // Generate URL
-        const amountInTiyn = amount * 100
+        const amountInTiyn = Math.round(Number(amount) * 100)
         const paymentUrl = await generatePaymeUrl(amountInTiyn, {
             order_id: pendingPurchase.id
         })

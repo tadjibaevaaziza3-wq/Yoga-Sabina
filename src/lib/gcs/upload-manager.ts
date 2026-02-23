@@ -5,21 +5,21 @@ import { storage } from './config';
  * This uses a resumable upload session for better reliability with large videos.
  */
 export async function getUploadUrl(fileName: string, contentType: string) {
-    // Use the main bucket name from env, or fallback to the one user created
     const bucketName = process.env.GCS_BUCKET_NAME || 'antigravity-videos-aziza';
     const bucket = storage.bucket(bucketName);
     const file = bucket.file(fileName);
 
-    // Generate a signed URL for a resumable upload
-    // This does NOT check if the bucket exists, which is good for performance and permission handling
     const [url] = await file.getSignedUrl({
         version: 'v4',
         action: 'write',
-        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+        expires: Date.now() + 15 * 60 * 1000,
         contentType,
     });
 
-    return url;
+    return {
+        url,
+        publicUrl: `https://storage.googleapis.com/${bucketName}/${fileName}`
+    };
 }
 
 /**

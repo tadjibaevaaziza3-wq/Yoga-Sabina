@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import DailyCheckInModal from '@/components/tma/DailyCheckInModal';
 import StreakWidget from '@/components/tma/gamification/StreakWidget';
 import AchievementsList from '@/components/tma/gamification/AchievementsList';
-import StudentChat from '@/components/tma/StudentChat';
+
 
 interface UserDashboardClientProps {
     userData: any;
@@ -56,15 +56,7 @@ export default function UserDashboardClient({ userData, lang }: UserDashboardCli
                 </div>
             </section>
 
-            {/* Community Section */}
-            <section className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h4 className="text-[11px] font-bold uppercase tracking-[0.4em] text-[var(--foreground)] opacity-60">
-                        {lang === 'uz' ? "Talabalar jamiyati" : "Сообщество студентов"}
-                    </h4>
-                </div>
-                <StudentChat />
-            </section>
+
         </div>
     );
 }

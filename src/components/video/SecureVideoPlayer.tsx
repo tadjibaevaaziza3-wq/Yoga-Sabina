@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, Shield } from "lucide-react"
+import OTPVerificationModal from "./OTPVerificationModal"
 
 interface SecureVideoPlayerProps {
     videoUrl: string
@@ -10,9 +11,11 @@ interface SecureVideoPlayerProps {
     userPhone?: string
     courseTitle: string
     lessonId?: string
+    requireOTP?: boolean
+    lang?: string
 }
 
-export function SecureVideoPlayer({ videoUrl, userId, userPhone, courseTitle, lessonId }: SecureVideoPlayerProps) {
+export function SecureVideoPlayer({ videoUrl, userId, userPhone, courseTitle, lessonId, requireOTP = false, lang = 'uz' }: SecureVideoPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [isMuted, setIsMuted] = useState(false)
@@ -23,6 +26,37 @@ export function SecureVideoPlayer({ videoUrl, userId, userPhone, courseTitle, le
     const [signedSrc, setSignedSrc] = useState<string>("")
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+
+    // OTP state
+    const [otpVerified, setOtpVerified] = useState(!requireOTP)
+    const [showOTPModal, setShowOTPModal] = useState(false)
+
+    // Check for existing OTP session on mount
+    useEffect(() => {
+        if (!requireOTP) return
+        const sessionKey = `otp_session_${lessonId || 'global'}`
+        const stored = sessionStorage.getItem(sessionKey)
+        if (stored) {
+            try {
+                const session = JSON.parse(atob(stored))
+                if (session.expiresAt > Date.now()) {
+                    setOtpVerified(true)
+                    return
+                }
+            } catch { }
+            sessionStorage.removeItem(sessionKey)
+        }
+        setShowOTPModal(true)
+    }, [requireOTP, lessonId])
+
+    const handleOTPVerified = (sessionToken: string) => {
+        setOtpVerified(true)
+        setShowOTPModal(false)
+        if (sessionToken) {
+            const sessionKey = `otp_session_${lessonId || 'global'}`
+            sessionStorage.setItem(sessionKey, sessionToken)
+        }
+    }
 
     // Watermark State (Moving Position)
     const [watermarkPos, setWatermarkPos] = useState({ x: 10, y: 10 })
@@ -100,6 +134,32 @@ export function SecureVideoPlayer({ videoUrl, userId, userPhone, courseTitle, le
             const p = (videoRef.current.currentTime / videoRef.current.duration) * 100
             setProgress(p)
         }
+    }
+
+    if (!otpVerified) {
+        return (
+            <>
+                <div className="relative w-full aspect-video bg-black rounded-[2rem] overflow-hidden flex items-center justify-center">
+                    <div className="text-center">
+                        <Shield className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                        <p className="text-white/40 text-sm font-bold">{lang === 'ru' ? 'Требуется верификация' : 'Tasdiqlash kerak'}</p>
+                        <button
+                            onClick={() => setShowOTPModal(true)}
+                            className="mt-4 px-6 py-3 bg-[var(--primary)] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[var(--primary)]/90 transition"
+                        >
+                            {lang === 'ru' ? 'Подтвердить' : 'Tasdiqlash'}
+                        </button>
+                    </div>
+                </div>
+                <OTPVerificationModal
+                    isOpen={showOTPModal}
+                    onVerified={handleOTPVerified}
+                    onClose={() => setShowOTPModal(false)}
+                    lessonId={lessonId}
+                    lang={lang}
+                />
+            </>
+        )
     }
 
     if (isLoading) {

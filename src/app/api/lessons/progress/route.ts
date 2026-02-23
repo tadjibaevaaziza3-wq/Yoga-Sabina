@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createServerClient } from '@/lib/supabase/server';
+import { getLocalUser } from '@/lib/auth/server';
 import { checkRateLimit, getResetTime } from '@/lib/security/rate-limit';
 
 
@@ -16,10 +17,17 @@ export async function GET(request: NextRequest) {
             }, { status: 429 })
         }
 
+        // Auth: try Supabase first, fallback to local cookie auth
         const supabase = await createServerClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const { data: { user: supaUser }, error: authError } = await supabase.auth.getUser();
+        let userId: string | null = supaUser?.id || null;
 
-        if (authError || !user) {
+        if (authError || !userId) {
+            const localUser = await getLocalUser();
+            userId = localUser?.id || null;
+        }
+
+        if (!userId) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -33,7 +41,7 @@ export async function GET(request: NextRequest) {
         const progress = await prisma.enhancedVideoProgress.findUnique({
             where: {
                 userId_lessonId: {
-                    userId: user.id,
+                    userId,
                     lessonId: lessonId,
                 },
             },
@@ -58,10 +66,17 @@ export async function POST(request: NextRequest) {
             }, { status: 429 })
         }
 
+        // Auth: try Supabase first, fallback to local cookie auth
         const supabase = await createServerClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const { data: { user: supaUser }, error: authError } = await supabase.auth.getUser();
+        let userId: string | null = supaUser?.id || null;
 
-        if (authError || !user) {
+        if (authError || !userId) {
+            const localUser = await getLocalUser();
+            userId = localUser?.id || null;
+        }
+
+        if (!userId) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -75,7 +90,7 @@ export async function POST(request: NextRequest) {
         const progress = await prisma.enhancedVideoProgress.upsert({
             where: {
                 userId_lessonId: {
-                    userId: user.id,
+                    userId,
                     lessonId: lessonId,
                 },
             },
@@ -88,7 +103,7 @@ export async function POST(request: NextRequest) {
                 lastWatched: new Date(),
             },
             create: {
-                userId: user.id,
+                userId,
                 lessonId: lessonId,
                 progress: Math.floor(watchedSeconds),
                 duration: Math.floor(totalSeconds),
@@ -101,8 +116,8 @@ export async function POST(request: NextRequest) {
         // GAMIFICATION HOOK
         try {
             const { GamificationService } = await import('@/lib/gamification/gamification-service');
-            await GamificationService.updateStreaks(user.id);
-            const newAchievements = await GamificationService.checkAchievements(user.id);
+            await GamificationService.updateStreaks(userId);
+            const newAchievements = await GamificationService.checkAchievements(userId);
 
             return NextResponse.json({ success: true, progress, newAchievements });
         } catch (gError) {

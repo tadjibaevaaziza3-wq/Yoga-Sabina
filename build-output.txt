@@ -1,0 +1,245 @@
+﻿тЦ▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+node.exe : тЪа The "mid
+dleware" file conventio
+n is deprecated. Please
+ use "proxy" instead. L
+earn more: https://next
+js.org/docs/messages/mi
+ddleware-to-proxy
+строка:1 знак:1
++ & "C:\Program Files\n
+odejs/node.exe" "C:\Pro
+gram Files\nodejs/node_
+mo ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (тЪа The "midd   
+ le...leware-to-pro    
+xy:String) [], Rem    o
+teException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+  Creating an optimized production build ...
+тЬУ Compiled successfully in 28.7s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+GEMINI_API_KEY is not s
+et in environment varia
+bles.
+[GCS Config] Runtime raw key length: 1704
+[GCS Config] Runtime raw key sample: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w"
+[GCS Config] Parsed key length: 1703
+[GCS Config] Runtime raw key length: 1704
+[GCS Config] Runtime raw key sample: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w"
+[GCS Config] Parsed key length: 1703
+GEMINI_API_KEY is not s
+et in environment varia
+bles.
+GEMINI_API_KEY is not s
+et in environment varia
+bles.
+GEMINI_API_KEY is not s
+et in environment varia
+bles.
+GEMINI_API_KEY is not s
+et in environment varia
+bles.
+[GCS Config] Runtime raw key length: 1704
+[GCS Config] Runtime raw key sample: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w"
+[GCS Config] Parsed key length: 1703
+[GCS Config] Runtime raw key length: 1704
+[GCS Config] Runtime raw key sample: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w"
+[GCS Config] Parsed key length: 1703
+[GCS Config] Runtime raw key length: 1704
+[GCS Config] Runtime raw key sample: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w"
+[GCS Config] Parsed key length: 1703
+  Generating static pages using 7 workers (0/94) ...
+  Generating static pages using 7 workers (23/94) 
+[GCS Config] Runtime raw key length: 1704
+[GCS Config] Runtime raw key sample: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w"
+[GCS Config] Parsed key length: 1703
+  Generating static pages using 7 workers (46/94) 
+[GCS Config] Runtime raw key length: 1704
+[GCS Config] Runtime raw key sample: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w"
+[GCS Config] Parsed key length: 1703
+  Generating static pages using 7 workers (70/94) 
+prisma:query SELECT "public"."Course"."id", "public"."Course"."updatedAt", "public"."Course"."type"::text FROM "public"."Course" WHERE "public"."Course"."isActive" = $1 OFFSET $2
+тЬУ Generating static pages using 7 workers (94/94) in 2.0s
+  Finalizing page optimization ...
+
+Route (app)
+тФМ тЧЛ /_not-found
+тФЬ ╞Т /[lang]
+тФЬ ╞Т /[lang]/about
+тФЬ ╞Т /[lang]/account
+тФЬ ╞Т /[lang]/admin
+тФЬ ╞Т /[lang]/admin/chat
+тФЬ ╞Т /[lang]/admin/consultations
+тФЬ ╞Т /[lang]/admin/content/articles
+тФЬ ╞Т /[lang]/admin/content/posts
+тФЬ ╞Т /[lang]/admin/courses
+тФЬ ╞Т /[lang]/admin/courses/[id]
+тФЬ ╞Т /[lang]/admin/courses/[id]/lessons
+тФЬ ╞Т /[lang]/admin/courses/new
+тФЬ ╞Т /[lang]/admin/login
+тФЬ ╞Т /[lang]/admin/marketing/broadcasts
+тФЬ ╞Т /[lang]/admin/marketing/triggers
+тФЬ ╞Т /[lang]/admin/tgu-users/[id]
+тФЬ ╞Т /[lang]/chat
+тФЬ ╞Т /[lang]/checkout
+тФЬ ╞Т /[lang]/consultations
+тФЬ ╞Т /[lang]/consultations/[id]
+тФЬ ╞Т /[lang]/consultations/[id]/success
+тФЬ ╞Т /[lang]/courses
+тФЬ ╞Т /[lang]/courses/[id]
+тФЬ ╞Т /[lang]/courses/[id]/lesson/[lessonId]
+тФЬ ╞Т /[lang]/feedback
+тФЬ ╞Т /[lang]/learn/[id]
+тФЬ ╞Т /[lang]/login
+тФЬ ╞Т /[lang]/my-courses
+тФЬ ╞Т /[lang]/offline-courses
+тФЬ ╞Т /[lang]/online-courses
+тФЬ ╞Т /[lang]/register
+тФЬ ╞Т /[lang]/tma
+тФЬ ╞Т /[lang]/tma/auth
+тФЬ ╞Т /[lang]/tma/chat
+тФЬ ╞Т /[lang]/tma/courses
+тФЬ ╞Т /[lang]/tma/courses/[id]
+тФЬ ╞Т /[lang]/tma/dashboard
+тФЬ ╞Т /[lang]/tma/player/[id]
+тФЬ ╞Т /[lang]/tma/profile
+тФЬ ╞Т /[lang]/tma/register
+тФЬ ╞Т /api/admin/ai/train
+тФЬ ╞Т /api/admin/analytics
+тФЬ ╞Т /api/admin/analytics/engagement
+тФЬ ╞Т /api/admin/assets/upload
+тФЬ ╞Т /api/admin/assets/upload-url
+тФЬ ╞Т /api/admin/bot/broadcast
+тФЬ ╞Т /api/admin/broadcast
+тФЬ ╞Т /api/admin/chat
+тФЬ ╞Т /api/admin/chat/[courseId]
+тФЬ ╞Т /api/admin/chat/rooms
+тФЬ ╞Т /api/admin/consultations
+тФЬ ╞Т /api/admin/consultations/[id]
+тФЬ ╞Т /api/admin/consultations/[id]/status
+тФЬ ╞Т /api/admin/content/articles
+тФЬ ╞Т /api/admin/content/posts
+тФЬ ╞Т /api/admin/coupons
+тФЬ ╞Т /api/admin/coupons/[id]
+тФЬ ╞Т /api/admin/courses
+тФЬ ╞Т /api/admin/courses/[id]
+тФЬ ╞Т /api/admin/courses/[id]/lessons
+тФЬ ╞Т /api/admin/courses/[id]/lessons/[lessonId]
+тФЬ ╞Т /api/admin/engagement-stats
+тФЬ ╞Т /api/admin/faq
+тФЬ ╞Т /api/admin/feedback
+тФЬ ╞Т /api/admin/feedback/[id]
+тФЬ ╞Т /api/admin/leads
+тФЬ ╞Т /api/admin/leads/broadcast
+тФЬ ╞Т /api/admin/leads/export
+тФЬ ╞Т /api/admin/lessons
+тФЬ ╞Т /api/admin/lessons/[id]
+тФЬ ╞Т /api/admin/login
+тФЬ ╞Т /api/admin/marketing/triggers
+тФЬ ╞Т /api/admin/notifications
+тФЬ ╞Т /api/admin/orders
+тФЬ ╞Т /api/admin/purchases
+тФЬ ╞Т /api/admin/reminders/trigger
+тФЬ ╞Т /api/admin/seed
+тФЬ ╞Т /api/admin/settings
+тФЬ ╞Т /api/admin/stats
+тФЬ ╞Т /api/admin/subscriptions
+тФЬ ╞Т /api/admin/subscriptions/[id]
+тФЬ ╞Т /api/admin/tgu-users
+тФЬ ╞Т /api/admin/tgu-users/[id]
+тФЬ ╞Т /api/admin/translate
+тФЬ ╞Т /api/admin/upload
+тФЬ ╞Т /api/admin/users
+тФЬ ╞Т /api/admin/videos/upload-url
+тФЬ ╞Т /api/ai/chat
+тФЬ ╞Т /api/ai/check-in
+тФЬ ╞Т /api/analytics/event-logs
+тФЬ ╞Т /api/auth/device-binding
+тФЬ ╞Т /api/auth/login
+тФЬ ╞Т /api/auth/logout
+тФЬ ╞Т /api/auth/me
+тФЬ ╞Т /api/auth/register
+тФЬ ╞Т /api/auth/stream
+тФЬ ╞Т /api/auth/telegram
+тФЬ ╞Т /api/checkout/config
+тФЬ ╞Т /api/checkout/validate-coupon
+тФЬ ╞Т /api/consultations
+тФЬ ╞Т /api/consultations/[id]
+тФЬ ╞Т /api/courses
+тФЬ ╞Т /api/courses/[courseId]
+тФЬ ╞Т /api/courses/[courseId]/chat
+тФЬ ╞Т /api/courses/[courseId]/chat/[messageId]
+тФЬ ╞Т /api/cron/subscription-check
+тФЬ ╞Т /api/cron/triggers
+тФЬ ╞Т /api/feedback
+тФЬ ╞Т /api/lessons/[lessonId]/comments
+тФЬ ╞Т /api/lessons/[lessonId]/comments/[commentId]
+тФЬ ╞Т /api/lessons/[lessonId]/comments/[commentId]/like
+тФЬ ╞Т /api/lessons/[lessonId]/favorite
+тФЬ ╞Т /api/lessons/[lessonId]/like
+тФЬ ╞Т /api/lessons/[lessonId]/progress
+тФЬ ╞Т /api/lessons/progress
+тФЬ ╞Т /api/payment/mock
+тФЬ ╞Т /api/payments/click/checkout
+тФЬ ╞Т /api/payments/click/create
+тФЬ ╞Т /api/payments/click/webhook
+тФЬ ╞Т /api/payments/manual/create
+тФЬ ╞Т /api/payments/mock/create
+тФЬ ╞Т /api/payments/mock/verify
+тФЬ ╞Т /api/payments/payme/checkout
+тФЬ ╞Т /api/payments/payme/create
+тФЬ ╞Т /api/payments/payme/webhook
+тФЬ ╞Т /api/payments/shopify/webhook
+тФЬ ╞Т /api/settings/public
+тФЬ ╞Т /api/social/comment
+тФЬ ╞Т /api/social/feedback
+тФЬ ╞Т /api/social/like
+тФЬ ╞Т /api/telegram/orders
+тФЬ ╞Т /api/telegram/webhook
+тФЬ ╞Т /api/tma/courses
+тФЬ ╞Т /api/tma/courses/[id]
+тФЬ ╞Т /api/tma/log-activity
+тФЬ ╞Т /api/tma/me
+тФЬ ╞Т /api/tma/notifications
+тФЬ ╞Т /api/tma/register
+тФЬ ╞Т /api/user/accept-agreement
+тФЬ ╞Т /api/user/agreement
+тФЬ ╞Т /api/user/chat
+тФЬ ╞Т /api/user/chat/[courseId]
+тФЬ ╞Т /api/user/chat/rooms
+тФЬ ╞Т /api/user/kpi
+тФЬ ╞Т /api/user/my-courses
+тФЬ ╞Т /api/user/notifications
+тФЬ ╞Т /api/user/password
+тФЬ ╞Т /api/user/profile
+тФЬ ╞Т /api/user/recommendations
+тФЬ ╞Т /api/video/get-signed-url
+тФЬ ╞Т /api/video/otp
+тФЬ ╞Т /api/videos/signed-url/[id]
+тФЬ тЧЛ /manifest.webmanifest
+тФЬ тЧЛ /robots.txt
+тФФ тЧЛ /sitemap.xml
+
+Route (pages)
+тФА ╞Т /api/socket
+
+╞Т Proxy (Middleware)
+
+тЧЛ  (Static)   prerendered as static content
+╞Т  (Dynamic)  server-rendered on demand
+

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 import { cookies } from 'next/headers'
+import bcrypt from 'bcryptjs'
 
 // In a real app, this would be in .env
 const AUTH_SECRET = process.env.AUTH_SECRET || 'baxtli-men-secret-key-2024'
@@ -86,7 +87,18 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
         }
 
-        if (hashedPassword !== user.password) {
+        // Check if user is blocked
+        if (user.isBlocked) {
+            return NextResponse.json({ success: false, error: 'Account is blocked. Contact admin.' }, { status: 403 })
+        }
+
+        // Check password — support both SHA-256 (legacy) and bcrypt (admin-created)
+        const sha256Hash = crypto.createHash('sha256').update(password).digest('hex')
+        let passwordValid = sha256Hash === user.password
+        if (!passwordValid && user.password.startsWith('$2')) {
+            passwordValid = await bcrypt.compare(password, user.password)
+        }
+        if (!passwordValid) {
             return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
         }
 
@@ -114,7 +126,11 @@ export async function POST(request: Request) {
 
         // Don't send password back
         const { password: _, ...userWithoutPassword } = user
-        return NextResponse.json({ success: true, user: userWithoutPassword })
+        return NextResponse.json({
+            success: true,
+            user: userWithoutPassword,
+            forcePasswordChange: user.forcePasswordChange || false,
+        })
     } catch (error: any) {
         return NextResponse.json(
             { success: false, error: error.message || 'Login failed' },

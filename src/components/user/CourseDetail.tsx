@@ -142,7 +142,7 @@ export default function CourseDetail({ courseId, lang = 'uz', userId, userEmail 
     };
 
     const handlePurchase = () => {
-        router.push(`/${lang}/checkout/${courseId}`);
+        router.push(`/${lang}/checkout?id=${courseId}&type=course`);
     };
 
     const getText = (uz: string, ru?: string) => {

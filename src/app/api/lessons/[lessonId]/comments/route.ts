@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createServerClient } from '@/lib/supabase/server'
+import { getLocalUser } from '@/lib/auth/server'
 
 // GET - Fetch comments for a lesson
 export async function GET(
@@ -9,8 +9,7 @@ export async function GET(
 ) {
     try {
         const { lessonId } = await params
-        const supabase = await createServerClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const user = await getLocalUser()
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -70,8 +69,7 @@ export async function POST(
             return NextResponse.json({ error: 'Comment cannot be empty' }, { status: 400 })
         }
 
-        const supabase = await createServerClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const user = await getLocalUser()
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -87,17 +85,26 @@ export async function POST(
             return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
         }
 
-        const subscription = await prisma.subscription.findFirst({
-            where: {
-                userId: user.id,
-                courseId: lesson.courseId,
-                status: 'ACTIVE',
-                endsAt: { gt: new Date() }
-            }
-        })
+        const [subscription, purchase] = await Promise.all([
+            prisma.subscription.findFirst({
+                where: {
+                    userId: user.id,
+                    courseId: lesson.courseId,
+                    status: 'ACTIVE',
+                    endsAt: { gt: new Date() }
+                }
+            }),
+            prisma.purchase.findFirst({
+                where: {
+                    userId: user.id,
+                    courseId: lesson.courseId,
+                    status: 'PAID'
+                }
+            })
+        ])
 
-        if (!subscription) {
-            return NextResponse.json({ error: 'No active subscription' }, { status: 403 })
+        if (!subscription && !purchase && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+            return NextResponse.json({ error: 'No active subscription or purchase' }, { status: 403 })
         }
 
         // Create comment
