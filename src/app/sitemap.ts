@@ -1,20 +1,12 @@
 import { MetadataRoute } from 'next';
-import { prisma } from '@/lib/prisma';
+
+// Force dynamic to prevent build-time static generation (requires DB)
+export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://baxtli-men.uz';
 
-    // Fetch all active courses
-    const courses = await prisma.course.findMany({
-        where: { isActive: true },
-        select: {
-            id: true,
-            updatedAt: true,
-            type: true,
-        },
-    });
-
-    // Static pages
+    // Static pages (always available)
     const staticPages: MetadataRoute.Sitemap = [
         {
             url: baseUrl,
@@ -84,21 +76,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
     ];
 
-    // Dynamic course pages
-    const coursePages: MetadataRoute.Sitemap = courses.flatMap((course) => [
-        {
-            url: `${baseUrl}/uz/courses/${course.id}`,
-            lastModified: course.updatedAt,
-            changeFrequency: 'weekly' as const,
-            priority: 0.8,
-        },
-        {
-            url: `${baseUrl}/ru/courses/${course.id}`,
-            lastModified: course.updatedAt,
-            changeFrequency: 'weekly' as const,
-            priority: 0.8,
-        },
-    ]);
+    // Dynamic course pages — gracefully degrade if DB is unavailable
+    let coursePages: MetadataRoute.Sitemap = [];
+    try {
+        const { prisma } = await import('@/lib/prisma');
+        const courses = await prisma.course.findMany({
+            where: { isActive: true },
+            select: {
+                id: true,
+                updatedAt: true,
+                type: true,
+            },
+        });
+
+        coursePages = courses.flatMap((course) => [
+            {
+                url: `${baseUrl}/uz/courses/${course.id}`,
+                lastModified: course.updatedAt,
+                changeFrequency: 'weekly' as const,
+                priority: 0.8,
+            },
+            {
+                url: `${baseUrl}/ru/courses/${course.id}`,
+                lastModified: course.updatedAt,
+                changeFrequency: 'weekly' as const,
+                priority: 0.8,
+            },
+        ]);
+    } catch (e) {
+        console.warn('[Sitemap] Could not fetch courses from DB, returning static pages only:', (e as Error).message);
+    }
 
     return [...staticPages, ...coursePages];
 }
