@@ -1,11 +1,12 @@
 "use client"
 
-import { Admin, Resource, Layout, AppBar, CustomRoutes } from 'react-admin';
+import { Admin, Resource, Layout, AppBar, CustomRoutes, Menu } from 'react-admin';
 import { lightGreenTheme } from '@/lib/admin/theme';
 import { authProvider } from '@/lib/admin/authProvider';
 import { dataProvider } from '@/lib/admin/dataProvider';
 import { i18nProvider } from '@/lib/admin/i18nProvider';
 import { Box, Typography } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 import users from '@/components/admin/users';
 import courses from '@/components/admin/courses';
@@ -20,7 +21,9 @@ import automations from '@/components/admin/automations';
 import { AiAnalytics } from '@/components/admin/automations';
 import feedbacks from '@/components/admin/feedback';
 import { Dashboard } from '@/components/admin/dashboard/Dashboard';
+import { SystemSettings } from '@/components/admin/SystemSettings';
 import { Route } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Custom AppBar — light green branding
 const CustomAppBar = (props: any) => (
@@ -37,8 +40,27 @@ const CustomAppBar = (props: any) => (
 );
 
 const CustomLayout = (props: any) => (
-    <Layout {...props} appBar={CustomAppBar} />
+    <Layout {...props} appBar={CustomAppBar} menu={CustomMenu} />
 );
+
+// Custom Menu with Settings link
+const CustomMenu = (props: any) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const isSettingsActive = location.pathname.includes('/system-settings');
+    return (
+        <Menu {...props}>
+            <Menu.ResourceItems />
+            <Menu.Item
+                to="/system-settings"
+                primaryText="⚙️ Sozlamalar"
+                leftIcon={<SettingsIcon />}
+                onClick={() => navigate('/system-settings')}
+                selected={isSettingsActive}
+            />
+        </Menu>
+    );
+};
 
 export const ReactAdminApp = () => (
     <Admin
@@ -69,6 +91,7 @@ export const ReactAdminApp = () => (
         <Resource name="subscriptions" />
         <CustomRoutes>
             <Route path="/ai-analytics" element={<AiAnalytics />} />
+            <Route path="/system-settings" element={<SystemSettings />} />
         </CustomRoutes>
     </Admin>
 );

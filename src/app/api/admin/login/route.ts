@@ -67,13 +67,14 @@ export async function POST(req: Request) {
         }
 
         // Create session
-        await createAdminSession(admin.id)
+        const token = await createAdminSession(admin.id)
 
         // Log successful login
         await logAdminAction(admin.id, 'LOGIN_SUCCESS', { ipAddress: ip })
 
         return NextResponse.json({
             success: true,
+            token,
             admin: {
                 id: admin.id,
                 username: admin.username,

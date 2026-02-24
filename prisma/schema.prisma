@@ -237,6 +237,9 @@ model Course {
   region             Region              @default(GLOBAL)
   language           String              @default("uz") // "uz", "ru", "en"
   isActive           Boolean             @default(true)
+  showInApp          Boolean             @default(true)
+  showInTma          Boolean             @default(true)
+  bannerImage        String?
 
   // Offline specific
   location   String?

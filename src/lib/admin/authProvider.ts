@@ -13,10 +13,14 @@ export const authProvider: AuthProvider = {
             throw new Error('Invalid credentials');
         }
 
-        const { success, error } = await response.json();
+        const { success, error, token } = await response.json();
 
         if (!success) {
             throw new Error(error || 'Login failed');
+        }
+
+        if (token) {
+            localStorage.setItem('admin_token', token);
         }
 
         return Promise.resolve();

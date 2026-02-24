@@ -73,10 +73,21 @@ export const Dashboard = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/admin/analytics')
-            .then(r => r.json())
+        const token = localStorage.getItem('admin_token');
+        fetch('/api/admin/analytics', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            credentials: 'include',
+        })
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
             .then(d => { setData(d); setLoading(false); })
-            .catch(() => setLoading(false));
+            .catch((err) => {
+                console.error('Dashboard analytics error:', err);
+                setData({ error: err.message || 'Unknown error' });
+                setLoading(false);
+            });
     }, []);
 
     if (loading) {

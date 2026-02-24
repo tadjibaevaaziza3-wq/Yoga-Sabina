@@ -71,6 +71,20 @@ export const ConsultationList = () => (
                 )}
             />
             <DateField source="createdAt" label="Sana" />
+            <FunctionField
+                label="App"
+                render={(record: any) => (
+                    <Chip label={record?.showInApp !== false ? '✓' : '✗'} size="small"
+                        sx={{ bgcolor: record?.showInApp !== false ? 'rgba(17,69,57,0.08)' : 'rgba(200,50,50,0.08)', color: record?.showInApp !== false ? '#114539' : '#dc2626', fontWeight: 600, minWidth: 32 }} />
+                )}
+            />
+            <FunctionField
+                label="TMA"
+                render={(record: any) => (
+                    <Chip label={record?.showInTma !== false ? '✓' : '✗'} size="small"
+                        sx={{ bgcolor: record?.showInTma !== false ? 'rgba(17,69,57,0.08)' : 'rgba(200,50,50,0.08)', color: record?.showInTma !== false ? '#114539' : '#dc2626', fontWeight: 600, minWidth: 32 }} />
+                )}
+            />
             <ShowButton label="Ko'rish" />
             <EditButton label="Tahrirlash" />
         </Datagrid>
@@ -170,7 +184,10 @@ export const ConsultationEdit = () => (
                 <Typography variant="h5" sx={{ color: '#114539', fontWeight: 700, mb: 1 }}>Ko'rinish va rasm</Typography>
                 <Divider sx={{ mb: 3 }} />
                 <BooleanInput source="isActive" label="Foydalanuvchilarga ko'rsatish" />
+                <BooleanInput source="showInApp" label="Ilovada ko'rsatish (App)" defaultValue={true} />
+                <BooleanInput source="showInTma" label="TMA da ko'rsatish (Telegram Mini App)" defaultValue={true} />
                 <GcsImageInput source="coverImage" label="Muqova rasmi" bucket="assets" pathPrefix="consultations/covers" />
+                <GcsImageInput source="bannerImage" label="Banner rasmi (sahifa uchun)" bucket="assets" pathPrefix="consultations/banners" />
             </Box>
         </SimpleForm>
     </Edit>
@@ -225,7 +242,10 @@ export const ConsultationCreate = () => (
                 <Typography variant="h5" sx={{ color: '#114539', fontWeight: 700, mb: 1 }}>Ko'rinish va rasm</Typography>
                 <Divider sx={{ mb: 3 }} />
                 <BooleanInput source="isActive" label="Foydalanuvchilarga ko'rsatish" defaultValue={true} />
+                <BooleanInput source="showInApp" label="Ilovada ko'rsatish (App)" defaultValue={true} />
+                <BooleanInput source="showInTma" label="TMA da ko'rsatish (Telegram Mini App)" defaultValue={true} />
                 <GcsImageInput source="coverImage" label="Muqova rasmi" bucket="assets" pathPrefix="consultations/covers" />
+                <GcsImageInput source="bannerImage" label="Banner rasmi (sahifa uchun)" bucket="assets" pathPrefix="consultations/banners" />
             </Box>
         </SimpleForm>
     </Create>

@@ -6,10 +6,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminFromSession } from '@/lib/auth/admin-auth';
+import { getAdminFromRequest } from '@/lib/auth/admin-auth';
 
 export async function GET(request: NextRequest) {
-    const admin = await getAdminFromSession();
+    const admin = await getAdminFromRequest(request);
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const now = new Date();

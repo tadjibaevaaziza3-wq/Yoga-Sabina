@@ -28,6 +28,11 @@ export default function ConsultationsPage() {
     useEffect(() => {
         const fetchConsultations = async () => {
             try {
+                // Fetch banner setting
+                const bannerRes = await fetch('/api/settings/public?keys=BANNER_CONSULTATIONS');
+                const bannerData = await bannerRes.json().catch(() => ({}));
+                if (bannerData?.BANNER_CONSULTATIONS) setBannerUrl(bannerData.BANNER_CONSULTATIONS);
+
                 const res = await fetch('/api/consultations')
                 if (res.ok) {
                     const data = await res.json().catch(() => null)
