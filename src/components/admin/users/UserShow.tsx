@@ -250,6 +250,7 @@ const UserShowContent = () => {
                     userId: record.id,
                     phone: record.phone || record.email,
                     telegramId: record.telegramId || null,
+                    telegramUsername: record.telegramUsername || null,
                 })
             });
             const data = await res.json();

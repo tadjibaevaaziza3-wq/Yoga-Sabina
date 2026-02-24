@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
-import { sendTelegramMessage } from '@/lib/telegram-bot'
+import { sendTelegramMessage, resolveTelegramChatId } from '@/lib/telegram-bot'
 
 /**
  * User Password Reset via Phone Number
@@ -18,7 +18,7 @@ import { sendTelegramMessage } from '@/lib/telegram-bot'
  */
 export async function POST(request: Request) {
     try {
-        const { phone, telegramId: providedTelegramId, userId } = await request.json()
+        const { phone, telegramId: providedTelegramId, telegramUsername, userId } = await request.json()
 
         if (!phone && !userId) {
             return NextResponse.json({ success: false, error: 'Telefon raqam yoki foydalanuvchi ID kiritilishi kerak' }, { status: 400 })
@@ -49,8 +49,25 @@ export async function POST(request: Request) {
             })
         }
 
-        // Use telegramId from: provided param > user record
-        const telegramId = providedTelegramId || user.telegramId;
+        // Use telegramId from: provided param > user record > resolve from username
+        let telegramId = providedTelegramId || user.telegramId;
+
+        // If no telegramId but have username, try to resolve it
+        if (!telegramId) {
+            const tgUsername = telegramUsername || (user as any).telegramUsername;
+            if (tgUsername) {
+                const resolvedId = await resolveTelegramChatId(tgUsername);
+                if (resolvedId) {
+                    telegramId = resolvedId;
+                    // Save the resolved telegramId for future use
+                    await prisma.user.update({
+                        where: { id: user.id },
+                        data: { telegramId: resolvedId }
+                    })
+                    console.log(`✅ Resolved Telegram ID for ${tgUsername}: ${resolvedId}`);
+                }
+            }
+        }
 
         // Generate temporary password (6 random characters)
         const tempPassword = crypto.randomBytes(3).toString('hex') // e.g., "a3f2b1"

@@ -13,6 +13,36 @@ if (!BOT_TOKEN) {
 
 const API_BASE = `https://api.telegram.org/bot${BOT_TOKEN}`
 
+/**
+ * Try to resolve a Telegram username to a numeric chat_id
+ * Works only if the user has previously interacted with the bot
+ */
+export async function resolveTelegramChatId(username: string): Promise<string | null> {
+    if (!BOT_TOKEN || !username) return null
+
+    // Remove @ prefix if present
+    const cleanUsername = username.replace('@', '')
+
+    try {
+        const response = await fetch(`${API_BASE}/getChat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: `@${cleanUsername}` })
+        })
+
+        const data = await response.json()
+
+        if (data.ok && data.result?.id) {
+            return String(data.result.id)
+        }
+
+        return null
+    } catch (error) {
+        console.error('[Telegram Bot] Error resolving username:', error)
+        return null
+    }
+}
+
 interface TelegramResponse {
     ok: boolean
     result?: any
