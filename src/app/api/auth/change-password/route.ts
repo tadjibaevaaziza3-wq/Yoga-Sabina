@@ -11,10 +11,8 @@ export async function POST(request: Request) {
         const token = cookieStore.get('auth_token')?.value
         if (!token) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
 
-        const decoded = verifyToken(token) as any
-        if (!decoded) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
-
-        const userId = decoded.id || decoded.sub
+        const userId = verifyToken(token)
+        if (!userId) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
         const { newPassword } = await request.json()
 
         if (!newPassword || newPassword.length < 6) {
