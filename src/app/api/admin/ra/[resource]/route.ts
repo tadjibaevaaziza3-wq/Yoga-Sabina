@@ -42,8 +42,18 @@ function parseQuery(url: URL) {
             // or q for full-text search
             Object.keys(parsedFilter).forEach(key => {
                 if (key === 'q') {
-                    // Requires manual mapping per resource or generic search over common fields
-                    // For now handled manually per resource if needed
+                    // Multi-field search for users
+                    const searchTerm = parsedFilter[key];
+                    if (searchTerm && searchTerm.length > 0) {
+                        prismaWhere.OR = [
+                            { firstName: { contains: searchTerm, mode: 'insensitive' } },
+                            { lastName: { contains: searchTerm, mode: 'insensitive' } },
+                            { phone: { contains: searchTerm, mode: 'insensitive' } },
+                            { telegramUsername: { contains: searchTerm, mode: 'insensitive' } },
+                            { telegramId: { contains: searchTerm, mode: 'insensitive' } },
+                            { email: { contains: searchTerm, mode: 'insensitive' } },
+                        ];
+                    }
                 } else if (Array.isArray(parsedFilter[key])) {
                     prismaWhere[key] = { in: parsedFilter[key] };
                 } else if (typeof parsedFilter[key] === 'string' && parsedFilter[key].length > 0) {
@@ -111,6 +121,18 @@ export async function GET(
                     include: { course: { select: { id: true, title: true } } },
                     orderBy: { startsAt: 'desc' as const },
                 },
+                purchases: {
+                    select: {
+                        id: true,
+                        status: true,
+                        screenshotUrl: true,
+                        verifiedByAdmin: true,
+                        courseId: true,
+                        course: { select: { id: true, title: true } },
+                        createdAt: true,
+                    },
+                    orderBy: { createdAt: 'desc' as const },
+                },
             },
         };
 
@@ -144,14 +166,31 @@ export async function GET(
         // Post-process: compute derived subscription fields for users
         if (resource === 'users') {
             const now = new Date();
+            const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
             data = data.map((user: any) => {
                 const subs = user.subscriptions || [];
+                const purchases = user.purchases || [];
                 const activeSubs = subs.filter((s: any) => s.status === 'ACTIVE' && new Date(s.endsAt) > now);
                 const firstSub = subs.length > 0
                     ? subs.reduce((earliest: any, s: any) => new Date(s.startsAt) < new Date(earliest.startsAt) ? s : earliest)
                     : null;
 
-                // Build summary string: "CourseA (Faol), CourseB (Tugagan)"
+                // Latest active subscription dates
+                const latestActiveSub = activeSubs.length > 0
+                    ? activeSubs.reduce((latest: any, s: any) => new Date(s.endsAt) > new Date(latest.endsAt) ? s : latest)
+                    : null;
+
+                // Check if subscription is expiring within 3 days
+                const isExpiringSoon = latestActiveSub
+                    ? new Date(latestActiveSub.endsAt) <= threeDaysFromNow
+                    : false;
+
+                // Check for pending payment screenshots
+                const pendingPayments = purchases.filter(
+                    (p: any) => p.screenshotUrl && !p.verifiedByAdmin && p.status === 'PENDING'
+                );
+
+                // Build summary string
                 const summaryParts = subs.map((s: any) => {
                     const isActive = s.status === 'ACTIVE' && new Date(s.endsAt) > now;
                     const statusLabel = isActive ? 'Faol' : s.status === 'EXPIRED' ? 'Tugagan' : 'Bekor';
@@ -160,11 +199,19 @@ export async function GET(
 
                 return {
                     ...user,
-                    subscriptions: undefined, // Don't send raw subscriptions to list
+                    subscriptions: undefined,
+                    purchases: undefined,
                     totalSubscriptionCount: subs.length,
                     activeSubscriptionCount: activeSubs.length,
                     activeSubscriptionsSummary: summaryParts.join(', ') || '—',
                     firstSubscriptionDate: firstSub?.startsAt || null,
+                    // New fields
+                    subStartDate: latestActiveSub?.startsAt || null,
+                    subEndDate: latestActiveSub?.endsAt || null,
+                    isExpiringSoon,
+                    hasPendingPayment: pendingPayments.length > 0,
+                    pendingPaymentCount: pendingPayments.length,
+                    pendingPaymentCourse: pendingPayments[0]?.course?.title || null,
                 };
             });
         }
