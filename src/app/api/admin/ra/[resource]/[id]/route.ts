@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromSession } from "@/lib/auth/admin-auth";
+import { getAdminFromRequest } from "@/lib/auth/admin-auth";
 
 const resourceToModel: Record<string, keyof typeof prisma> = {
     users: 'user',
@@ -29,7 +29,7 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ resource: string, id: string }> }
 ) {
-    const admin = await getAdminFromSession();
+    const admin = await getAdminFromRequest(request);
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const p = await params;
@@ -69,7 +69,7 @@ export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ resource: string, id: string }> }
 ) {
-    const admin = await getAdminFromSession();
+    const admin = await getAdminFromRequest(request);
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const p = await params;
@@ -120,7 +120,7 @@ export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ resource: string, id: string }> }
 ) {
-    const admin = await getAdminFromSession();
+    const admin = await getAdminFromRequest(request);
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const p = await params;

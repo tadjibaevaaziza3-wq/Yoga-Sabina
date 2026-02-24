@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminFromSession } from "@/lib/auth/admin-auth";
+import { getAdminFromRequest } from "@/lib/auth/admin-auth";
 
 // Helper to convert React-Admin query params to Prisma query
 function parseQuery(url: URL) {
@@ -88,7 +88,7 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ resource: string }> }
 ) {
-    const admin = await getAdminFromSession();
+    const admin = await getAdminFromRequest(request);
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const resource = (await params).resource;
@@ -186,7 +186,7 @@ export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ resource: string }> }
 ) {
-    const admin = await getAdminFromSession();
+    const admin = await getAdminFromRequest(request);
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const resource = (await params).resource;
