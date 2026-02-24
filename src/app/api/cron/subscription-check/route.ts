@@ -13,9 +13,14 @@ import { sendTelegramMessage } from '@/lib/telegram-bot'
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const key = searchParams.get('key')
+    const authHeader = req.headers.get('authorization')
 
-    // Security: verify cron secret
-    if (key !== process.env.CRON_SECRET && process.env.NODE_ENV === 'production') {
+    // Security: verify cron secret (Vercel sends Bearer header, manual calls use ?key=)
+    const isAuthorized =
+        key === process.env.CRON_SECRET ||
+        authHeader === `Bearer ${process.env.CRON_SECRET}`
+
+    if (!isAuthorized && process.env.NODE_ENV === 'production') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

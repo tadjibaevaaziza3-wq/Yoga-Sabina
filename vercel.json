@@ -1,7 +1,7 @@
 {
     "crons": [
         {
-            "path": "/api/cron/subscription-check?key=CRON_SECRET_VALUE",
+            "path": "/api/cron/subscription-check",
             "schedule": "0 9 * * *"
         }
     ]
