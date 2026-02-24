@@ -3,6 +3,7 @@ import {
     TextInput,
     NumberInput,
     SelectInput,
+    BooleanInput,
     useRecordContext,
     TabbedForm,
     FormTab
@@ -49,6 +50,8 @@ export const CourseEdit = () => (
                 <NumberInput source="price" fullWidth label="Narx (UZS)" />
                 <NumberInput source="durationDays" fullWidth label="Kirish muddati (kun)" helperText="Cheksiz kirish uchun bo'sh qoldiring" />
                 <NumberInput source="videoLimit" fullWidth label="Video chegarasi" helperText="Foydalanuvchi ko'rishi mumkin bo'lgan videolar soni" />
+                <BooleanInput source="isBestseller" label="⭐ Bestseller (birinchi ko'rsatiladi)" />
+                <NumberInput source="sortOrder" fullWidth label="Tartib raqami" helperText="Katta raqam = yuqorida ko'rsatiladi" defaultValue={0} />
 
                 <SelectInput source="productType" label="Mahsulot turi" choices={[
                     { id: 'STANDARD', name: 'Standart' },

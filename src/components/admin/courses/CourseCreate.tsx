@@ -1,7 +1,7 @@
 "use client";
 
 import {
-    Create, TextInput, NumberInput, SelectInput, TabbedForm, FormTab
+    Create, TextInput, NumberInput, SelectInput, BooleanInput, TabbedForm, FormTab
 } from 'react-admin';
 import { GcsImageInput } from '../inputs/GcsImageInput';
 import { TranslatableTextInput } from '../inputs/TranslatableTextInput';
@@ -31,6 +31,8 @@ export const CourseCreate = () => (
                 <NumberInput source="price" fullWidth label="Narx (UZS)" defaultValue={0} />
                 <NumberInput source="durationDays" fullWidth label="Kirish muddati (kun)" helperText="Cheksiz kirish uchun bo'sh qoldiring" />
                 <NumberInput source="videoLimit" fullWidth label="Video chegarasi" />
+                <BooleanInput source="isBestseller" label="⭐ Bestseller (birinchi ko'rsatiladi)" />
+                <NumberInput source="sortOrder" fullWidth label="Tartib raqami" defaultValue={0} helperText="Katta raqam = yuqorida" />
                 <SelectInput source="productType" label="Mahsulot turi" choices={[
                     { id: 'COURSE', name: 'Kurs' },
                     { id: 'CONSULTATION', name: 'Konsultatsiya' },

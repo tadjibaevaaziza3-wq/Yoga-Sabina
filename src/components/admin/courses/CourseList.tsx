@@ -3,12 +3,14 @@ import {
     Datagrid,
     TextField,
     NumberField,
+    FunctionField,
     SearchInput,
     SelectInput,
     ShowButton,
     EditButton,
     ImageField
 } from 'react-admin';
+import { Chip } from '@mui/material';
 
 const courseFilters = [
     <SearchInput source="q" alwaysOn key="search" />,
@@ -34,6 +36,7 @@ export const CourseList = () => (
         <Datagrid rowClick="show" bulkActionButtons={false}>
             <ImageField source="coverImage" label="Rasm" sx={{ '& img': { width: 50, height: 50, objectFit: 'cover', borderRadius: '8px' } }} />
             <TextField source="title" label="Sarlavha (UZ)" />
+            <FunctionField label="" render={(r: any) => r?.isBestseller ? <Chip label="⭐ Bestseller" size="small" sx={{ bgcolor: '#fef3c7', color: '#92400e', fontWeight: 700, fontSize: '0.7rem' }} /> : null} />
             <TextField source="type" label="Turi" />
             <NumberField source="price" label="Narx" options={{ style: 'currency', currency: 'UZS' }} />
             <ShowButton label="Ko'rish" />

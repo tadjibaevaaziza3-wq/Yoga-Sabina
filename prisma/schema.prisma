@@ -240,6 +240,8 @@ model Course {
   showInApp          Boolean             @default(true)
   showInTma          Boolean             @default(true)
   bannerImage        String?
+  isBestseller       Boolean             @default(false)
+  sortOrder          Int                 @default(0)
 
   // Offline specific
   location   String?

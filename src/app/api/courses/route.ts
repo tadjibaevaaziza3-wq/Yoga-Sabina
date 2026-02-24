@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
                 timesRu: true,
                 features: true,
                 featuresRu: true,
+                isBestseller: true,
                 createdAt: true,
                 _count: {
                     select: {
@@ -49,9 +50,11 @@ export async function GET(request: NextRequest) {
                     },
                 },
             },
-            orderBy: {
-                createdAt: 'desc',
-            },
+            orderBy: [
+                { isBestseller: 'desc' },
+                { sortOrder: 'desc' },
+                { createdAt: 'desc' },
+            ],
         });
 
         return NextResponse.json({ success: true, courses });
