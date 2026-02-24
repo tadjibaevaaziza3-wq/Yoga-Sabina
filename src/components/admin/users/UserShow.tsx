@@ -20,6 +20,8 @@ import SchoolIcon from '@mui/icons-material/School';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ImageIcon from '@mui/icons-material/Image';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 const ShowTitle = () => <span>Foydalanuvchi tafsilotlari</span>;
 
@@ -90,27 +92,43 @@ const AddSubscriptionDialog = ({ open, onClose, userId }: { open: boolean; onClo
 };
 
 // ── Screenshot Gallery ──
-const ScreenshotGallery = ({ screenshots }: { screenshots: { id: string; url: string; courseTitle: string; amount: number; status: string; date: string }[] }) => {
-    const [selected, setSelected] = useState<string | null>(null);
+const ScreenshotGallery = ({ screenshots, onVerify }: { screenshots: { id: string; url: string; courseTitle: string; amount: number; status: string; date: string }[]; onVerify: (purchaseId: string, action: 'APPROVE' | 'REJECT') => Promise<void> }) => {
+    const [selected, setSelected] = useState<{ id: string; url: string; status: string; courseTitle: string; amount: number } | null>(null);
+    const [verifying, setVerifying] = useState(false);
 
     if (screenshots.length === 0) {
         return <Alert severity="info" sx={{ borderRadius: 2 }}>Skrinshot topilmadi</Alert>;
     }
 
+    const handleAction = async (action: 'APPROVE' | 'REJECT') => {
+        if (!selected) return;
+        setVerifying(true);
+        await onVerify(selected.id, action);
+        setVerifying(false);
+        setSelected(null);
+    };
+
     return (
         <>
             <ImageList cols={3} gap={12} sx={{ mb: 0 }}>
                 {screenshots.map(s => (
-                    <ImageListItem key={s.id} sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(17,69,57,0.08)', cursor: 'pointer' }} onClick={() => setSelected(s.url)}>
+                    <ImageListItem
+                        key={s.id}
+                        sx={{
+                            borderRadius: 2, overflow: 'hidden', cursor: 'pointer',
+                            border: s.status === 'PENDING' ? '2px solid #f59e0b' : '1px solid rgba(17,69,57,0.08)',
+                        }}
+                        onClick={() => setSelected({ id: s.id, url: s.url, status: s.status, courseTitle: s.courseTitle, amount: s.amount })}
+                    >
                         <img src={s.url} alt={s.courseTitle} loading="lazy" style={{ height: 160, objectFit: 'cover' }} />
                         <ImageListItemBar
                             title={s.courseTitle}
                             subtitle={`${s.amount.toLocaleString()} so'm • ${new Date(s.date).toLocaleDateString('uz-UZ')}`}
                             actionIcon={
                                 <Chip
-                                    label={s.status === 'PAID' ? '✅' : s.status === 'PENDING' ? '⏳' : '❌'}
+                                    label={s.status === 'PAID' ? '✅ Tasdiqlangan' : s.status === 'PENDING' ? '⏳ Kutilmoqda' : '❌ Rad etilgan'}
                                     size="small"
-                                    sx={{ mr: 1, bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: '0.7rem' }}
+                                    sx={{ mr: 1, bgcolor: 'rgba(255,255,255,0.25)', color: '#fff', fontSize: '0.65rem', fontWeight: 600 }}
                                 />
                             }
                             sx={{ '& .MuiImageListItemBar-title': { fontSize: '0.75rem' }, '& .MuiImageListItemBar-subtitle': { fontSize: '0.65rem' } }}
@@ -119,14 +137,57 @@ const ScreenshotGallery = ({ screenshots }: { screenshots: { id: string; url: st
                 ))}
             </ImageList>
 
-            {/* Lightbox */}
-            <Dialog open={!!selected} onClose={() => setSelected(null)} maxWidth="md" PaperProps={{ sx: { borderRadius: 3, bgcolor: 'transparent', boxShadow: 'none' } }}>
+            {/* Lightbox with Approve/Reject */}
+            <Dialog open={!!selected} onClose={() => setSelected(null)} maxWidth="md" PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
                 <Box position="relative">
-                    <IconButton onClick={() => setSelected(null)} sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'rgba(0,0,0,0.5)', color: '#fff', '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' } }}>
+                    <IconButton onClick={() => setSelected(null)} sx={{ position: 'absolute', top: 8, right: 8, zIndex: 2, bgcolor: 'rgba(0,0,0,0.5)', color: '#fff', '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' } }}>
                         <CloseIcon />
                     </IconButton>
-                    {selected && <img src={selected} alt="Screenshot" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 12 }} />}
+                    {selected && <img src={selected.url} alt="Screenshot" style={{ maxWidth: '100%', maxHeight: '65vh', display: 'block' }} />}
                 </Box>
+                {selected && (
+                    <Box sx={{ p: 2, bgcolor: '#fff' }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={selected.status === 'PENDING' ? 2 : 0}>
+                            <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: '#114539' }}>{selected.courseTitle}</Typography>
+                                <Typography variant="caption" color="text.secondary">{selected.amount.toLocaleString()} so'm</Typography>
+                            </Box>
+                            <Chip
+                                label={selected.status === 'PAID' ? '✅ Tasdiqlangan' : selected.status === 'PENDING' ? '⏳ Kutilmoqda' : '❌ Rad etilgan'}
+                                size="small"
+                                sx={{
+                                    fontWeight: 700, fontSize: '0.7rem',
+                                    bgcolor: selected.status === 'PAID' ? '#16a34a12' : selected.status === 'PENDING' ? '#f59e0b15' : '#dc262610',
+                                    color: selected.status === 'PAID' ? '#16a34a' : selected.status === 'PENDING' ? '#d97706' : '#dc2626',
+                                }}
+                            />
+                        </Box>
+                        {selected.status === 'PENDING' && (
+                            <Box display="flex" gap={1.5}>
+                                <Button
+                                    variant="contained"
+                                    fullWidth
+                                    startIcon={verifying ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <CheckCircleIcon />}
+                                    disabled={verifying}
+                                    onClick={() => handleAction('APPROVE')}
+                                    sx={{ bgcolor: '#16a34a', '&:hover': { bgcolor: '#15803d' }, borderRadius: 2, textTransform: 'none', fontWeight: 700, py: 1.2 }}
+                                >
+                                    ✅ Tasdiqlash
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    fullWidth
+                                    startIcon={verifying ? <CircularProgress size={16} /> : <CancelIcon />}
+                                    disabled={verifying}
+                                    onClick={() => handleAction('REJECT')}
+                                    sx={{ borderColor: '#dc2626', color: '#dc2626', '&:hover': { bgcolor: '#dc262608', borderColor: '#b91c1c' }, borderRadius: 2, textTransform: 'none', fontWeight: 700, py: 1.2 }}
+                                >
+                                    ❌ Rad etish
+                                </Button>
+                            </Box>
+                        )}
+                    </Box>
+                )}
             </Dialog>
         </>
     );
@@ -138,6 +199,7 @@ const UserShowContent = () => {
     const [details, setDetails] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [subDialogOpen, setSubDialogOpen] = useState(false);
+    const notify = useNotify();
 
     const fetchDetails = async () => {
         if (!record?.id) return;
@@ -151,6 +213,26 @@ const UserShowContent = () => {
     };
 
     useEffect(() => { fetchDetails(); }, [record?.id]);
+
+    // Handle purchase verification (approve/reject)
+    const handleVerifyPurchase = async (purchaseId: string, action: 'APPROVE' | 'REJECT') => {
+        try {
+            const res = await fetch('/api/admin/purchases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ purchaseId, action }),
+            });
+            if (res.ok) {
+                notify(action === 'APPROVE' ? "To'lov tasdiqlandi! Obuna avtomatik berildi ✅" : "To'lov rad etildi ❌", { type: action === 'APPROVE' ? 'success' : 'info' });
+                fetchDetails(); // Refresh to show updated status and new subscription
+            } else {
+                const err = await res.json();
+                notify(`Xatolik: ${err.error}`, { type: 'error' });
+            }
+        } catch {
+            notify('Xatolik yuz berdi', { type: 'error' });
+        }
+    };
 
     if (!record) return null;
 
@@ -298,16 +380,17 @@ const UserShowContent = () => {
                                                 <th style={{ textAlign: 'center', padding: '8px', color: '#114539', fontWeight: 700 }}>Holat</th>
                                                 <th style={{ textAlign: 'center', padding: '8px', color: '#114539', fontWeight: 700 }}>Usul</th>
                                                 <th style={{ textAlign: 'right', padding: '8px', color: '#114539', fontWeight: 700 }}>Sana</th>
+                                                <th style={{ textAlign: 'center', padding: '8px', color: '#114539', fontWeight: 700 }}>Amallar</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {details.purchases.map((p: any) => (
-                                                <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                                <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: p.status === 'PENDING' ? '#f59e0b06' : 'transparent' }}>
                                                     <td style={{ padding: '8px', fontWeight: 600 }}>{p.courseTitle}</td>
                                                     <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, color: '#114539' }}>{Number(p.amount).toLocaleString()} so'm</td>
                                                     <td style={{ padding: '8px', textAlign: 'center' }}>
                                                         <Chip
-                                                            label={p.status === 'PAID' ? '✅ To\'langan' : p.status === 'PENDING' ? '⏳ Kutilmoqda' : p.status === 'FAILED' ? '❌ Xato' : '↩ Qaytarilgan'}
+                                                            label={p.status === 'PAID' ? '✅ To\'langan' : p.status === 'PENDING' ? '⏳ Kutilmoqda' : p.status === 'FAILED' ? '❌ Rad etilgan' : '↩ Qaytarilgan'}
                                                             size="small"
                                                             sx={{
                                                                 bgcolor: p.status === 'PAID' ? 'rgba(22,163,74,0.08)' : p.status === 'PENDING' ? 'rgba(217,119,6,0.08)' : 'rgba(220,38,38,0.08)',
@@ -321,6 +404,30 @@ const UserShowContent = () => {
                                                     </td>
                                                     <td style={{ padding: '8px', textAlign: 'right', color: '#6b7280', fontSize: '0.8rem' }}>
                                                         {new Date(p.createdAt).toLocaleDateString('uz-UZ')}
+                                                    </td>
+                                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                                        {p.status === 'PENDING' ? (
+                                                            <Box display="flex" gap={0.5} justifyContent="center">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleVerifyPurchase(p.id, 'APPROVE')}
+                                                                    sx={{ color: '#16a34a', bgcolor: '#16a34a10', '&:hover': { bgcolor: '#16a34a20' } }}
+                                                                    title="Tasdiqlash"
+                                                                >
+                                                                    <CheckCircleIcon fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleVerifyPurchase(p.id, 'REJECT')}
+                                                                    sx={{ color: '#dc2626', bgcolor: '#dc262610', '&:hover': { bgcolor: '#dc262620' } }}
+                                                                    title="Rad etish"
+                                                                >
+                                                                    <CancelIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Box>
+                                                        ) : (
+                                                            <Typography variant="caption" color="text.secondary">—</Typography>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -338,7 +445,7 @@ const UserShowContent = () => {
                         </Typography>
                         <Divider sx={{ mb: 2 }} />
                         {loading ? <CircularProgress size={24} /> : (
-                            <ScreenshotGallery screenshots={details?.screenshots || []} />
+                            <ScreenshotGallery screenshots={details?.screenshots || []} onVerify={handleVerifyPurchase} />
                         )}
                     </Paper>
                 </Box>
