@@ -438,6 +438,7 @@ model Feedback {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   message    String
   rating     Int?
+  photoUrl   String?
   isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
 }

@@ -25,6 +25,8 @@ export default function AboutPage() {
         message: "",
         rating: 5
     })
+    const [photo, setPhoto] = useState<File | null>(null)
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null)
     const [bannerUrl, setBannerUrl] = useState("/images/feedback-hero-bg.jpg")
 
     useEffect(() => {
@@ -62,6 +64,18 @@ export default function AboutPage() {
         loadData()
     }, [])
 
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            if (file.size > 10 * 1024 * 1024) {
+                toast.error(lang === 'uz' ? 'Rasm hajmi 10MB dan oshmasligi kerak' : 'Размер фото не должен превышать 10МБ')
+                return
+            }
+            setPhoto(file)
+            setPhotoPreview(URL.createObjectURL(file))
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!user) {
@@ -71,19 +85,24 @@ export default function AboutPage() {
 
         setIsSubmitting(true)
         try {
+            const formData = new FormData()
+            formData.append('userId', user.id)
+            formData.append('message', form.message)
+            formData.append('rating', String(form.rating))
+            if (photo) {
+                formData.append('photo', photo)
+            }
+
             const res = await fetch('/api/feedback', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.id,
-                    message: form.message,
-                    rating: form.rating
-                })
+                body: formData
             })
 
             if (res.ok) {
                 toast.success(dictionary?.about.feedbackSuccess || "Success")
                 setForm(prev => ({ ...prev, message: "", rating: 5 }))
+                setPhoto(null)
+                setPhotoPreview(null)
             } else {
                 toast.error("Error submitting feedback")
             }
@@ -185,9 +204,14 @@ export default function AboutPage() {
                                 >
                                     <Quote className="absolute top-8 right-10 w-12 h-12 text-[var(--accent)]/5 group-hover:text-[var(--accent)]/10 transition-colors" />
 
+                                    {item.photoUrl && (
+                                        <div className="mb-6 rounded-2xl overflow-hidden">
+                                            <img src={item.photoUrl} alt="" className="w-full h-48 object-cover" />
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-4 mb-8">
                                         <div className="w-14 h-14 rounded-2xl bg-[var(--secondary)] flex items-center justify-center relative overflow-hidden">
-                                            {/* Generic avatar if user has no photo */}
                                             <div className="text-[var(--accent)] font-black text-xl">
                                                 {item.user.firstName?.[0] || 'U'}
                                             </div>
@@ -278,21 +302,39 @@ export default function AboutPage() {
                                 />
                             </div>
 
-                            <div className="bg-[var(--secondary)]/30 rounded-[2.5rem] p-10 border border-[var(--secondary)]/50">
-                                <div className="flex flex-col items-center gap-6">
-                                    <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-[var(--accent)] shadow-sm">
-                                        <Camera className="w-8 h-8" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="font-bold text-[var(--primary)] mb-1">
-                                            {lang === 'uz' ? "Rasmni yuklash (ixtiyoriy)" : "Загрузите фото (необязательно)"}
+                            <label className="bg-[var(--secondary)]/30 rounded-[2.5rem] p-10 border border-[var(--secondary)]/50 cursor-pointer hover:border-[var(--accent)]/30 transition-colors block">
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    onChange={handlePhotoChange}
+                                    className="hidden"
+                                />
+                                {photoPreview ? (
+                                    <div className="flex flex-col items-center gap-4">
+                                        <img src={photoPreview} alt="Preview" className="w-32 h-32 object-cover rounded-2xl" />
+                                        <p className="text-sm font-bold text-[var(--accent)]">
+                                            {photo?.name}
                                         </p>
                                         <p className="text-[11px] font-bold text-[var(--primary)]/30 uppercase tracking-widest">
-                                            PNG, JPG up to 10MB
+                                            {lang === 'uz' ? 'Boshqa rasm tanlash uchun bosing' : 'Нажмите чтобы выбрать другое фото'}
                                         </p>
                                     </div>
-                                </div>
-                            </div>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-6">
+                                        <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-[var(--accent)] shadow-sm">
+                                            <Camera className="w-8 h-8" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="font-bold text-[var(--primary)] mb-1">
+                                                {lang === 'uz' ? "Rasmni yuklash (ixtiyoriy)" : "Загрузите фото (необязательно)"}
+                                            </p>
+                                            <p className="text-[11px] font-bold text-[var(--primary)]/30 uppercase tracking-widest">
+                                                PNG, JPG up to 10MB
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </label>
 
                             <div className="flex items-center gap-4 px-4">
                                 <input type="checkbox" required className="w-5 h-5 rounded-lg border-emerald-200 text-[var(--accent)] focus:ring-[var(--accent)]" />
@@ -322,7 +364,7 @@ export default function AboutPage() {
                         <h2 className="text-3xl md:text-6xl font-serif font-black text-[var(--primary)] max-w-4xl mx-auto leading-[1.1]">
                             {dictionary.about.readyToStart}
                         </h2>
-                        <Button className="bg-[#10b981] hover:bg-[#059669] text-white rounded-[2rem] px-12 py-10 text-xl font-black uppercase tracking-widest transition-all hover:scale-[105] shadow-2xl shadow-[var(--accent)]/20">
+                        <Button className="bg-[#10b981] hover:bg-[#059669] text-white rounded-[2rem] px-12 py-6 text-xl font-black uppercase tracking-widest transition-all hover:scale-105 shadow-2xl shadow-[var(--accent)]/20">
                             {dictionary.about.joinNow}
                         </Button>
                     </div>
