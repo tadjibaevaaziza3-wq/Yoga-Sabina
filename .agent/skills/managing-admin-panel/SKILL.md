@@ -173,3 +173,72 @@ Returns a single JSON with:
 - **Translations**: UZ is primary, RU is auto-generated via `/api/admin/translate`
 - **Announcements**: Admin broadcasts to users via User Panel and Telegram Bot
 - **Consultations**: Full CRUD on `Course` records where `productType = CONSULTATION`. Admin can create/edit/delete, toggle visibility (`isActive`), set format/location/schedule, and upload cover image.
+
+---
+
+## Payment & Subscription Lifecycle
+
+### Payment Methods
+
+| Method | Flow | Auto-Subscription |
+|---|---|---|
+| **PayMe** | User → PayMe checkout → PayMe webhook → system | ✅ Automatic |
+| **Click** | User → Click checkout → Click webhook → system | ✅ Automatic |
+| **Manual (Card Transfer)** | User → uploads screenshot → admin reviews → approve/reject | ✅ On admin approve |
+
+### PayMe Integration
+
+| Component | Path |
+|---|---|
+| Config | `src/lib/payments/payme.ts` |
+| Create purchase + redirect URL | `src/app/api/payments/payme/create/route.ts` |
+| Webhook (JSON-RPC) | `src/app/api/payments/payme/webhook/route.ts` |
+| Subscription helper | `src/lib/payments/subscription.ts` |
+
+**PayMe Webhook Methods:**
+1. `CheckPerformTransaction` — validates order exists and is not already paid
+2. `CreateTransaction` — stores PayMe transaction ID in `Purchase.providerTxnId`
+3. `PerformTransaction` — marks PAID, creates 30-day subscription, sends Telegram notification + in-app notification
+4. `CancelTransaction` — marks FAILED with cancellation reason
+
+### Manual Payment Verification (Admin Panel)
+
+Admin can approve/reject payments from two places in `UserShow`:
+1. **To'lovlar (Purchases) table** — ✅/❌ buttons in "Amallar" column for PENDING payments
+2. **To'lov skrinshotlari (Screenshot gallery)** — approve/reject in lightbox modal
+
+API: `POST /api/admin/purchases` with `{ purchaseId, action: 'APPROVE' | 'REJECT' }`
+
+On APPROVE: atomic transaction marks purchase PAID + creates/extends 30-day subscription.
+
+### Subscription Expiry Cron
+
+| Item | Detail |
+|---|---|
+| Route | `src/app/api/cron/subscription-check/route.ts` |
+| Schedule | Daily at 09:00 UTC (14:00 UZT) via `vercel.json` |
+| Auth | `?key=CRON_SECRET` query parameter |
+
+**Actions:**
+1. **3 days before expiry** → Telegram warning + in-app notification to user
+2. **On expiry** → mark subscription EXPIRED + Telegram alert to user + in-app notification + admin Telegram notification
+
+### Notification System
+
+Model: `Notification` in Prisma schema. Types: `info`, `success`, `warning`, `promo`, `system`.
+
+Notifications are created automatically by:
+- PayMe webhook (on successful payment)
+- Admin manual approval (on approve)
+- Subscription cron (on expiry/warning)
+
+### Env Variables Required
+
+```
+PAYME_MERCHANT_ID=     # PayMe merchant ID
+PAYME_SECRET_KEY=      # PayMe webhook secret
+TELEGRAM_BOT_TOKEN=    # Bot token for notifications
+ADMIN_TELEGRAM_ID=     # Admin's Telegram chat ID for alerts
+CRON_SECRET=           # Secret key for cron endpoint auth
+```
+

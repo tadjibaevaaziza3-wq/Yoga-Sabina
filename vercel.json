@@ -1,0 +1,8 @@
+{
+    "crons": [
+        {
+            "path": "/api/cron/subscription-check?key=CRON_SECRET_VALUE",
+            "schedule": "0 9 * * *"
+        }
+    ]
+}

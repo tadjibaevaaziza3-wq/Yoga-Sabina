@@ -1,23 +1,33 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { sendBroadcast } from '@/lib/telegram/bot'
+import { sendTelegramMessage } from '@/lib/telegram-bot'
 
+/**
+ * Subscription Check Cron Job
+ * Runs daily to:
+ * 1. Notify users 3 days before subscription expiry (Telegram + in-app)
+ * 2. Mark expired subscriptions as EXPIRED
+ * 3. Notify expired users to renew (Telegram + in-app)
+ * 4. Notify admin about expired subscriptions
+ */
 export async function GET(req: Request) {
-    // Basic security: Check for a secret key or verify it's a cron call
     const { searchParams } = new URL(req.url)
     const key = searchParams.get('key')
 
-    // For demo/simulated run, we can skip strict check if explicitly allowed
-    // if (key !== process.env.CRON_SECRET) {
-    //     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    // Security: verify cron secret
+    if (key !== process.env.CRON_SECRET && process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     try {
         const now = new Date()
         const threeDaysFromNow = new Date()
         threeDaysFromNow.setDate(now.getDate() + 3)
 
-        // 1. Find subscriptions expiring in exactly 3 days (or between 2 and 3 days)
+        let notifiedExpiring = 0
+        let processedExpired = 0
+
+        // ─── 1. Subscriptions expiring in 3 days → warn user ───
         const expiringSoon = await prisma.subscription.findMany({
             where: {
                 status: 'ACTIVE',
@@ -29,28 +39,30 @@ export async function GET(req: Request) {
             include: { user: true, course: true }
         })
 
-        let notifyCount = 0
-
         for (const sub of expiringSoon) {
+            // Telegram notification
             if (sub.user.telegramId) {
-                const message = `
-⚠️ **Obuna tugashiga oz qoldi!**
+                const msg = `⚠️ <b>Obuna tugashiga 3 kun qoldi!</b>\n\n📚 Kurs: ${sub.course.title}\n📅 Tugash sanasi: ${sub.endsAt.toLocaleDateString('uz-UZ')}\n\nObunani uzaytirish uchun to'lovni amalga oshiring.\n\n---\n⚠️ <b>Подписка истекает через 3 дня!</b>\n\n📚 Курс: ${sub.course.titleRu || sub.course.title}\n📅 Дата окончания: ${sub.endsAt.toLocaleDateString('ru-RU')}\n\nПродлите подписку, чтобы продолжить обучение.`
 
-Sizning "${sub.course.title}" kursiga obunangiz 3 kundan keyin tugaydi. 
-Bilim olishda davom etish uchun obunani vaqtida uzaytirishni unutmang. ✨
-
----
-⚠️ **Ваша подписка скоро истечет!**
-
-Ваша подписка на курс "${sub.course.titleRu || sub.course.title}" истекает через 3 дня.
-Не забудьте вовремя продлить подписку. ✨
-`
-                await sendBroadcast(sub.user.telegramId, 'TEXT', message)
-                notifyCount++
+                await sendTelegramMessage(sub.user.telegramId, msg)
+                notifiedExpiring++
             }
+
+            // In-app notification
+            await prisma.notification.create({
+                data: {
+                    userId: sub.userId,
+                    type: 'warning',
+                    title: `"${sub.course.title}" obunasi 3 kundan tugaydi!`,
+                    titleRu: `Подписка на "${sub.course.titleRu || sub.course.title}" истекает через 3 дня!`,
+                    message: `Darslarni ko'rishda davom etish uchun obunani uzaytiring. Tugash sanasi: ${sub.endsAt.toLocaleDateString('uz-UZ')}`,
+                    messageRu: `Продлите подписку, чтобы продолжить обучение. Дата окончания: ${sub.endsAt.toLocaleDateString('ru-RU')}`,
+                    link: `/checkout?courseId=${sub.courseId}`,
+                }
+            })
         }
 
-        // 2. Find expired subscriptions to notify admin
+        // ─── 2. Expired subscriptions → mark + notify user to renew ───
         const justExpired = await prisma.subscription.findMany({
             where: {
                 status: 'ACTIVE',
@@ -62,29 +74,46 @@ Bilim olishda davom etish uchun obunani vaqtida uzaytirishni unutmang. ✨
         })
 
         for (const sub of justExpired) {
-            // Update status to EXPIRED
+            // Mark as expired
             await prisma.subscription.update({
                 where: { id: sub.id },
                 data: { status: 'EXPIRED' }
             })
 
-            // Notify Admin (we assume there's an admin telegram ID in env or we find it)
+            // Notify user via Telegram
+            if (sub.user.telegramId) {
+                const msg = `🔴 <b>Obuna muddati tugadi!</b>\n\n📚 Kurs: ${sub.course.title}\n📅 Tugadi: ${sub.endsAt.toLocaleDateString('uz-UZ')}\n\nDarslarni ko'rishda davom etish uchun obunani yangilang.\n\n---\n🔴 <b>Подписка истекла!</b>\n\n📚 Курс: ${sub.course.titleRu || sub.course.title}\n📅 Истекла: ${sub.endsAt.toLocaleDateString('ru-RU')}\n\nПродлите подписку, чтобы продолжить обучение.`
+
+                await sendTelegramMessage(sub.user.telegramId, msg)
+            }
+
+            // In-app notification
+            await prisma.notification.create({
+                data: {
+                    userId: sub.userId,
+                    type: 'warning',
+                    title: `"${sub.course.title}" obunasi tugadi!`,
+                    titleRu: `Подписка на "${sub.course.titleRu || sub.course.title}" истекла!`,
+                    message: `Obuna muddati tugadi. Darslarni ko'rishda davom etish uchun to'lov qiling va obunani yangilang.`,
+                    messageRu: `Срок подписки истёк. Оплатите и продлите подписку, чтобы продолжить обучение.`,
+                    link: `/checkout?courseId=${sub.courseId}`,
+                }
+            })
+
+            // Notify admin
             const adminId = process.env.ADMIN_TELEGRAM_ID
             if (adminId) {
-                const adminMsg = `
-🚫 **Obuna muddati tugadi**
+                const adminMsg = `🔴 <b>Obuna muddati tugadi</b>\n\n👤 ${sub.user.firstName || ''} ${sub.user.lastName || ''}\n📱 ${sub.user.phone || sub.user.telegramId || sub.user.email || 'N/A'}\n📚 ${sub.course.title}\n📅 ${sub.endsAt.toLocaleDateString('uz-UZ')}`
 
-Foydalanuvchi: ${sub.user.firstName} ${sub.user.lastName || ''} (@${sub.user.telegramId || 'ID: ' + sub.user.id})
-Kurs: ${sub.course.title}
-Muddati tugadi: ${sub.endsAt.toLocaleDateString()}
-`
-                await sendBroadcast(adminId, 'TEXT', adminMsg)
+                await sendTelegramMessage(adminId, adminMsg)
             }
+
+            processedExpired++
         }
 
         return NextResponse.json({
             success: true,
-            message: `Checked subscriptions. Notified ${notifyCount} users. Processed ${justExpired.length} expired.`
+            message: `Cron complete. Warned ${notifiedExpiring} expiring users. Processed ${processedExpired} expired subscriptions.`
         })
     } catch (error: any) {
         console.error('Subscription check error:', error)

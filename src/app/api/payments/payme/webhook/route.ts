@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createOrExtendSubscription } from '@/lib/payments/subscription'
 import { getPaymeConfig } from '@/lib/payments/payme'
+import { sendSubscriptionNotification } from '@/lib/telegram-bot'
 
 /**
  * Payme Webhook Handler
@@ -119,6 +120,7 @@ export async function POST(request: Request) {
                 where: { id: purchase.id },
                 data: {
                     status: 'PAID',
+                    verifiedByAdmin: true,
                     performTime
                 }
             })
@@ -129,6 +131,28 @@ export async function POST(request: Request) {
                 purchase.courseId,
                 purchase.course.durationDays || 30
             )
+
+            // Send Telegram notification to user
+            if (purchase.user.telegramId) {
+                await sendSubscriptionNotification(
+                    purchase.user.telegramId,
+                    purchase.course.title,
+                    (purchase.user.language as 'uz' | 'ru') || 'uz'
+                )
+            }
+
+            // Create in-app notification for user panel
+            await prisma.notification.create({
+                data: {
+                    userId: purchase.userId,
+                    type: 'success',
+                    title: `"${purchase.course.title}" kursiga obuna tasdiqlandi!`,
+                    titleRu: `Подписка на курс "${purchase.course.titleRu || purchase.course.title}" подтверждена!`,
+                    message: `To'lov muvaffaqiyatli amalga oshirildi. Endi barcha darslarni ko'rishingiz mumkin. 🎉`,
+                    messageRu: `Оплата прошла успешно. Теперь вам доступны все уроки. 🎉`,
+                    link: `/courses/${purchase.courseId}`,
+                }
+            })
 
             return NextResponse.json({
                 result: {
