@@ -158,13 +158,30 @@ export async function POST(
             return NextResponse.json({ error: `Resource '${resource}' (mapped to Prisma '${String(modelName)}') not found` }, { status: 404 });
         }
 
+        // Remove ID and date fields if present to let DB handle defaults
+        const { id: _id, createdAt, updatedAt, ...createData } = body as any;
+
+        // Sanitize createData: convert "" to null for unique string fields
+        for (const key in createData) {
+            if (createData[key] === "") {
+                createData[key] = null;
+            }
+        }
+
         const data = await delegate.create({
-            data: body
+            data: createData
         });
 
         return NextResponse.json(data);
     } catch (error: any) {
         console.error(`Error creating ${resource}:`, error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+
+        // Handle Prisma unique constraint error gracefully for React Admin
+        if (error.code === 'P2002') {
+            const fields = Array.isArray(error.meta?.target) ? error.meta.target.join(', ') : 'bu qiymat';
+            return NextResponse.json({ message: `Bu ma'lumot (${fields}) tizimda allaqachon mavjud.` }, { status: 400 });
+        }
+
+        return NextResponse.json({ message: error.message || 'Server xatosi', error: error.message }, { status: 500 });
     }
 }

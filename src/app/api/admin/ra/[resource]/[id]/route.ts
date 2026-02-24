@@ -86,7 +86,15 @@ export async function PUT(
         }
 
         // Remove ID from body if present to prevent updating primary keys
-        const { id: _id, ...updateData } = body;
+        const { id: _id, createdAt, updatedAt, ...updateData } = body as any;
+
+        // Sanitize updateData: convert "" to null for unique string fields (like email, phone) to avoid Unique Constraint violations
+        for (const key in updateData) {
+            if (updateData[key] === "") {
+                // If it's an empty string, convert to null
+                updateData[key] = null;
+            }
+        }
 
         const data = await delegate.update({
             where: { id },
@@ -96,7 +104,14 @@ export async function PUT(
         return NextResponse.json(data);
     } catch (error: any) {
         console.error(`Error updating ${resource}/${id}:`, error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+
+        // Handle Prisma unique constraint error gracefully for React Admin
+        if (error.code === 'P2002') {
+            const fields = Array.isArray(error.meta?.target) ? error.meta.target.join(', ') : 'bu qiymat';
+            return NextResponse.json({ message: `Bu ma'lumot (${fields}) tizimda allaqachon mavjud.` }, { status: 400 });
+        }
+
+        return NextResponse.json({ message: error.message || 'Server xatosi', error: error.message }, { status: 500 });
     }
 }
 
