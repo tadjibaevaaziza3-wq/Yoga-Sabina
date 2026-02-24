@@ -61,7 +61,6 @@ export function Header({ minimal = false, isAdmin = false, isConsultationEnabled
     const navLinks = [
         { href: `/${lang}/online-courses`, label: dictionary.courses.online },
         { href: `/${lang}/offline-courses`, label: dictionary.courses.offline },
-        ...(isConsultationEnabled ? [{ href: `/${lang}/consultations`, label: dictionary.common.consultations || "Konsultatsiyalar" }] : []),
         { href: `/${lang}/about`, label: dictionary.common.about },
     ]
 

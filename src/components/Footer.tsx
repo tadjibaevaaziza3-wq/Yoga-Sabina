@@ -14,7 +14,7 @@ export function Footer({ isConsultationEnabled = true }: { isConsultationEnabled
         <footer role="contentinfo" aria-label="Site footer" className="bg-[var(--background)] text-[var(--primary)] pt-40 pb-20 relative overflow-hidden">
             {/* Giant Watermark */}
             <div className="absolute top-0 left-0 w-full overflow-hidden opacity-[0.03] pointer-events-none select-none">
-                <h1 className="text-[20vw] font-editorial font-bold text-center leading-[0.8] tracking-tight whitespace-nowrap">
+                <h1 className="text-[15vw] font-editorial font-bold text-center leading-[0.8] tracking-tight">
                     BAXTLI MEN
                 </h1>
             </div>
@@ -57,9 +57,6 @@ export function Footer({ isConsultationEnabled = true }: { isConsultationEnabled
                             <ul className="space-y-4">
                                 <li><a href={`/${lang}/online-courses`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{dictionary.courses.online}</a></li>
                                 <li><a href={`/${lang}/offline-courses`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{dictionary.courses.offline}</a></li>
-                                {isConsultationEnabled && (
-                                    <li><a href={`/${lang}/consultations`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{dictionary.common.consultations || "Konsultatsiyalar"}</a></li>
-                                )}
                                 <li><a href={`/${lang}/about`} className="text-[var(--primary)] text-sm hover:text-[var(--accent)] transition-colors">{dictionary.common.about}</a></li>
                             </ul>
                         </div>

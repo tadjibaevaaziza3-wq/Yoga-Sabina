@@ -17,18 +17,23 @@ export async function generateMetadata(
 ): Promise<Metadata> {
     const { lang, id } = await params
 
-    const course = await prisma.course.findUnique({
-        where: { id },
-        select: {
-            title: true,
-            titleRu: true,
-            description: true,
-            descriptionRu: true,
-            seoTitle: true,
-            seoDescription: true,
-            coverImage: true,
-        }
-    })
+    let course: any = null
+    try {
+        course = await prisma.course.findUnique({
+            where: { id },
+            select: {
+                title: true,
+                titleRu: true,
+                description: true,
+                descriptionRu: true,
+                seoTitle: true,
+                seoDescription: true,
+                coverImage: true,
+            }
+        })
+    } catch (e) {
+        // Invalid ID format (e.g. slug from static data)
+    }
 
     if (!course) {
         return {
@@ -63,9 +68,14 @@ export default async function CoursePage({
     const { lang, id } = await params
 
     // Fetch course for schema
-    const course = await prisma.course.findUnique({
-        where: { id }
-    })
+    let course: any = null
+    try {
+        course = await prisma.course.findUnique({
+            where: { id }
+        })
+    } catch (e) {
+        // Invalid ID format (e.g. slug from static data)
+    }
 
     if (!course) notFound()
 
