@@ -1,34 +1,30 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Loader2, Play, Users } from 'lucide-react';
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { ChevronLeft, Loader2, LogIn, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TMARegisterPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const lang = (params?.lang as string) || 'uz';
-    const videoRef = useRef<HTMLVideoElement>(null);
 
     const translations = {
         uz: {
             back: "ORQAGA",
-            title: "Baxtli Men",
-            tagline: "PREMIUM YOGA VA SALOMATLIK",
-            stats: "500+ A'ZOLAR",
-            introTitle: "Mening metodim bilan tanishing",
-            introLabel: "INTRO VIDEO",
-            bio: "Sabina Polatova — 7 yillik tajribaga ega sertifikatlangan yoga-trener va yoga-terapevt. Salomatlik va barcha uchun ichki muvozanat bo'yicha mutaxassis.",
-            cta: "BOSHLASH",
             registerTitle: "Keling, tanishamiz",
             registerSubtitle: "Davom etish uchun quyidagi ma'lumotlarni to'ldiring.",
+            loginTitle: "Kirish",
+            loginSubtitle: "Saytda ro'yxatdan o'tgan bo'lsangiz, telefon va parol bilan kiring.",
             nameLabel: "Ism va familiya",
-            namePlaceholder: "Sabina Polatova",
+            namePlaceholder: "✨ Ismingiz",
             phoneLabel: "Telefon raqam",
             phonePlaceholder: "+998 90 123 45 67",
+            passwordLabel: "Parol",
+            passwordPlaceholder: "Parolingizni kiriting",
             locationLabel: "Shahar",
             locationPlaceholder: "Toshkent",
             goalsLabel: "Maqsadlaringiz",
@@ -37,28 +33,30 @@ export default function TMARegisterPage() {
             offerLink: "Ommaviy oferta",
             offerSuffix: " shartlariga roziman",
             submit: "RO'YXATDAN O'TISH",
-            errorInit: "Telegram foydalanuvchi ma'lumotlari topilmadi. Iltimos, Telegram orqali kiring.",
-            errorEnv: "Telegram Mini App muhiti topilmadi.",
+            loginBtn: "KIRISH",
+            switchToLogin: "Allaqachon ro'yxatdan o'tganmisiz?",
+            switchToLoginLink: "Kirish",
+            switchToRegister: "Hali ro'yxatdan o'tmaganmisiz?",
+            switchToRegisterLink: "Ro'yxatdan o'tish",
+            phoneExistsMsg: "Bu raqam allaqachon ro'yxatdan o'tgan. Parolingiz bilan kiring:",
             errorId: "Telegram ID aniqlanmadi. Iltimos, qaytadan urinib ko'ring.",
             errorServer: "Serverga ulanishda xatolik yuz berdi.",
             defaultError: "Ro'yxatdan o'tishda xatolik yuz berdi.",
-            devMode: "Development Mode: Mock User Active"
+            loginError: "Telefon yoki parol noto'g'ri.",
+            errorInit: "Telegram foydalanuvchi ma'lumotlari topilmadi.",
         },
         ru: {
             back: "НАЗАД",
-            title: "Baxtli Men",
-            tagline: "ПРЕМИАЛЬНАЯ ЙОГА И ЗДОРОВЬЕ",
-            stats: "500+ УЧАСТНИКОВ",
-            introTitle: "Познакомьтесь с моим методом",
-            introLabel: "ИНТРО ВИДЕО",
-            bio: "Сабина Полатова — сертифицированный йога-тренер и йога-терапевт с 7-летним стажем. Специалист по оздоровлению и внутреннему балансу для всех.",
-            cta: "НАЧАТЬ",
             registerTitle: "Давайте познакомимся",
             registerSubtitle: "Пожалуйста, заполните следующие данные, чтобы продолжить.",
+            loginTitle: "Вход",
+            loginSubtitle: "Если вы уже зарегистрированы на сайте, войдите по номеру и паролю.",
             nameLabel: "Имя и фамилия",
-            namePlaceholder: "Сабина Полатова",
+            namePlaceholder: "✨ Ваше имя",
             phoneLabel: "Номер телефона",
             phonePlaceholder: "+998 90 123 45 67",
+            passwordLabel: "Пароль",
+            passwordPlaceholder: "Введите ваш пароль",
             locationLabel: "Город",
             locationPlaceholder: "Ташкент",
             goalsLabel: "Ваши цели",
@@ -67,19 +65,28 @@ export default function TMARegisterPage() {
             offerLink: "Публичной оферты",
             offerSuffix: "",
             submit: "ЗАРЕГИСТРИРОВАТЬСЯ",
-            errorInit: "Данные пользователя Telegram не найдены. Пожалуйста, войдите через Telegram.",
-            errorEnv: "Среда Telegram Mini App не найдена.",
-            errorId: "ID Telegram не определен. Пожалуйста, попробуйте еще раз.",
+            loginBtn: "ВОЙТИ",
+            switchToLogin: "Уже зарегистрированы?",
+            switchToLoginLink: "Войти",
+            switchToRegister: "Ещё не зарегистрированы?",
+            switchToRegisterLink: "Регистрация",
+            phoneExistsMsg: "Этот номер уже зарегистрирован. Войдите с паролем:",
+            errorId: "ID Telegram не определен. Попробуйте еще раз.",
             errorServer: "Произошла ошибка при подключении к серверу.",
             defaultError: "Произошла ошибка при регистрации.",
-            devMode: "Режим разработки: активен тестовый пользователь"
+            loginError: "Неверный номер или пароль.",
+            errorInit: "Данные пользователя Telegram не найдены.",
         }
     };
 
     const t = translations[lang as 'uz' | 'ru'] || translations.uz;
 
-    const [step, setStep] = useState<'intro' | 'form'>('intro');
+    // Read initial mode from URL ?mode=login
+    const initialMode = searchParams.get('mode') === 'login' ? 'login' : 'register';
+
+    const [mode, setMode] = useState<'register' | 'login'>(initialMode as any);
     const [phone, setPhone] = useState("");
+    const [password, setPassword] = useState("");
     const [fullName, setFullName] = useState("");
     const [location, setLocation] = useState("");
     const [healthGoals, setHealthGoals] = useState("");
@@ -88,7 +95,6 @@ export default function TMARegisterPage() {
     const [initializing, setInitializing] = useState(true);
     const [tgUser, setTgUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
 
     useEffect(() => {
         const initTMA = async () => {
@@ -118,7 +124,7 @@ export default function TMARegisterPage() {
                     const data = await res.json();
                     if (data.success && data.isRegistered) {
                         router.push(`/${lang}/tma/dashboard`);
-                        return; // Stop initialization if redirecting
+                        return;
                     }
                 } catch (err) {
                     console.error("Auth check error:", err);
@@ -133,23 +139,10 @@ export default function TMARegisterPage() {
         initTMA();
     }, []);
 
-    const toggleVideo = () => {
-        if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
-            } else {
-                videoRef.current.play();
-            }
-            setIsPlaying(!isPlaying);
-        }
-    };
-
+    // ─── REGISTER ───
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!tgUser?.id) {
-            setError(t.errorId);
-            return;
-        }
+        if (!tgUser?.id) { setError(t.errorId); return; }
         setLoading(true);
         setError(null);
 
@@ -162,23 +155,69 @@ export default function TMARegisterPage() {
                     telegramUsername: tgUser.username,
                     firstName: tgUser.first_name,
                     lastName: tgUser.last_name,
-                    fullName,
-                    phone,
-                    location,
-                    healthGoals,
-                    lang
+                    fullName, phone, location, healthGoals, lang
                 })
             });
-
             const data = await res.json();
 
             if (res.ok && data.success) {
                 router.push(`/${lang}/tma/dashboard`);
             } else {
-                setError(data.error || t.defaultError);
+                // If phone already exists, switch to login
+                if (res.status === 409 || (data.error && (
+                    data.error.toLowerCase().includes('allaqachon') ||
+                    data.error.toLowerCase().includes('уже зарегистрирован') ||
+                    data.error.toLowerCase().includes('phone')
+                ))) {
+                    setMode('login');
+                    setError(t.phoneExistsMsg);
+                } else {
+                    setError(data.error || t.defaultError);
+                }
             }
-        } catch (err) {
-            console.error("Register Error:", err);
+        } catch {
+            setError(t.errorServer);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ─── LOGIN ───
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login: phone, password })
+            });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                // Link telegramId to the existing user
+                if (tgUser?.id) {
+                    try {
+                        await fetch('/api/tma/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                telegramId: tgUser.id,
+                                telegramUsername: tgUser.username,
+                                firstName: tgUser.first_name,
+                                lastName: tgUser.last_name,
+                                phone, lang
+                            })
+                        });
+                    } catch { /* not critical */ }
+                }
+                router.push(`/${lang}/tma/dashboard`);
+            } else {
+                setError(data.error || t.loginError);
+            }
+        } catch {
             setError(t.errorServer);
         } finally {
             setLoading(false);
@@ -195,141 +234,109 @@ export default function TMARegisterPage() {
 
     return (
         <div className="min-h-screen bg-[#f6f9fe] overflow-x-hidden">
-            <AnimatePresence mode="wait">
-                {step === 'intro' ? (
-                    <motion.div
-                        key="intro"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, x: -50 }}
-                        className="flex flex-col min-h-screen"
-                    >
-                        {/* Header Section */}
-                        <div className="pt-12 px-8 flex items-center gap-6">
-                            <div className="relative w-20 h-20">
-                                <Image src="/images/logo.png" alt="Logo" fill className="object-contain" priority />
-                            </div>
-                            <div className="space-y-0.5">
-                                <h1 className="text-4xl font-editorial font-bold text-[#114539] tracking-tight">{t.title}</h1>
-                                <p className="text-[9px] font-black text-[#114539]/40 uppercase tracking-[0.2em]">{t.tagline}</p>
-                            </div>
-                        </div>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-8 pt-12 space-y-8 min-h-screen"
+            >
+                {/* Header */}
+                <div className="space-y-5">
+                    <button onClick={() => router.push(`/${lang}/tma`)} className="text-[#114539]/30 text-[10px] font-bold uppercase tracking-[0.4em] flex items-center gap-2">
+                        <ChevronLeft className="w-4 h-4" /> {t.back}
+                    </button>
+                    <h2 className="text-4xl font-editorial font-bold text-[#114539] leading-tight tracking-tight">
+                        {mode === 'login' ? t.loginTitle : t.registerTitle}
+                    </h2>
+                    <p className="text-[#114539]/50 text-sm font-medium leading-relaxed">
+                        {mode === 'login' ? t.loginSubtitle : t.registerSubtitle}
+                    </p>
+                </div>
 
-                        <div className="mt-6 border-y border-[#114539]/10 py-4 flex justify-center">
-                            <div className="flex items-center gap-2 text-[10px] font-black text-[#114539]/60 uppercase tracking-widest">
-                                <Users className="w-3 h-3" />
-                                <span>{t.stats}</span>
-                            </div>
-                        </div>
-
-                        {/* Video Card Container */}
-                        <div className="px-8 mt-10">
-                            <motion.div
-                                whileTap={{ scale: 0.98 }}
-                                className="relative aspect-[3/4] rounded-[3.5rem] overflow-hidden shadow-2xl premium-shadow"
-                            >
-                                <video
-                                    ref={videoRef}
-                                    src="/videos/intro.mp4"
-                                    className="w-full h-full object-cover"
-                                    playsInline
-                                    loop
-                                    poster="/images/hero-sabina.png"
-                                />
-                                <div className={`absolute inset-0 bg-gradient-to-t from-[#114539] via-transparent to-transparent flex flex-col justify-end p-10 transition-opacity duration-500 ${isPlaying ? 'opacity-0' : 'opacity-100'}`}>
-                                    <button
-                                        onClick={toggleVideo}
-                                        className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center mb-6 group active:scale-90 transition-all"
-                                    >
-                                        <Play className="w-6 h-6 text-white fill-white" />
-                                    </button>
-                                    <div className="space-y-1">
-                                        <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em]">{t.introLabel}</p>
-                                        <h3 className="text-2xl font-editorial font-bold text-white leading-tight">{t.introTitle}</h3>
-                                    </div>
-                                </div>
-                                {isPlaying && (
-                                    <div
-                                        onClick={toggleVideo}
-                                        className="absolute inset-0 z-10"
-                                    />
-                                )}
-                            </motion.div>
-                        </div>
-
-                        {/* Bio and Footer */}
-                        <div className="px-10 mt-10 space-y-12 flex-1 flex flex-col justify-between pb-12">
-                            <p className="text-center text-[#114539]/60 text-sm font-medium leading-relaxed italic">
-                                "{t.bio}"
-                            </p>
-
-                            <button
-                                onClick={() => setStep('form')}
-                                className="w-full bg-[#d8cfc4] text-[#114539] font-black text-[11px] uppercase tracking-[0.3em] py-7 rounded-[2rem] shadow-xl active:scale-95 transition-all"
-                            >
-                                {t.cta}
-                            </button>
-                        </div>
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="form"
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="p-8 pt-12 space-y-10 min-h-screen"
-                    >
-                        <div className="space-y-6">
-                            <button onClick={() => setStep('intro')} className="text-[#114539]/30 text-[10px] font-bold uppercase tracking-[0.4em] flex items-center gap-2">
-                                <ChevronRight className="w-4 h-4 rotate-180" /> {t.back}
-                            </button>
-                            <h2 className="text-4xl font-editorial font-bold text-[#114539] leading-tight tracking-tight" dangerouslySetInnerHTML={{ __html: t.registerTitle.replace(',', ',<br />') }} />
-                            <p className="text-[#114539]/50 text-sm font-medium leading-relaxed">{t.registerSubtitle}</p>
-                        </div>
-
-                        <form onSubmit={handleRegister} className="space-y-8">
-                            {error && (
-                                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-xs font-bold uppercase tracking-widest text-center">
-                                    {error}
-                                </div>
-                            )}
-
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.nameLabel}</label>
-                                    <input required type="text" placeholder={t.namePlaceholder} value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-white border border-[#114539]/5 rounded-2xl py-6 px-8 text-[#0b0c10] shadow-soft focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.phoneLabel}</label>
-                                    <input required type="tel" placeholder={t.phonePlaceholder} value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-white border border-[#114539]/5 rounded-2xl py-6 px-8 text-[#0b0c10] shadow-soft focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.locationLabel}</label>
-                                    <input required type="text" placeholder={t.locationPlaceholder} value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-white border border-[#114539]/5 rounded-2xl py-6 px-8 text-[#0b0c10] shadow-soft focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.goalsLabel}</label>
-                                    <textarea required placeholder={t.goalsPlaceholder} value={healthGoals} onChange={(e) => setHealthGoals(e.target.value)} className="w-full bg-white border border-[#114539]/5 rounded-[2.5rem] py-6 px-8 text-[#0b0c10] shadow-soft min-h-[140px] focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
-                                </div>
-                            </div>
-
-                            <div className="p-6 bg-white rounded-3xl border border-[#114539]/5 shadow-soft flex items-start gap-4">
-                                <input type="checkbox" required id="tma-offer" checked={agreeToOffer} onChange={(e) => setAgreeToOffer(e.target.checked)} className="mt-1 w-5 h-5 accent-[#114539]" />
-                                <label htmlFor="tma-offer" className="text-xs font-medium text-[#114539]/60 leading-snug">
-                                    {t.offerPrefix}
-                                    <Link href={`/${lang}/legal/public-offer`} className="text-[#114539] font-bold underline">
-                                        {t.offerLink}
-                                    </Link>
-                                    {t.offerSuffix}
-                                </label>
-                            </div>
-
-                            <button type="submit" disabled={!agreeToOffer || loading || initializing || !tgUser?.id} className="w-full bg-[#114539] text-white py-7 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-xl disabled:opacity-50 active:scale-95 transition-all">
-                                {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t.submit}
-                            </button>
-                        </form>
-                    </motion.div>
+                {error && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-700 text-xs font-bold text-center leading-relaxed">
+                        {error}
+                    </div>
                 )}
-            </AnimatePresence>
+
+                {mode === 'login' ? (
+                    /* ─── LOGIN FORM ─── */
+                    <form onSubmit={handleLogin} className="space-y-8">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.phoneLabel}</label>
+                                <input required type="tel" placeholder={t.phonePlaceholder} value={phone} onChange={(e) => setPhone(e.target.value)}
+                                    className="w-full bg-white border border-[#114539]/5 rounded-2xl py-6 px-8 text-[#0b0c10] shadow-soft focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.passwordLabel}</label>
+                                <input required type="password" placeholder={t.passwordPlaceholder} value={password} onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-white border border-[#114539]/5 rounded-2xl py-6 px-8 text-[#0b0c10] shadow-soft focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
+                            </div>
+                        </div>
+
+                        <button type="submit" disabled={loading || !phone || !password}
+                            className="w-full bg-[#114539] text-white py-7 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-xl disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-3">
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><LogIn className="w-4 h-4" /> {t.loginBtn}</>}
+                        </button>
+
+                        <div className="text-center pt-2">
+                            <span className="text-[#114539]/40 text-xs font-medium">{t.switchToRegister} </span>
+                            <button type="button" onClick={() => { setMode('register'); setError(null); }} className="text-[#114539] text-xs font-bold underline">
+                                {t.switchToRegisterLink}
+                            </button>
+                        </div>
+                    </form>
+                ) : (
+                    /* ─── REGISTER FORM ─── */
+                    <form onSubmit={handleRegister} className="space-y-8">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.nameLabel}</label>
+                                <input required type="text" placeholder={t.namePlaceholder} value={fullName} onChange={(e) => setFullName(e.target.value)}
+                                    className="w-full bg-white border border-[#114539]/5 rounded-2xl py-6 px-8 text-[#0b0c10] shadow-soft focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.phoneLabel}</label>
+                                <input required type="tel" placeholder={t.phonePlaceholder} value={phone} onChange={(e) => setPhone(e.target.value)}
+                                    className="w-full bg-white border border-[#114539]/5 rounded-2xl py-6 px-8 text-[#0b0c10] shadow-soft focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.locationLabel}</label>
+                                <input required type="text" placeholder={t.locationPlaceholder} value={location} onChange={(e) => setLocation(e.target.value)}
+                                    className="w-full bg-white border border-[#114539]/5 rounded-2xl py-6 px-8 text-[#0b0c10] shadow-soft focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[#114539]/60 uppercase tracking-widest ml-4">{t.goalsLabel}</label>
+                                <textarea required placeholder={t.goalsPlaceholder} value={healthGoals} onChange={(e) => setHealthGoals(e.target.value)}
+                                    className="w-full bg-white border border-[#114539]/5 rounded-[2.5rem] py-6 px-8 text-[#0b0c10] shadow-soft min-h-[140px] focus:outline-none focus:ring-2 focus:ring-[#114539]/20" />
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-white rounded-3xl border border-[#114539]/5 shadow-soft flex items-start gap-4">
+                            <input type="checkbox" required id="tma-offer" checked={agreeToOffer} onChange={(e) => setAgreeToOffer(e.target.checked)} className="mt-1 w-5 h-5 accent-[#114539]" />
+                            <label htmlFor="tma-offer" className="text-xs font-medium text-[#114539]/60 leading-snug">
+                                {t.offerPrefix}
+                                <Link href={`/${lang}/legal/public-offer`} className="text-[#114539] font-bold underline">
+                                    {t.offerLink}
+                                </Link>
+                                {t.offerSuffix}
+                            </label>
+                        </div>
+
+                        <button type="submit" disabled={!agreeToOffer || loading || initializing || !tgUser?.id}
+                            className="w-full bg-[#114539] text-white py-7 rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-xl disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-3">
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><UserPlus className="w-4 h-4" /> {t.submit}</>}
+                        </button>
+
+                        <div className="text-center pt-2">
+                            <span className="text-[#114539]/40 text-xs font-medium">{t.switchToLogin} </span>
+                            <button type="button" onClick={() => { setMode('login'); setError(null); }} className="text-[#114539] text-xs font-bold underline">
+                                {t.switchToLoginLink}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </motion.div>
         </div>
     );
 }

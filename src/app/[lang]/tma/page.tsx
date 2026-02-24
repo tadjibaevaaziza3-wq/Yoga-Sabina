@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Heart, Play, Pause } from 'lucide-react';
+import { Heart, Play, Pause, UserPlus, LogIn } from 'lucide-react';
 
 // Default content (used when settings are not set in admin)
 const DEFAULTS = {
@@ -213,14 +213,28 @@ export default function TMAPage({ params }: { params: any }) {
                         {t.bio}
                     </p>
 
-                    <button
-                        onClick={() => {
-                            router.push(`/${currentLang}/tma/register`);
-                        }}
-                        className="btn-luxury w-full py-6 text-xs uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-all text-white font-black"
-                    >
-                        {t.cta}
-                    </button>
+                    <div className="space-y-4">
+                        {/* Sign Up button */}
+                        <button
+                            onClick={() => {
+                                router.push(`/${currentLang}/tma/register`);
+                            }}
+                            className="btn-luxury w-full py-6 text-xs uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-all text-white font-black flex items-center justify-center gap-3"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            {currentLang === 'ru' ? 'РЕГИСТРАЦИЯ' : "RO'YXATDAN O'TISH"}
+                        </button>
+                        {/* Sign In button */}
+                        <button
+                            onClick={() => {
+                                router.push(`/${currentLang}/tma/register?mode=login`);
+                            }}
+                            className="w-full py-6 text-xs uppercase tracking-[0.3em] shadow-lg active:scale-95 transition-all text-[#114539] font-black bg-white border-2 border-[#114539]/20 rounded-[2rem] flex items-center justify-center gap-3"
+                        >
+                            <LogIn className="w-4 h-4" />
+                            {currentLang === 'ru' ? 'ВОЙТИ' : 'KIRISH'}
+                        </button>
+                    </div>
                 </motion.div>
             </div>
         </main>
