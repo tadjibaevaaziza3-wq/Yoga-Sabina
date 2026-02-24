@@ -30,8 +30,9 @@ export function findBestFAQMatch(query: string, lang: Locale) {
         }
     }
 
-    // Threshold for matching
-    if (maxScore >= 1 && bestMatch) {
+    // Threshold: require at least 2 keyword matches to avoid overly generic answers
+    // (e.g. "yoga" alone should NOT trigger the generic "Yoga nima?" FAQ)
+    if (maxScore >= 2 && bestMatch) {
         return bestMatch.answer
     }
 
