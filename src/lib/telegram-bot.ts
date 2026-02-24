@@ -172,3 +172,42 @@ export async function sendTelegramAudio(
     }
 }
 
+/**
+ * Send a photo to a Telegram user
+ */
+export async function sendTelegramPhoto(
+    chatId: string | number,
+    photoUrl: string,
+    caption?: string
+): Promise<boolean> {
+    if (!BOT_TOKEN) {
+        console.error('[Telegram Bot] No bot token configured')
+        return false
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/sendPhoto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                photo: photoUrl,
+                caption: caption || '',
+                parse_mode: 'HTML'
+            })
+        })
+
+        const data: TelegramResponse = await response.json()
+
+        if (!data.ok) {
+            console.error('[Telegram Bot] Photo send failed:', data.description)
+            return false
+        }
+
+        return true
+    } catch (error) {
+        console.error('[Telegram Bot] Error sending photo:', error)
+        return false
+    }
+}
+

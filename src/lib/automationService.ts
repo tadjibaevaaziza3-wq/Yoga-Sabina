@@ -6,7 +6,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import { sendTelegramMessage, sendTelegramVideo, sendTelegramAudio } from '@/lib/telegram-bot'
+import { sendTelegramMessage, sendTelegramVideo, sendTelegramAudio, sendTelegramPhoto } from '@/lib/telegram-bot'
 import { generateRetentionMessage, estimateReturnProbability, adjustToneByProbability, selectVariant } from '@/lib/aiRetentionService'
 import { recalculateUserEngagement } from '@/lib/engagementService'
 
@@ -233,6 +233,8 @@ export async function processQueue(): Promise<{ sent: number; failed: number; er
                 success = await sendTelegramVideo(item.user.telegramId, step.contentUrl, messageText || undefined)
             } else if (step.contentType === 'audio' && step.contentUrl) {
                 success = await sendTelegramAudio(item.user.telegramId, step.contentUrl, messageText || undefined)
+            } else if ((step.contentType === 'photo' || step.contentType === 'image') && step.contentUrl) {
+                success = await sendTelegramPhoto(item.user.telegramId, step.contentUrl, messageText || undefined)
             } else {
                 if (!messageText) { failed++; continue }
                 success = await sendTelegramMessage(item.user.telegramId, messageText)
