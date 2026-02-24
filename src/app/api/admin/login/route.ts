@@ -52,11 +52,47 @@ export async function POST(req: Request) {
         }
 
         if (!admin || !admin.isActive) {
-            return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
+            // Last resort: check ENV credentials directly (for when username doesn't match DB)
+            const envUser = process.env.ADMIN_USERNAME
+            const envPass = process.env.ADMIN_PASSWORD
+            if (envUser && envPass && username === envUser && password === envPass) {
+                // Create or update admin from ENV
+                const hashedPassword = await bcrypt.hash(password, 12)
+                admin = await prisma.adminUser.upsert({
+                    where: { username: envUser },
+                    update: { passwordHash: hashedPassword, isActive: true },
+                    create: {
+                        username: envUser,
+                        displayName: 'Super Admin',
+                        passwordHash: hashedPassword,
+                        role: 'SUPER_ADMIN',
+                        permissions: [],
+                    }
+                })
+                console.log('✅ Admin synced from env credentials')
+            } else {
+                return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
+            }
         }
 
         // Verify password with bcrypt
-        const passwordValid = await bcrypt.compare(password, admin.passwordHash)
+        let passwordValid = await bcrypt.compare(password, admin.passwordHash)
+
+        // If password doesn't match DB hash but matches ENV, sync the password
+        if (!passwordValid) {
+            const envUser = process.env.ADMIN_USERNAME
+            const envPass = process.env.ADMIN_PASSWORD
+            if (envUser && envPass && username === envUser && password === envPass) {
+                const hashedPassword = await bcrypt.hash(password, 12)
+                admin = await prisma.adminUser.update({
+                    where: { id: admin.id },
+                    data: { passwordHash: hashedPassword }
+                })
+                passwordValid = true
+                console.log('✅ Admin password synced from env')
+            }
+        }
+
         if (!passwordValid) {
             // Log failed attempt
             await logAdminAction(admin.id, 'LOGIN_FAILED', {
