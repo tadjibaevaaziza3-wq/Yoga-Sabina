@@ -16,13 +16,17 @@ export default function TMADashboard() {
         BANNER_TMA_DASHBOARD: "/images/hero-sabina.png",
         FRONTEND_TRAINER_PHOTO: "/images/trainer-portrait.png",
         FRONTEND_VIDEO_BANNER: "/images/sabina-intro.png",
-        IS_CONSULTATION_ENABLED: "true"
+        IS_CONSULTATION_ENABLED: "true",
+        TMA_DASHBOARD_ONLINE_IMAGE: "/images/courses/woman-premium.jpg",
+        TMA_DASHBOARD_OFFLINE_IMAGE: "/images/studios/doyoga.jpg",
+        TMA_DASHBOARD_BADGE_TEXT: "✦ Premium Yoga Platform",
+        TMA_CONTACT_TELEGRAM: "@sabina_polatova",
     })
 
     useEffect(() => {
         const fetchBanners = async () => {
             try {
-                const res = await fetch('/api/settings/public?keys=BANNER_TMA_DASHBOARD,FRONTEND_TRAINER_PHOTO,FRONTEND_VIDEO_BANNER,IS_CONSULTATION_ENABLED')
+                const res = await fetch('/api/settings/public?keys=BANNER_TMA_DASHBOARD,FRONTEND_TRAINER_PHOTO,FRONTEND_VIDEO_BANNER,IS_CONSULTATION_ENABLED,TMA_DASHBOARD_ONLINE_IMAGE,TMA_DASHBOARD_OFFLINE_IMAGE,TMA_DASHBOARD_BADGE_TEXT,TMA_CONTACT_TELEGRAM')
                 const data = await res.json()
                 setBanners(prev => ({
                     ...prev,
@@ -136,7 +140,7 @@ export default function TMADashboard() {
 
                     {/* Premium Badge */}
                     <div className="w-full bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-[#114539]/5 shadow-soft">
-                        <span className="text-[9px] font-bold text-[#114539]/50 uppercase tracking-[0.3em]">✦ Premium Yoga Platform</span>
+                        <span className="text-[9px] font-bold text-[#114539]/50 uppercase tracking-[0.3em]">{banners.TMA_DASHBOARD_BADGE_TEXT}</span>
                     </div>
                 </header>
 
@@ -197,7 +201,7 @@ export default function TMADashboard() {
                     {/* Online Courses */}
                     <Link href={`/${lang}/tma/courses?filter=ONLINE`} className="col-span-2 block group">
                         <motion.div whileTap={{ scale: 0.98 }} className="relative h-36 rounded-[2rem] overflow-hidden shadow-lg border border-white/10">
-                            <Image src="/images/courses/woman-premium.jpg" alt="Online" fill className="object-cover object-[center_35%] transition-transform duration-700 group-active:scale-105" />
+                            <Image src={banners.TMA_DASHBOARD_ONLINE_IMAGE} alt="Online" fill className="object-cover object-[center_35%] transition-transform duration-700 group-active:scale-105" />
                             <div className="absolute inset-0 bg-gradient-to-r from-[#114539]/80 via-[#114539]/30 to-transparent" />
                             <div className="absolute inset-0 p-5 flex items-end">
                                 <div>
@@ -214,7 +218,7 @@ export default function TMADashboard() {
                     {/* Offline */}
                     <Link href={`/${lang}/tma/courses?filter=OFFLINE`} className="block group">
                         <motion.div whileTap={{ scale: 0.98 }} className="relative h-36 rounded-[2rem] overflow-hidden shadow-lg border border-white/10">
-                            <Image src="/images/studios/doyoga.jpg" alt="Offline" fill className="object-cover object-[center_40%] transition-transform duration-700 group-active:scale-105" />
+                            <Image src={banners.TMA_DASHBOARD_OFFLINE_IMAGE} alt="Offline" fill className="object-cover object-[center_40%] transition-transform duration-700 group-active:scale-105" />
                             <div className="absolute inset-0 bg-gradient-to-t from-[#114539]/80 to-[#114539]/20" />
                             <div className="absolute inset-0 p-4 flex items-end">
                                 <div>
@@ -240,7 +244,7 @@ export default function TMADashboard() {
                             </motion.div>
                         </Link>
                     ) : (
-                        <a href="https://t.me/sabina_polatova" target="_blank" rel="noopener noreferrer" className="block group">
+                        <a href={`https://t.me/${banners.TMA_CONTACT_TELEGRAM.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="block group">
                             <motion.div whileTap={{ scale: 0.98 }} className="relative h-36 rounded-[2rem] overflow-hidden shadow-lg border border-white/10">
                                 <Image src={banners.FRONTEND_VIDEO_BANNER} alt="Contact" fill className="object-cover object-[center_15%] transition-transform duration-700 group-active:scale-105" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#114539]/80 to-[#114539]/20" />
@@ -257,14 +261,14 @@ export default function TMADashboard() {
 
                 {/* Contact Admin - always show */}
                 {banners.IS_CONSULTATION_ENABLED !== "false" && (
-                    <a href="https://t.me/sabina_polatova" target="_blank" rel="noopener noreferrer" className="block">
+                    <a href={`https://t.me/${banners.TMA_CONTACT_TELEGRAM.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="block">
                         <motion.div whileTap={{ scale: 0.98 }} className="flex items-center gap-4 bg-white rounded-2xl p-5 border border-[#114539]/5 shadow-sm">
                             <div className="w-10 h-10 rounded-xl bg-[#114539]/5 flex items-center justify-center">
                                 <Send className="w-4 h-4 text-[#114539]" />
                             </div>
                             <div className="flex-1">
                                 <p className="text-xs font-black text-[#114539] uppercase tracking-widest">{t.categories.contact}</p>
-                                <p className="text-[9px] text-[#114539]/40 font-bold">@sabina_polatova</p>
+                                <p className="text-[9px] text-[#114539]/40 font-bold">{banners.TMA_CONTACT_TELEGRAM}</p>
                             </div>
                             <ChevronRight className="w-4 h-4 text-[#114539]/30" />
                         </motion.div>
@@ -290,6 +294,6 @@ export default function TMADashboard() {
                     <span className="text-[8px] font-bold uppercase tracking-widest">{t.profile}</span>
                 </Link>
             </div>
-        </main>
+        </main >
     );
 }

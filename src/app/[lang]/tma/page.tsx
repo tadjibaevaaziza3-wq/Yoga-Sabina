@@ -6,12 +6,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { Heart, Play, Pause } from 'lucide-react';
 
+// Default content (used when settings are not set in admin)
+const DEFAULTS = {
+    TMA_INTRO_LOGO: '/images/logo.png',
+    TMA_INTRO_VIDEO: '/videos/intro.mp4',
+    TMA_INTRO_TRAINER_NAME: 'SABINA POLATOVA',
+    TMA_INTRO_TITLE_UZ: 'Baxtli Men',
+    TMA_INTRO_TITLE_RU: 'Baxtli Men',
+    TMA_INTRO_SUBTITLE_UZ: "Sog'lomlik va ichki muvozanat",
+    TMA_INTRO_SUBTITLE_RU: 'Здоровье и внутренний баланс',
+    TMA_INTRO_BIO_UZ: "Sabina Polatova — 7 yillik tajribaga ega sertifikatlangan yoga-trener va yoga-terapevt. Salomatlik va barcha uchun ichki muvozanat bo'yicha mutaxassis.",
+    TMA_INTRO_BIO_RU: 'Сабина Полатова — сертифицированный йога-тренер и йога-терапевт с 7-летнего стажем. Специалист по оздоровлению и внутреннему балансу для всех.',
+    TMA_INTRO_MEMBERS_COUNT: '500+',
+    TMA_INTRO_VIDEO_LABEL_UZ: 'Metodim bilan tanishing',
+    TMA_INTRO_VIDEO_LABEL_RU: 'Познакомьтесь с методом',
+};
+
+const SETTING_KEYS = Object.keys(DEFAULTS).join(',');
+
 export default function TMAPage({ params }: { params: any }) {
     const router = useRouter();
     const videoRef = useRef<HTMLVideoElement>(null);
     const [loading, setLoading] = useState(true);
     const [currentLang, setCurrentLang] = useState('uz');
     const [isPlaying, setIsPlaying] = useState(false);
+    const [settings, setSettings] = useState(DEFAULTS);
 
     const toggleVideo = () => {
         if (videoRef.current) {
@@ -25,11 +44,25 @@ export default function TMAPage({ params }: { params: any }) {
     };
 
     useEffect(() => {
-        const checkRegistration = async () => {
+        const init = async () => {
             const resolvedParams = await params;
             const lang = resolvedParams.lang || 'uz';
             setCurrentLang(lang);
 
+            // Fetch dynamic settings
+            try {
+                const res = await fetch(`/api/settings/public?keys=${SETTING_KEYS}`);
+                const data = await res.json();
+                setSettings(prev => {
+                    const merged = { ...prev };
+                    Object.keys(prev).forEach(k => {
+                        if (data[k]) (merged as any)[k] = data[k];
+                    });
+                    return merged;
+                });
+            } catch { }
+
+            // Check if user is already registered
             if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
                 const tg = (window as any).Telegram.WebApp;
                 const tgUser = tg.initDataUnsafe?.user;
@@ -40,7 +73,6 @@ export default function TMAPage({ params }: { params: any }) {
                         const res = await fetch(`/api/tma/register?telegramId=${tgUser.id}`)
                         const data = await res.json()
                         if (data.success && data.isRegistered) {
-                            // Using replace to prevent back-button loops
                             window.location.replace(`/${lang}/tma/dashboard`);
                             return;
                         } else {
@@ -60,13 +92,8 @@ export default function TMAPage({ params }: { params: any }) {
                 setLoading(false);
             }
         };
-        checkRegistration();
+        init();
     }, [params]);
-
-    const handleLangSwitch = (lang: string) => {
-        setCurrentLang(lang);
-        router.push(`/${lang}/tma`);
-    };
 
     if (loading) return (
         <div className="min-h-screen bg-[#f6f9fe] flex items-center justify-center">
@@ -74,24 +101,16 @@ export default function TMAPage({ params }: { params: any }) {
         </div>
     );
 
-    const content = {
-        uz: {
-            title: "Baxtli Men",
-            subtitle: "Sog'lomlik va ichki muvozanat",
-            bio: "Sabina Polatova — 7 yillik tajribaga ega sertifikatlangan yoga-trener va yoga-terapevt. Salomatlik va barcha uchun ichki muvozanat bo'yicha mutaxassis.",
-            cta: "DAVOM ETISH",
-            members: "A'zolar"
-        },
-        ru: {
-            title: "Baxtli Men",
-            subtitle: "Здоровье и внутренний баланс",
-            bio: "Сабина Полатова — сертифицированный йога-тренер и йога-терапевт с 7-летнего стажем. Специалист по оздоровлению и внутреннему балансу для всех.",
-            cta: "ПРОДОЛЖИТЬ",
-            members: "Участников"
-        }
+    // Dynamic localized content
+    const s = settings;
+    const t = {
+        title: currentLang === 'ru' ? s.TMA_INTRO_TITLE_RU : s.TMA_INTRO_TITLE_UZ,
+        subtitle: currentLang === 'ru' ? s.TMA_INTRO_SUBTITLE_RU : s.TMA_INTRO_SUBTITLE_UZ,
+        bio: currentLang === 'ru' ? s.TMA_INTRO_BIO_RU : s.TMA_INTRO_BIO_UZ,
+        cta: currentLang === 'ru' ? 'ПРОДОЛЖИТЬ' : 'DAVOM ETISH',
+        members: currentLang === 'ru' ? 'Участников' : "A'zolar",
+        videoLabel: currentLang === 'ru' ? s.TMA_INTRO_VIDEO_LABEL_RU : s.TMA_INTRO_VIDEO_LABEL_UZ,
     };
-
-    const t = content[currentLang as keyof typeof content];
 
     return (
         <main className="bg-[#f6f9fe] min-h-screen flex flex-col overflow-x-hidden relative">
@@ -107,7 +126,7 @@ export default function TMAPage({ params }: { params: any }) {
                     <div className="space-y-4 flex flex-col items-center">
                         <div className="relative w-24 h-24 mb-2">
                             <Image
-                                src="/images/logo.png"
+                                src={s.TMA_INTRO_LOGO}
                                 alt="Logo"
                                 fill
                                 className="object-contain"
@@ -115,7 +134,7 @@ export default function TMAPage({ params }: { params: any }) {
                         </div>
                         <div className="space-y-3">
                             <span className="text-[11px] font-bold uppercase tracking-[0.5em] text-[#114539] block">
-                                SABINA POLATOVA
+                                {s.TMA_INTRO_TRAINER_NAME}
                             </span>
                             <h1 className="text-6xl font-editorial font-bold leading-[1] tracking-tight text-[#114539]">
                                 {t.title}
@@ -126,7 +145,7 @@ export default function TMAPage({ params }: { params: any }) {
 
                     <div className="flex items-center justify-center gap-4 py-2 border-y border-[#114539]/10">
                         <div className="text-[10px] font-bold text-[#114539]/40 uppercase tracking-widest">
-                            <span className="text-[#114539]">500+</span> {t.members}
+                            <span className="text-[#114539]">{s.TMA_INTRO_MEMBERS_COUNT}</span> {t.members}
                         </div>
                     </div>
                 </motion.div>
@@ -144,7 +163,7 @@ export default function TMAPage({ params }: { params: any }) {
                     >
                         <video
                             ref={videoRef}
-                            src="/videos/intro.mp4"
+                            src={s.TMA_INTRO_VIDEO}
                             className="w-full h-full object-cover"
                             playsInline
                             loop
@@ -171,7 +190,7 @@ export default function TMAPage({ params }: { params: any }) {
                         {/* Title Overlay */}
                         <div className="absolute top-8 left-8 text-left">
                             <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Intro Video</p>
-                            <h4 className="text-lg font-editorial font-semibold leading-tight text-white">Metodim bilan tanishing</h4>
+                            <h4 className="text-lg font-editorial font-semibold leading-tight text-white">{t.videoLabel}</h4>
                         </div>
 
                         {isPlaying && (

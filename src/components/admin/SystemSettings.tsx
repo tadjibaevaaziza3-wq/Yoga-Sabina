@@ -33,7 +33,24 @@ export function SystemSettings() {
         BANNER_OFFLINE_COURSES: '',
         BANNER_ALL_COURSES: '',
         BANNER_CONSULTATIONS: '',
-        BANNER_TMA_DASHBOARD: ''
+        BANNER_TMA_DASHBOARD: '',
+        // TMA Content
+        TMA_INTRO_LOGO: '',
+        TMA_INTRO_VIDEO: '',
+        TMA_INTRO_TRAINER_NAME: '',
+        TMA_INTRO_TITLE_UZ: '',
+        TMA_INTRO_TITLE_RU: '',
+        TMA_INTRO_SUBTITLE_UZ: '',
+        TMA_INTRO_SUBTITLE_RU: '',
+        TMA_INTRO_BIO_UZ: '',
+        TMA_INTRO_BIO_RU: '',
+        TMA_INTRO_MEMBERS_COUNT: '',
+        TMA_INTRO_VIDEO_LABEL_UZ: '',
+        TMA_INTRO_VIDEO_LABEL_RU: '',
+        TMA_DASHBOARD_ONLINE_IMAGE: '',
+        TMA_DASHBOARD_OFFLINE_IMAGE: '',
+        TMA_DASHBOARD_BADGE_TEXT: '',
+        TMA_CONTACT_TELEGRAM: '',
     })
 
     useEffect(() => {
@@ -42,32 +59,13 @@ export function SystemSettings() {
                 const res = await fetch('/api/admin/settings');
                 const data = await res.json();
                 if (data.success && data.settings) {
-                    setCredentials({
-                        IS_CONSULTATION_ENABLED: data.settings.IS_CONSULTATION_ENABLED || 'true',
-                        PAYME_MERCHANT_ID: data.settings.PAYME_MERCHANT_ID || '',
-                        PAYME_SECRET_KEY: data.settings.PAYME_SECRET_KEY || '',
-                        CLICK_MERCHANT_ID: data.settings.CLICK_MERCHANT_ID || '',
-                        CLICK_SERVICE_ID: data.settings.CLICK_SERVICE_ID || '',
-                        CLICK_SECRET_KEY: data.settings.CLICK_SECRET_KEY || '',
-                        MANUAL_CARD_NUMBER: data.settings.MANUAL_CARD_NUMBER || '',
-                        MANUAL_CARD_OWNER: data.settings.MANUAL_CARD_OWNER || '',
-                        FRONTEND_HERO_PHOTO: data.settings.FRONTEND_HERO_PHOTO || '',
-                        FRONTEND_TRAINER_PHOTO: data.settings.FRONTEND_TRAINER_PHOTO || '',
-                        FRONTEND_MAIN_VIDEO: data.settings.FRONTEND_MAIN_VIDEO || '',
-                        FRONTEND_VIDEO_BANNER: data.settings.FRONTEND_VIDEO_BANNER || '',
-                        FRONTEND_PROGRAMS_ONLINE_BG: data.settings.FRONTEND_PROGRAMS_ONLINE_BG || '',
-                        FRONTEND_PROGRAMS_OFFLINE_BG: data.settings.FRONTEND_PROGRAMS_OFFLINE_BG || '',
-                        FRONTEND_PROGRAMS_CONSULTATION_BG: data.settings.FRONTEND_PROGRAMS_CONSULTATION_BG || '',
-                        FRONTEND_INSTA_1: data.settings.FRONTEND_INSTA_1 || '',
-                        FRONTEND_INSTA_2: data.settings.FRONTEND_INSTA_2 || '',
-                        FRONTEND_INSTA_3: data.settings.FRONTEND_INSTA_3 || '',
-                        FRONTEND_INSTA_4: data.settings.FRONTEND_INSTA_4 || '',
-                        BANNER_ABOUT_US: data.settings.BANNER_ABOUT_US || '',
-                        BANNER_ONLINE_COURSES: data.settings.BANNER_ONLINE_COURSES || '',
-                        BANNER_OFFLINE_COURSES: data.settings.BANNER_OFFLINE_COURSES || '',
-                        BANNER_ALL_COURSES: data.settings.BANNER_ALL_COURSES || '',
-                        BANNER_CONSULTATIONS: data.settings.BANNER_CONSULTATIONS || '',
-                        BANNER_TMA_DASHBOARD: data.settings.BANNER_TMA_DASHBOARD || ''
+                    setCredentials(prev => {
+                        const s = data.settings;
+                        const merged: any = { ...prev };
+                        Object.keys(prev).forEach(k => {
+                            if (s[k] !== undefined) merged[k] = s[k];
+                        });
+                        return merged;
                     });
                 }
             } catch (error) {
@@ -456,6 +454,118 @@ export function SystemSettings() {
                 {renderUploadBlock('FRONTEND_INSTA_2', 'Instagram Post 2')}
                 {renderUploadBlock('FRONTEND_INSTA_3', 'Instagram Post 3')}
                 {renderUploadBlock('FRONTEND_INSTA_4', 'Instagram Post 4')}
+            </div>
+
+            <h3 className="text-2xl font-editorial font-bold text-[var(--primary)] border-b border-[var(--border)] pb-4 mt-12">📱 TMA Kontent Sozlamalari (Mini App)</h3>
+
+            {/* TMA Images & Video */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {renderUploadBlock('TMA_INTRO_LOGO', 'TMA Intro Logo')}
+                {renderUploadBlock('TMA_INTRO_VIDEO', 'TMA Intro Video')}
+                {renderUploadBlock('TMA_DASHBOARD_ONLINE_IMAGE', 'TMA Online Kurslar Rasmi')}
+                {renderUploadBlock('TMA_DASHBOARD_OFFLINE_IMAGE', 'TMA Offline Kurslar Rasmi')}
+                {renderUploadBlock('BANNER_TMA_DASHBOARD', 'TMA Dashboard Banner')}
+            </div>
+
+            {/* TMA Text Settings */}
+            <h4 className="text-lg font-bold text-[var(--primary)] mt-8">📝 TMA Matnlari (Texts)</h4>
+            <div className="space-y-4">
+                {[
+                    { key: 'TMA_INTRO_TRAINER_NAME', label: 'Trener Ismi (masalan: SABINA POLATOVA)', placeholder: 'SABINA POLATOVA' },
+                    { key: 'TMA_INTRO_MEMBERS_COUNT', label: 'A\'zolar soni (masalan: 500+)', placeholder: '500+' },
+                    { key: 'TMA_DASHBOARD_BADGE_TEXT', label: 'Dashboard Badge Matni', placeholder: '✦ Premium Yoga Platform' },
+                    { key: 'TMA_CONTACT_TELEGRAM', label: 'Telegram Username (masalan: @sabina_polatova)', placeholder: '@sabina_polatova' },
+                ].map(({ key, label, placeholder }) => (
+                    <div key={key} className="space-y-2">
+                        <label className="text-sm font-bold opacity-70 uppercase tracking-widest pl-4">{label}</label>
+                        <div className="flex gap-4">
+                            <Input
+                                value={(credentials as any)[key] || ''}
+                                onChange={(e) => setCredentials(prev => ({ ...prev, [key]: e.target.value }))}
+                                className="flex-1 bg-white"
+                                placeholder={placeholder}
+                            />
+                            <button
+                                disabled={loading}
+                                onClick={() => handleSave(key, (credentials as any)[key])}
+                                className="bg-[var(--primary)] text-white px-6 rounded-2xl flex items-center gap-2 font-bold disabled:opacity-50"
+                            >
+                                <Save className="w-4 h-4" /> Saqlash
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* TMA Translatable Texts (UZ/RU) */}
+            <h4 className="text-lg font-bold text-[var(--primary)] mt-8">🌐 TMA Tarjimalar (UZ / RU)</h4>
+            <div className="space-y-6">
+                {[
+                    { uzKey: 'TMA_INTRO_TITLE_UZ', ruKey: 'TMA_INTRO_TITLE_RU', label: 'Sarlavha (Title)', uzPlaceholder: 'Baxtli Men', ruPlaceholder: 'Baxtli Men' },
+                    { uzKey: 'TMA_INTRO_SUBTITLE_UZ', ruKey: 'TMA_INTRO_SUBTITLE_RU', label: 'Taglavha (Subtitle)', uzPlaceholder: 'Sog\'lomlik va ichki muvozanat', ruPlaceholder: 'Здоровье и внутренний баланс' },
+                    { uzKey: 'TMA_INTRO_BIO_UZ', ruKey: 'TMA_INTRO_BIO_RU', label: 'Trener haqida (Bio)', uzPlaceholder: 'Sabina Polatova — 7 yillik tajriba...', ruPlaceholder: 'Сабина Полатова — сертифицированный...' },
+                    { uzKey: 'TMA_INTRO_VIDEO_LABEL_UZ', ruKey: 'TMA_INTRO_VIDEO_LABEL_RU', label: 'Video ustidagi matn', uzPlaceholder: 'Metodim bilan tanishing', ruPlaceholder: 'Познакомьтесь с методом' },
+                ].map(({ uzKey, ruKey, label, uzPlaceholder, ruPlaceholder }) => (
+                    <div key={uzKey} className="p-6 bg-white rounded-2xl border border-[var(--border)] space-y-4">
+                        <label className="text-sm font-bold opacity-70 uppercase tracking-widest block">{label}</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <span className="text-xs font-bold text-[var(--primary)]/50">🇺🇿 O'zbek</span>
+                                <div className="flex gap-2">
+                                    {uzKey.includes('BIO') ? (
+                                        <textarea
+                                            value={(credentials as any)[uzKey] || ''}
+                                            onChange={(e) => setCredentials(prev => ({ ...prev, [uzKey]: e.target.value }))}
+                                            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm min-h-[80px] outline-none focus:border-[var(--primary)]/50"
+                                            placeholder={uzPlaceholder}
+                                        />
+                                    ) : (
+                                        <Input
+                                            value={(credentials as any)[uzKey] || ''}
+                                            onChange={(e) => setCredentials(prev => ({ ...prev, [uzKey]: e.target.value }))}
+                                            className="flex-1 bg-gray-50"
+                                            placeholder={uzPlaceholder}
+                                        />
+                                    )}
+                                    <button
+                                        disabled={loading}
+                                        onClick={() => handleSave(uzKey, (credentials as any)[uzKey])}
+                                        className="bg-[var(--primary)] text-white px-4 rounded-xl flex items-center gap-1 font-bold disabled:opacity-50 text-xs"
+                                    >
+                                        <Save className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <span className="text-xs font-bold text-[var(--primary)]/50">🇷🇺 Русский</span>
+                                <div className="flex gap-2">
+                                    {ruKey.includes('BIO') ? (
+                                        <textarea
+                                            value={(credentials as any)[ruKey] || ''}
+                                            onChange={(e) => setCredentials(prev => ({ ...prev, [ruKey]: e.target.value }))}
+                                            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm min-h-[80px] outline-none focus:border-[var(--primary)]/50"
+                                            placeholder={ruPlaceholder}
+                                        />
+                                    ) : (
+                                        <Input
+                                            value={(credentials as any)[ruKey] || ''}
+                                            onChange={(e) => setCredentials(prev => ({ ...prev, [ruKey]: e.target.value }))}
+                                            className="flex-1 bg-gray-50"
+                                            placeholder={ruPlaceholder}
+                                        />
+                                    )}
+                                    <button
+                                        disabled={loading}
+                                        onClick={() => handleSave(ruKey, (credentials as any)[ruKey])}
+                                        className="bg-[var(--primary)] text-white px-4 rounded-xl flex items-center gap-1 font-bold disabled:opacity-50 text-xs"
+                                    >
+                                        <Save className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     )

@@ -242,3 +242,41 @@ ADMIN_TELEGRAM_ID=     # Admin's Telegram chat ID for alerts
 CRON_SECRET=           # Secret key for cron endpoint auth
 ```
 
+---
+
+## TMA Content Management (Mini App)
+
+Admin can change **all photos, videos, and texts** in TMA pages via `SystemSettings.tsx` → "📱 TMA Kontent Sozlamalari" section.
+
+### Setting Keys (SystemSetting model)
+
+| Key | Type | TMA Page | What It Controls |
+|-----|------|----------|-----------------|
+| `TMA_INTRO_LOGO` | Image | Intro | Logo image |
+| `TMA_INTRO_VIDEO` | Video | Intro | Intro video |
+| `TMA_INTRO_TRAINER_NAME` | Text | Intro | Trainer name display |
+| `TMA_INTRO_TITLE_UZ/RU` | Text | Intro | Title (bilingual) |
+| `TMA_INTRO_SUBTITLE_UZ/RU` | Text | Intro | Subtitle (bilingual) |
+| `TMA_INTRO_BIO_UZ/RU` | Text | Intro | Bio paragraph (bilingual) |
+| `TMA_INTRO_MEMBERS_COUNT` | Text | Intro | Members badge (e.g. "500+") |
+| `TMA_INTRO_VIDEO_LABEL_UZ/RU` | Text | Intro | Video overlay text |
+| `TMA_DASHBOARD_ONLINE_IMAGE` | Image | Dashboard | Online courses card |
+| `TMA_DASHBOARD_OFFLINE_IMAGE` | Image | Dashboard | Offline courses card |
+| `TMA_DASHBOARD_BADGE_TEXT` | Text | Dashboard | Premium badge |
+| `TMA_CONTACT_TELEGRAM` | Text | Dashboard | Telegram username |
+
+### How It Works
+
+1. Admin saves values via `SystemSettings.tsx` → `POST /api/admin/settings`
+2. TMA pages fetch via `GET /api/settings/public?keys=TMA_INTRO_*,...`
+3. Hardcoded defaults serve as fallback when settings are empty
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `src/components/admin/SystemSettings.tsx` | Admin UI for managing TMA content |
+| `src/app/[lang]/tma/page.tsx` | TMA intro page (all content dynamic) |
+| `src/app/[lang]/tma/dashboard/page.tsx` | TMA dashboard (images, badge, telegram dynamic) |
+| `src/app/api/settings/public/route.ts` | Public API for fetching non-secret settings |
+| `src/app/api/admin/settings/route.ts` | Admin API for reading/writing settings |
