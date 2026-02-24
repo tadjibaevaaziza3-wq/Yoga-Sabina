@@ -10,17 +10,17 @@ async function isAdmin(): Promise<boolean> {
     return !!verifyToken(adminSession);
 }
 
-// POST /api/admin/users/[userId]/approve-payment
+// POST /api/admin/users/[id]/approve-payment
 // Approves a pending payment screenshot and creates automatic subscription
 export async function POST(
     req: Request,
-    { params }: { params: Promise<{ userId: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     if (!await isAdmin()) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { userId } = await params;
+    const { id: userId } = await params;
 
     try {
         // Find pending purchase with screenshot
