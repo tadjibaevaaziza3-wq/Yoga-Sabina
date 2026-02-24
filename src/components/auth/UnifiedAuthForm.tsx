@@ -42,6 +42,10 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
     const [error, setError] = useState<string | null>(null)
     const [showLoginPassword, setShowLoginPassword] = useState(false)
     const [showRegisterPassword, setShowRegisterPassword] = useState(false)
+    const [showResetForm, setShowResetForm] = useState(false)
+    const [resetPhone, setResetPhone] = useState('')
+    const [resetLoading, setResetLoading] = useState(false)
+    const [resetResult, setResetResult] = useState<{ success: boolean; message: string; tempPassword?: string } | null>(null)
 
     const loginForm = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
@@ -101,12 +105,31 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
         }
     }
 
+    const handlePasswordReset = async () => {
+        if (!resetPhone || resetPhone.length < 7) return
+        setResetLoading(true)
+        setResetResult(null)
+        try {
+            const res = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: resetPhone })
+            })
+            const data = await res.json()
+            setResetResult(data)
+        } catch {
+            setResetResult({ success: false, message: 'Xatolik yuz berdi' })
+        } finally {
+            setResetLoading(false)
+        }
+    }
+
     return (
         <div className="w-full">
             {/* Mode Switcher */}
             <div className="flex bg-[var(--secondary)]/50 p-1.5 rounded-2xl mb-8 border border-[var(--primary)]/5">
                 <button
-                    onClick={() => { setMode('login'); setError(null); }}
+                    onClick={() => { setMode('login'); setError(null); setShowResetForm(false); }}
                     className={cn(
                         "flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
                         mode === 'login' ? "bg-white text-[var(--primary)] shadow-sm" : "text-[var(--primary)]/40 hover:text-[var(--primary)]/60"
@@ -115,7 +138,7 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
                     {dictionary.common.login}
                 </button>
                 <button
-                    onClick={() => { setMode('register'); setError(null); }}
+                    onClick={() => { setMode('register'); setError(null); setShowResetForm(false); }}
                     className={cn(
                         "flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
                         mode === 'register' ? "bg-white text-[var(--primary)] shadow-sm" : "text-[var(--primary)]/40 hover:text-[var(--primary)]/60"
@@ -157,14 +180,13 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
                         <div className="space-y-2">
                             <div className="flex items-center justify-between ml-4">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)]/40">Parol</label>
-                                <a
-                                    href="https://t.me/baxtli_men_bot?start=recovery"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowResetForm(!showResetForm); setResetResult(null); }}
                                     className="text-[9px] font-bold text-[var(--primary)] hover:underline opacity-80"
                                 >
                                     {lang === 'uz' ? "Parolni unutdingizmi?" : "Забыли пароль?"}
-                                </a>
+                                </button>
                             </div>
                             <div className="relative">
                                 <Input
@@ -186,6 +208,57 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
                                 </button>
                             </div>
                         </div>
+
+                        {/* Password Reset Form */}
+                        <AnimatePresence>
+                            {showResetForm && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="p-4 rounded-2xl bg-[var(--secondary)]/50 border border-[var(--primary)]/10 space-y-3">
+                                        <p className="text-[10px] font-bold text-[var(--primary)]/60">
+                                            {lang === 'uz'
+                                                ? "Telefon raqamingizni kiriting. Yangi parol Telegram orqali yuboriladi."
+                                                : "Введите номер телефона. Новый пароль будет отправлен через Telegram."
+                                            }
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={resetPhone}
+                                                onChange={(e) => setResetPhone(e.target.value)}
+                                                placeholder="+998..."
+                                                className="flex-1 rounded-xl border-[var(--primary)]/5 bg-white py-3 text-sm"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handlePasswordReset}
+                                                disabled={resetLoading || resetPhone.length < 7}
+                                                className="px-4 py-3 rounded-xl bg-[var(--primary)] text-white text-[10px] font-black uppercase tracking-wider disabled:opacity-50 transition-all active:scale-95"
+                                            >
+                                                {resetLoading ? '...' : lang === 'uz' ? 'Yuborish' : 'Отправить'}
+                                            </button>
+                                        </div>
+                                        {resetResult && (
+                                            <div className={`p-3 rounded-xl text-xs font-bold ${resetResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                                                {resetResult.message}
+                                                {resetResult.tempPassword && (
+                                                    <div className="mt-2 p-2 bg-white rounded-lg text-center">
+                                                        <span className="text-[10px] text-[var(--primary)]/50 block mb-1">
+                                                            {lang === 'uz' ? 'Vaqtinchalik parol:' : 'Временный пароль:'}
+                                                        </span>
+                                                        <code className="text-lg font-mono font-black text-[var(--primary)]">{resetResult.tempPassword}</code>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         <Button type="submit" disabled={loading} className="w-full py-6 rounded-2xl bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white text-[11px] font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 active:scale-95 transition-all">
                             {loading ? (
                                 <span className="inline-flex items-center gap-2">

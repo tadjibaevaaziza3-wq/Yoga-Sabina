@@ -199,6 +199,7 @@ const UserShowContent = () => {
     const [details, setDetails] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [subDialogOpen, setSubDialogOpen] = useState(false);
+    const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
     const notify = useNotify();
 
     const fetchDetails = async () => {
@@ -232,6 +233,35 @@ const UserShowContent = () => {
         } catch {
             notify('Xatolik yuz berdi', { type: 'error' });
         }
+    };
+
+    // Admin can reset a user's password — generates temp password and sends via Telegram
+    const handleResetPassword = async () => {
+        if (!record?.phone && !record?.email) {
+            notify('Bu foydalanuvchining telefon raqami yo\'q', { type: 'warning' });
+            return;
+        }
+        setResetPasswordLoading(true);
+        try {
+            const res = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: record.phone || record.email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.tempPassword) {
+                    notify(`Parol tiklandi: ${data.tempPassword} (Telegram yo'q — parolni foydalanuvchiga yetkazing)`, { type: 'success', autoHideDuration: 15000 });
+                } else {
+                    notify('Yangi parol Telegram orqali yuborildi ✅', { type: 'success' });
+                }
+            } else {
+                notify(`Xatolik: ${data.message || data.error}`, { type: 'error' });
+            }
+        } catch {
+            notify('Xatolik yuz berdi', { type: 'error' });
+        }
+        setResetPasswordLoading(false);
     };
 
     if (!record) return null;
@@ -268,6 +298,23 @@ const UserShowContent = () => {
                                     return <Chip label={`Segment: ${seg.toUpperCase()}`} sx={{ bgcolor: `${segColors[seg]}15`, color: segColors[seg], fontWeight: 700 }} />;
                                 }}
                             />
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={handleResetPassword}
+                                disabled={resetPasswordLoading}
+                                sx={{
+                                    mt: 1,
+                                    borderColor: '#114539',
+                                    color: '#114539',
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    borderRadius: 2,
+                                    '&:hover': { bgcolor: '#11453910' }
+                                }}
+                            >
+                                {resetPasswordLoading ? <CircularProgress size={16} /> : '🔑 Parolni tiklash'}
+                            </Button>
                         </Box>
                     </Paper>
 
