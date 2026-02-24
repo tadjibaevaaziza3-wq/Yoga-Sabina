@@ -97,19 +97,6 @@ export default function TMAPage({ params }: { params: any }) {
         <main className="bg-[#f6f9fe] min-h-screen flex flex-col overflow-x-hidden relative">
             <div className="absolute top-0 right-0 w-[80%] h-[40%] bg-[#114539]/10 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
 
-            {/* Language Switcher */}
-            <div className="absolute top-6 right-6 z-50 flex gap-2">
-                {['uz', 'ru'].map((l) => (
-                    <button
-                        key={l}
-                        onClick={() => handleLangSwitch(l)}
-                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${currentLang === l ? 'bg-[#114539] text-white' : 'bg-white/50 text-[#114539]/40 border border-[#114539]/5'}`}
-                    >
-                        {l}
-                    </button>
-                ))}
-            </div>
-
             <div className="flex-1 flex flex-col p-8 pt-20 space-y-10 relative z-10 text-center">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}

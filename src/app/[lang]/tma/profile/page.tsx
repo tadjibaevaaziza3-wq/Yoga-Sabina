@@ -5,10 +5,12 @@ import { Container } from "@/components/ui/Container";
 import { User, Phone, MapPin, Target, Save, LogOut, CheckCircle2, Activity, BookOpen, Star, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 export default function TMAProfile() {
     const router = useRouter();
+    const params = useParams();
+    const lang = (params?.lang as string) || 'uz';
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -193,15 +195,15 @@ export default function TMAProfile() {
 
             {/* Bottom Nav Bar (Global) */}
             <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-[#114539]/5 p-6 pb-10 flex justify-around z-50">
-                <Link href="/tma/dashboard" className="flex flex-col items-center gap-2">
+                <Link href={`/${lang}/tma/dashboard`} className="flex flex-col items-center gap-2">
                     <Activity className="w-6 h-6 text-[#114539]/20" />
                     <span className="text-[8px] font-bold uppercase tracking-widest text-[#114539]/20">Panel</span>
                 </Link>
-                <Link href="/tma/courses" className="flex flex-col items-center gap-2">
+                <Link href={`/${lang}/tma/courses`} className="flex flex-col items-center gap-2">
                     <BookOpen className="w-6 h-6 text-[#114539]/20" />
                     <span className="text-[8px] font-bold uppercase tracking-widest text-[#114539]/20">Kurslar</span>
                 </Link>
-                <Link href="/tma/profile" className="flex flex-col items-center gap-2">
+                <Link href={`/${lang}/tma/profile`} className="flex flex-col items-center gap-2">
                     <Star className="w-6 h-6 text-[#114539]" />
                     <span className="text-[8px] font-bold uppercase tracking-widest text-[#114539]">Profil</span>
                 </Link>
