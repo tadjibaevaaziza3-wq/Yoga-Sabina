@@ -37,6 +37,9 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        if (!await isAdmin()) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+        }
         const { id } = await params
         const body = await req.json()
 
@@ -50,26 +53,80 @@ export async function POST(
         const lesson = await prisma.lesson.create({
             data: {
                 courseId: id,
+                moduleId: body.moduleId || null,
                 title: body.title,
-                description: body.description,
+                titleRu: body.titleRu || null,
+                description: body.description || null,
+                descriptionRu: body.descriptionRu || null,
                 videoUrl: body.videoUrl,
                 duration: body.duration,
                 isFree: body.isFree || false,
                 order: body.order || newOrder,
                 content: body.content,
-                assets: {
-                    create: body.assets?.map((a: any) => ({
+                assets: body.assets ? {
+                    create: body.assets.map((a: any) => ({
                         type: a.type,
                         name: a.name,
                         url: a.url,
                         size: a.size
                     }))
-                }
+                } : undefined
             },
             include: { assets: true }
         })
 
         return NextResponse.json({ success: true, lesson })
+    } catch (error: any) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    }
+}
+
+// PUT /api/admin/courses/[id]/lessons — update a lesson
+export async function PUT(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        if (!await isAdmin()) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+        }
+        const body = await req.json()
+
+        const lesson = await prisma.lesson.update({
+            where: { id: body.id },
+            data: {
+                title: body.title,
+                titleRu: body.titleRu || null,
+                description: body.description || null,
+                descriptionRu: body.descriptionRu || null,
+                isFree: body.isFree ?? false,
+            },
+        })
+
+        return NextResponse.json({ success: true, lesson })
+    } catch (error: any) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    }
+}
+
+// DELETE /api/admin/courses/[id]/lessons?lessonId=xxx — delete a lesson
+export async function DELETE(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        if (!await isAdmin()) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+        }
+        const url = new URL(req.url)
+        const lessonId = url.searchParams.get('lessonId')
+
+        if (!lessonId) {
+            return NextResponse.json({ success: false, error: 'lessonId is required' }, { status: 400 })
+        }
+
+        await prisma.lesson.delete({ where: { id: lessonId } })
+        return NextResponse.json({ success: true })
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }

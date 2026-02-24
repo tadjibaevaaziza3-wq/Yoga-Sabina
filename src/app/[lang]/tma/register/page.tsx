@@ -82,7 +82,7 @@ export default function TMARegisterPage() {
     const t = translations[lang as 'uz' | 'ru'] || translations.uz;
 
     // Read initial mode from URL ?mode=login
-    const initialMode = searchParams.get('mode') === 'login' ? 'login' : 'register';
+    const initialMode = searchParams?.get('mode') === 'login' ? 'login' : 'register';
 
     const [mode, setMode] = useState<'register' | 'login'>(initialMode as any);
     const [phone, setPhone] = useState("");

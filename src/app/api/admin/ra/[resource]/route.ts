@@ -65,6 +65,7 @@ const resourceToModel: Record<string, keyof typeof prisma> = {
     users: 'user',
     courses: 'course',
     lessons: 'lesson',
+    modules: 'module',
     appcontents: 'appContent',
     aitrainings: 'aiTraining',
     faqs: 'fAQ',

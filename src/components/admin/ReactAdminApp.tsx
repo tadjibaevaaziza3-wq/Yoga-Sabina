@@ -7,6 +7,7 @@ import { dataProvider } from '@/lib/admin/dataProvider';
 import { i18nProvider } from '@/lib/admin/i18nProvider';
 import { Box, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 
 import users from '@/components/admin/users';
 import courses from '@/components/admin/courses';
@@ -43,13 +44,21 @@ const CustomLayout = (props: any) => (
     <Layout {...props} appBar={CustomAppBar} menu={CustomMenu} />
 );
 
-// Custom Menu with Settings link
+// Custom Menu with Dashboard and Settings links
 const CustomMenu = (props: any) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const isDashboardActive = location.pathname === '/' || location.pathname === '';
     const isSettingsActive = location.pathname.includes('/system-settings');
     return (
         <Menu {...props}>
+            <Menu.Item
+                to="/"
+                primaryText="📊 Dashboard"
+                leftIcon={<DashboardIcon />}
+                onClick={() => navigate('/')}
+                selected={isDashboardActive}
+            />
             <Menu.ResourceItems />
             <Menu.Item
                 to="/system-settings"
@@ -89,6 +98,7 @@ export const ReactAdminApp = () => (
         <Resource name="userautomationqueue" />
         <Resource name="purchases" />
         <Resource name="subscriptions" />
+        <Resource name="modules" />
         <CustomRoutes>
             <Route path="/ai-analytics" element={<AiAnalytics />} />
             <Route path="/system-settings" element={<SystemSettings />} />
