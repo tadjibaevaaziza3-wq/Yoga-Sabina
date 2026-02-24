@@ -15,6 +15,24 @@ This skill defines the architectural standards and implementation workflows for 
   3. Initialize session tracking (EventLog: `session_start`).
   4. Redirect to Dashboard if authorized.
 
+## 1.1 Password Reset System
+- **User-Initiated Reset** (`POST /api/auth/reset-password`):
+  1. User clicks "Parolni unutdingizmi?" on login page.
+  2. User enters phone number in the inline reset form.
+  3. System finds user by phone, generates 6-char temp password.
+  4. Hashes with SHA-256 (matching registration flow), sets `forcePasswordChange = true`.
+  5. Sends temp password to user via **Telegram** (if `telegramId` exists).
+  6. If user has no Telegram, temp password is returned in the API response (one-time).
+  7. On next login, user is redirected to change-password page.
+- **Admin-Initiated Reset**:
+  - Admin panel `UserShow.tsx` has a "🔑 Parolni tiklash" button.
+  - Calls the same `/api/auth/reset-password` API with user's phone.
+  - Admin sees confirmation (Telegram sent or temp password displayed).
+- **Admin Password Reset** (`POST /api/admin/reset-password`):
+  - Requires `resetKey` (defaults to `baxtli-men-admin-reset-2026`).
+  - Can reset existing admin password or create new SUPER_ADMIN if none exists.
+  - Use when locked out of admin panel.
+
 ## 2. Secure Video Streaming Flow
 ```mermaid
 sequenceDiagram
