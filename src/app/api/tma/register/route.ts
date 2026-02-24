@@ -14,16 +14,88 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Missing telegramId' }, { status: 400 })
         }
 
-        // 1. Find or create user
+        // 1. Find user by telegramId first
         let user = await prisma.user.findUnique({
             where: { telegramId: String(telegramId) },
             include: { profile: true }
         })
 
-        if (!user) {
+        // 2. If no user found by telegramId, check by phone number
+        //    (handles users who registered via web panel)
+        if (!user && phone) {
+            const cleanPhone = phone.replace(/\+/g, '')
+            user = await prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { phone },
+                        { phone: cleanPhone },
+                        { phone: `+${cleanPhone}` },
+                    ]
+                },
+                include: { profile: true }
+            })
+
+            // Link telegramId to the existing web-registered user
+            if (user) {
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        telegramId: String(telegramId),
+                        firstName: firstName || user.firstName,
+                        lastName: lastName || user.lastName,
+                    }
+                })
+                // Update profile with TMA data
+                if (user.profile) {
+                    await prisma.profile.update({
+                        where: { userId: user.id },
+                        data: {
+                            name: fullName || user.profile.name,
+                            location: location || user.profile.location,
+                            healthIssues: healthGoals || user.profile.healthIssues,
+                            bodyParams: {
+                                ...(user.profile.bodyParams as any || {}),
+                                telegramUsername: telegramUsername || (user.profile.bodyParams as any)?.telegramUsername,
+                                region: location || (user.profile.bodyParams as any)?.region,
+                                source: (user.profile.bodyParams as any)?.source || 'WEB+TMA'
+                            } as any
+                        }
+                    })
+                }
+                console.log(`[TMA] Linked telegramId ${telegramId} to existing web user ${user.id}`)
+            }
+        }
+
+        // 3. If user found (by telegramId or phone), update and login
+        if (user) {
+            // Update existing user's info
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    firstName: firstName || user.firstName,
+                    lastName: lastName || user.lastName,
+                    phone: phone || user.phone,
+                    ...(user.profile ? {
+                        profile: {
+                            update: {
+                                name: fullName || user.profile?.name,
+                                location: location || user.profile?.location,
+                                healthIssues: healthGoals || user.profile?.healthIssues,
+                                bodyParams: {
+                                    ...(user.profile?.bodyParams as any || {}),
+                                    telegramUsername: telegramUsername || (user.profile?.bodyParams as any)?.telegramUsername,
+                                    region: location || (user.profile?.bodyParams as any)?.region,
+                                } as any
+                            }
+                        }
+                    } : {})
+                }
+            })
+        } else {
+            // 4. Create new user (no existing user found by telegramId or phone)
             user = await prisma.user.create({
                 data: {
-                    email: `${telegramId}@tma.local`, // Dummy email for TMA users
+                    email: `${telegramId}@tma.local`,
                     telegramId: String(telegramId),
                     firstName: firstName || null,
                     lastName: lastName || null,
@@ -44,28 +116,6 @@ export async function POST(request: Request) {
                 },
                 include: { profile: true }
             })
-        } else {
-            // Update existing user
-            await prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    firstName: firstName || user.firstName,
-                    lastName: lastName || user.lastName,
-                    phone: phone || user.phone,
-                    profile: {
-                        update: {
-                            name: fullName || user.profile?.name,
-                            location: location || user.profile?.location,
-                            healthIssues: healthGoals || user.profile?.healthIssues,
-                            bodyParams: {
-                                ...(user.profile?.bodyParams as any || {}),
-                                telegramUsername: telegramUsername || (user.profile?.bodyParams as any)?.telegramUsername,
-                                region: location || (user.profile?.bodyParams as any)?.region,
-                            } as any
-                        }
-                    }
-                }
-            })
         }
 
         if (!user) {
@@ -85,16 +135,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, isRegistered: !!user.phone })
     } catch (error: any) {
         console.error('TMA Register error:', error)
-
-        // Handle Prisma Unique Constraint error
-        if (error.code === 'P2002') {
-            const field = error.meta?.target?.[0] || 'ma\'lumotlar'
-            const message = lang === 'ru'
-                ? (field === 'phone' ? "Этот номер телефона уже зарегистрирован." : "Этот пользователь уже зарегистрирован.")
-                : (field === 'phone' ? "Bu telefon raqami allaqachon ro'yxatdan o'tgan." : "Bu foydalanuvchi allaqachon ro'yxatdan o'tgan.")
-            return NextResponse.json({ success: false, error: message }, { status: 400 })
-        }
-
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 }
