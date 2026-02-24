@@ -357,20 +357,6 @@ export default function AboutPage() {
                 </Container>
             </section>
 
-            {/* Final CTA */}
-            <section className="pb-32 px-4">
-                <Container>
-                    <div className="text-center space-y-10">
-                        <h2 className="text-3xl md:text-6xl font-serif font-black text-[var(--primary)] max-w-4xl mx-auto leading-[1.1]">
-                            {dictionary.about.readyToStart}
-                        </h2>
-                        <Button className="bg-[#10b981] hover:bg-[#059669] text-white rounded-[2rem] px-12 py-6 text-xl font-black uppercase tracking-widest transition-all hover:scale-105 shadow-2xl shadow-[var(--accent)]/20">
-                            {dictionary.about.joinNow}
-                        </Button>
-                    </div>
-                </Container>
-            </section>
-
             {/* Simple footer metadata */}
             <div className="border-t border-[var(--secondary)] py-12">
                 <Container>
