@@ -237,8 +237,8 @@ const UserShowContent = () => {
 
     // Admin can reset a user's password — generates temp password and sends via Telegram
     const handleResetPassword = async () => {
-        if (!record?.phone && !record?.email) {
-            notify('Bu foydalanuvchining telefon raqami yo\'q', { type: 'warning' });
+        if (!record?.id) {
+            notify('Foydalanuvchi topilmadi', { type: 'warning' });
             return;
         }
         setResetPasswordLoading(true);
@@ -246,14 +246,20 @@ const UserShowContent = () => {
             const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: record.phone || record.email })
+                body: JSON.stringify({
+                    userId: record.id,
+                    phone: record.phone || record.email,
+                    telegramId: record.telegramId || null,
+                })
             });
             const data = await res.json();
             if (data.success) {
-                if (data.tempPassword) {
-                    notify(`Parol tiklandi: ${data.tempPassword} (Telegram yo'q — parolni foydalanuvchiga yetkazing)`, { type: 'success', autoHideDuration: 15000 });
+                if (data.sentViaTelegram) {
+                    notify('✅ Yangi parol Telegram orqali yuborildi', { type: 'success' });
+                } else if (data.tempPassword) {
+                    notify(`🔑 Parol tiklandi: ${data.tempPassword} (Telegram yo'q — parolni foydalanuvchiga yetkazing)`, { type: 'success', autoHideDuration: 15000 });
                 } else {
-                    notify('Yangi parol Telegram orqali yuborildi ✅', { type: 'success' });
+                    notify('✅ Parol tiklandi', { type: 'success' });
                 }
             } else {
                 notify(`Xatolik: ${data.message || data.error}`, { type: 'error' });

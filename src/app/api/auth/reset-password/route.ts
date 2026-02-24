@@ -18,30 +18,39 @@ import { sendTelegramMessage } from '@/lib/telegram-bot'
  */
 export async function POST(request: Request) {
     try {
-        const { phone } = await request.json()
+        const { phone, telegramId: providedTelegramId, userId } = await request.json()
 
-        if (!phone) {
-            return NextResponse.json({ success: false, error: 'Telefon raqam kiritilishi kerak' }, { status: 400 })
+        if (!phone && !userId) {
+            return NextResponse.json({ success: false, error: 'Telefon raqam yoki foydalanuvchi ID kiritilishi kerak' }, { status: 400 })
         }
 
-        // Find user by phone
-        const user = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { phone },
-                    { phone: phone.replace('+', '') },
-                    { phone: `+${phone.replace('+', '')}` },
-                ]
-            }
-        })
+        // Find user by ID, phone, or email
+        let user;
+        if (userId) {
+            user = await prisma.user.findUnique({ where: { id: userId } });
+        }
+        if (!user && phone) {
+            user = await prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { phone },
+                        { phone: phone.replace('+', '') },
+                        { phone: `+${phone.replace('+', '')}` },
+                        { email: phone },
+                    ]
+                }
+            })
+        }
 
         if (!user) {
-            // Don't reveal if user exists or not — return generic success
             return NextResponse.json({
                 success: true,
                 message: 'Agar bu raqam ro\'yxatdan o\'tgan bo\'lsa, yangi parol yuboriladi'
             })
         }
+
+        // Use telegramId from: provided param > user record
+        const telegramId = providedTelegramId || user.telegramId;
 
         // Generate temporary password (6 random characters)
         const tempPassword = crypto.randomBytes(3).toString('hex') // e.g., "a3f2b1"
@@ -59,17 +68,24 @@ export async function POST(request: Request) {
         })
 
         // Send via Telegram if available
-        if (user.telegramId) {
+        if (telegramId) {
             const msg = `🔑 <b>Yangi parol — Baxtli Men</b>\n\nSizning vaqtinchalik parolingiz: <code>${tempPassword}</code>\n\nIltimos, tizimga kirganingizdan so'ng darhol parolni o'zgartiring.\n\n---\n🔑 <b>Новый пароль — Baxtli Men</b>\n\nВаш временный пароль: <code>${tempPassword}</code>\n\nПожалуйста, смените пароль после входа.`
 
-            await sendTelegramMessage(user.telegramId, msg)
+            const sent = await sendTelegramMessage(telegramId, msg)
+
+            return NextResponse.json({
+                success: true,
+                message: 'Yangi parol Telegram orqali yuborildi',
+                sentViaTelegram: sent,
+                // If telegram send failed, also return the password
+                ...(!sent ? { tempPassword } : {}),
+            })
         }
 
         return NextResponse.json({
             success: true,
-            message: 'Yangi parol Telegram orqali yuborildi',
-            // Only show temp password if user has no telegram (so they can see it once)
-            ...(user.telegramId ? {} : { tempPassword }),
+            message: 'Parol tiklandi',
+            tempPassword, // No Telegram — admin must deliver manually
         })
     } catch (error: any) {
         console.error('Password reset error:', error)
