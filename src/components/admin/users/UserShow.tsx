@@ -203,7 +203,16 @@ const UserShowContent = () => {
                     {/* Active Subscriptions */}
                     <Paper sx={{ p: 3, borderRadius: 4 }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                            <Typography variant="h6" sx={{ color: '#114539', fontWeight: 700 }}>📋 Obunalar</Typography>
+                            <Box display="flex" alignItems="center" gap={1}>
+                                <Typography variant="h6" sx={{ color: '#114539', fontWeight: 700 }}>📜 Obuna tarixi</Typography>
+                                {!loading && details && (
+                                    <Chip
+                                        label={`Jami: ${details.allSubscriptions?.length || 0}`}
+                                        size="small"
+                                        sx={{ bgcolor: '#11453910', color: '#114539', fontWeight: 700, fontSize: '0.7rem' }}
+                                    />
+                                )}
+                            </Box>
                             <Button
                                 variant="contained"
                                 size="small"
@@ -217,28 +226,56 @@ const UserShowContent = () => {
                         <Divider sx={{ mb: 2 }} />
                         {loading ? <CircularProgress size={24} /> : (
                             details?.allSubscriptions?.length > 0 ? (
-                                <Box display="flex" flexDirection="column" gap={1}>
-                                    {details.allSubscriptions.map((s: any) => {
-                                        const isActive = s.status === 'ACTIVE' && new Date(s.endsAt) > now;
-                                        return (
-                                            <Card key={s.id} sx={{ border: `1px solid ${isActive ? '#16a34a20' : '#dc262620'}`, borderRadius: 2, bgcolor: isActive ? '#16a34a05' : '#dc262605' }}>
-                                                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Box>
-                                                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#114539' }}>{s.courseTitle}</Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            <CalendarMonthIcon sx={{ fontSize: 12, mr: 0.3, verticalAlign: 'middle' }} />
-                                                            {new Date(s.startsAt).toLocaleDateString('uz-UZ')} — {new Date(s.endsAt).toLocaleDateString('uz-UZ')}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Chip
-                                                        label={isActive ? '🟢 Faol' : s.status === 'EXPIRED' ? '🔴 Tugagan' : '⚪ Bekor qilingan'}
-                                                        size="small"
-                                                        sx={{ fontWeight: 700, fontSize: '0.7rem' }}
-                                                    />
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
+                                <Box sx={{ overflow: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                                                <th style={{ textAlign: 'left', padding: '10px 8px', color: '#114539', fontWeight: 700 }}>Kurs nomi</th>
+                                                <th style={{ textAlign: 'center', padding: '10px 8px', color: '#114539', fontWeight: 700 }}>Boshlanish</th>
+                                                <th style={{ textAlign: 'center', padding: '10px 8px', color: '#114539', fontWeight: 700 }}>Tugash</th>
+                                                <th style={{ textAlign: 'center', padding: '10px 8px', color: '#114539', fontWeight: 700 }}>Holat</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {details.allSubscriptions.map((s: any) => {
+                                                const isActive = s.status === 'ACTIVE' && new Date(s.endsAt) > now;
+                                                const isExpired = s.status === 'EXPIRED' || (s.status === 'ACTIVE' && new Date(s.endsAt) <= now);
+                                                return (
+                                                    <tr
+                                                        key={s.id}
+                                                        style={{
+                                                            borderBottom: '1px solid #f3f4f6',
+                                                            backgroundColor: isActive ? '#16a34a06' : 'transparent',
+                                                        }}
+                                                    >
+                                                        <td style={{ padding: '10px 8px', fontWeight: 600, color: '#1a2e1a' }}>
+                                                            {s.courseTitle}
+                                                        </td>
+                                                        <td style={{ padding: '10px 8px', textAlign: 'center', color: '#5a6b5a' }}>
+                                                            <CalendarMonthIcon sx={{ fontSize: 13, mr: 0.3, verticalAlign: 'middle', opacity: 0.6 }} />
+                                                            {new Date(s.startsAt).toLocaleDateString('uz-UZ')}
+                                                        </td>
+                                                        <td style={{ padding: '10px 8px', textAlign: 'center', color: '#5a6b5a' }}>
+                                                            <CalendarMonthIcon sx={{ fontSize: 13, mr: 0.3, verticalAlign: 'middle', opacity: 0.6 }} />
+                                                            {new Date(s.endsAt).toLocaleDateString('uz-UZ')}
+                                                        </td>
+                                                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                                            <Chip
+                                                                label={isActive ? '🟢 Faol' : isExpired ? '🔴 Tugagan' : '⚪ Bekor qilingan'}
+                                                                size="small"
+                                                                sx={{
+                                                                    fontWeight: 700,
+                                                                    fontSize: '0.7rem',
+                                                                    bgcolor: isActive ? '#16a34a12' : isExpired ? '#dc262610' : '#6b728010',
+                                                                    color: isActive ? '#16a34a' : isExpired ? '#dc2626' : '#6b7280',
+                                                                }}
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
                                 </Box>
                             ) : <Alert severity="info" sx={{ borderRadius: 2 }}>Obunalar topilmadi</Alert>
                         )}

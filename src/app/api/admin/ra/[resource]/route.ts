@@ -103,6 +103,18 @@ export async function GET(
             return NextResponse.json({ error: `Resource '${resource}' (mapped to Prisma '${String(modelName)}') not found` }, { status: 404 });
         }
 
+        // Resource-specific includes for richer list data
+        const resourceIncludes: Record<string, any> = {
+            users: {
+                subscriptions: {
+                    include: { course: { select: { id: true, title: true } } },
+                    orderBy: { startsAt: 'desc' as const },
+                },
+            },
+        };
+
+        const include = resourceIncludes[resource] || undefined;
+
         let data: any[];
         let total: number;
 
@@ -112,6 +124,7 @@ export async function GET(
                     where: prismaWhere,
                     orderBy: prismaSort,
                     ...prismaRange,
+                    ...(include ? { include } : {}),
                 }),
                 delegate.count({ where: prismaWhere })
             ]);
@@ -121,9 +134,38 @@ export async function GET(
                 delegate.findMany({
                     where: prismaWhere,
                     ...prismaRange,
+                    ...(include ? { include } : {}),
                 }),
                 delegate.count({ where: prismaWhere })
             ]);
+        }
+
+        // Post-process: compute derived subscription fields for users
+        if (resource === 'users') {
+            const now = new Date();
+            data = data.map((user: any) => {
+                const subs = user.subscriptions || [];
+                const activeSubs = subs.filter((s: any) => s.status === 'ACTIVE' && new Date(s.endsAt) > now);
+                const firstSub = subs.length > 0
+                    ? subs.reduce((earliest: any, s: any) => new Date(s.startsAt) < new Date(earliest.startsAt) ? s : earliest)
+                    : null;
+
+                // Build summary string: "CourseA (Faol), CourseB (Tugagan)"
+                const summaryParts = subs.map((s: any) => {
+                    const isActive = s.status === 'ACTIVE' && new Date(s.endsAt) > now;
+                    const statusLabel = isActive ? 'Faol' : s.status === 'EXPIRED' ? 'Tugagan' : 'Bekor';
+                    return `${s.course?.title || '—'} (${statusLabel})`;
+                });
+
+                return {
+                    ...user,
+                    subscriptions: undefined, // Don't send raw subscriptions to list
+                    totalSubscriptionCount: subs.length,
+                    activeSubscriptionCount: activeSubs.length,
+                    activeSubscriptionsSummary: summaryParts.join(', ') || '—',
+                    firstSubscriptionDate: firstSub?.startsAt || null,
+                };
+            });
         }
 
         return new NextResponse(JSON.stringify(data), {
