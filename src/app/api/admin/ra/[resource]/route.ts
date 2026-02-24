@@ -203,10 +203,35 @@ export async function POST(
         // Remove ID and date fields if present to let DB handle defaults
         const { id: _id, createdAt, updatedAt, ...createData } = body as any;
 
-        // Sanitize createData: convert "" to null for unique string fields
+        // Sanitize createData: convert "" to null for optional fields 
+        // but preserve required foreign keys
+        const requiredFKs: Record<string, string[]> = {
+            lesson: ['courseId'],
+            automationStep: ['triggerId'],
+            triggerLog: ['triggerId', 'userId'],
+            userAutomationQueue: ['userId', 'triggerId', 'automationStepId'],
+        };
+        const requiredFields = requiredFKs[modelName as string] || [];
+
         for (const key in createData) {
             if (createData[key] === "") {
+                if (requiredFields.includes(key)) {
+                    return NextResponse.json(
+                        { message: `"${key}" maydoni bo'sh bo'lishi mumkin emas` },
+                        { status: 400 }
+                    );
+                }
                 createData[key] = null;
+            }
+        }
+
+        // Validate required FK fields are present
+        for (const fk of requiredFields) {
+            if (!createData[fk]) {
+                return NextResponse.json(
+                    { message: `"${fk}" maydoni majburiy. Iltimos, tanlang.` },
+                    { status: 400 }
+                );
             }
         }
 
