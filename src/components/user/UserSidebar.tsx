@@ -55,10 +55,10 @@ export function UserSidebar({ lang, user: userProp }: UserSidebarProps) {
             key: 'account'
         },
         {
-            href: `/${lang}/online-courses`,
+            href: `/${lang}/all-courses`,
             icon: <BookOpen className="w-[18px] h-[18px]" />,
             label: lang === 'uz' ? 'Barcha Kurslar' : 'Все Курсы',
-            key: 'online-courses'
+            key: 'all-courses'
         },
         {
             href: `/${lang}/my-courses`,

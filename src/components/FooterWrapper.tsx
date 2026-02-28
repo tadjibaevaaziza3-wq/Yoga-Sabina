@@ -17,7 +17,15 @@ export const FooterWrapper = ({ isConsultationEnabled = true }: { isConsultation
         pathname?.includes("/settings") ||
         pathname?.includes("/activity") ||
         pathname?.includes("/all-courses") ||
+        pathname?.includes("/online-courses") ||
+        pathname?.includes("/offline-courses") ||
         pathname?.includes("/checkout") ||
+        pathname?.includes("/body-tracking") ||
+        pathname?.includes("/community") ||
+        pathname?.includes("/feedback") ||
+        pathname?.includes("/consultations") ||
+        pathname?.includes("/security") ||
+        pathname?.includes("/change-password") ||
         pathname?.includes("/courses");
 
     if (isTma || isAdmin || isUserPanel) return null;

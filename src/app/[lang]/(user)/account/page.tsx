@@ -9,6 +9,7 @@ import MyCoursesGrid from "@/components/dashboard/MyCoursesGrid"
 import { getRecommendations } from "@/lib/recommendations"
 import YogaCalendar from "@/components/user/YogaCalendar"
 import OfflineProgress from "@/components/user/OfflineProgress"
+import WatchedTimeChart from "@/components/user/WatchedTimeChart"
 
 export default async function DashboardPage({
     params,
@@ -365,24 +366,39 @@ export default async function DashboardPage({
                 </section>
             )}
 
-            {/* ── Training Calendar ── */}
+            {/* ── Offline Course Attendance ── */}
             <section className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                <OfflineProgress lang={lang} />
+            </section>
+
+            {/* ── Watched Time Chart ── */}
+            <section className="animate-fade-in" style={{ animationDelay: '0.35s' }}>
                 <h2 className="text-lg font-serif font-bold text-[var(--foreground)] mb-4">
-                    {lang === 'uz' ? "Mashg'ulot Kalendari" : "Календарь тренировок"}
+                    {lang === 'uz' ? "Mashg'ulot faolligi" : "Активность тренировок"}
                 </h2>
                 <div className="bg-white rounded-2xl border border-[var(--foreground)]/[0.04] p-5 shadow-sm">
-                    <YogaCalendar
+                    <WatchedTimeChart
                         lang={lang}
-                        initialCycleData={(user as any)?.profile?.cycleData}
-                        practiceData={activityData.map(d => ({ date: d.date, minutes: d.count > 0 ? Math.max(d.count * 5, 1) : 0, sessions: d.count }))}
+                        data={activityData.map(d => ({ date: d.date, count: d.count }))}
                     />
                 </div>
             </section>
 
-
-            {/* ── Offline Course Attendance ── */}
-            <section className="animate-fade-in" style={{ animationDelay: '0.45s' }}>
-                <OfflineProgress lang={lang} />
+            {/* ── Mini Calendar ── */}
+            <section className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+                <details className="group">
+                    <summary className="cursor-pointer flex items-center gap-2 text-sm font-bold text-[var(--foreground)]/40 mb-3 hover:text-[var(--foreground)]/60 transition-colors">
+                        <span>📅 {lang === 'uz' ? 'Kalendar' : 'Календарь'}</span>
+                        <span className="text-[10px] group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div className="bg-white rounded-2xl border border-[var(--foreground)]/[0.04] p-4 shadow-sm">
+                        <YogaCalendar
+                            lang={lang}
+                            initialCycleData={(user as any)?.profile?.cycleData}
+                            practiceData={activityData.map(d => ({ date: d.date, minutes: d.count > 0 ? Math.max(d.count * 5, 1) : 0, sessions: d.count }))}
+                        />
+                    </div>
+                </details>
             </section>
 
             {/* ── Motivational ── */}
