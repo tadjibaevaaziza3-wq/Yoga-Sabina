@@ -10,6 +10,50 @@ async function getAdmin() {
     return verifyToken(session)
 }
 
+// Helper: parse schedule string like "Du/Chor/Juma" or "Пн/Ср/Пт" to day-of-week numbers
+function parseScheduleDays(schedule: string | null): number[] {
+    if (!schedule) return []
+    const dayMap: Record<string, number> = {
+        // Uzbek
+        'du': 1, 'dush': 1, 'dushanba': 1,
+        'se': 2, 'sesh': 2, 'seshanba': 2,
+        'chor': 3, 'chorshanba': 3, 'cho': 3,
+        'pay': 4, 'payshanba': 4,
+        'ju': 5, 'juma': 5,
+        'sha': 6, 'shanba': 6,
+        'yak': 0, 'yakshanba': 0,
+        // Russian
+        'пн': 1, 'понедельник': 1,
+        'вт': 2, 'вторник': 2,
+        'ср': 3, 'среда': 3,
+        'чт': 4, 'четверг': 4,
+        'пт': 5, 'пятница': 5,
+        'сб': 6, 'суббота': 6,
+        'вс': 0, 'воскресенье': 0,
+        // English shortcuts
+        'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6, 'sun': 0,
+    }
+    const parts = schedule.toLowerCase().split(/[\/,\s\-]+/).map(s => s.trim()).filter(Boolean)
+    const days: number[] = []
+    for (const part of parts) {
+        if (dayMap[part] !== undefined) days.push(dayMap[part])
+    }
+    return [...new Set(days)]
+}
+
+// Helper: get all dates in a month that match given day-of-week numbers
+function getMonthDates(year: number, month: number, dayNumbers: number[]): Date[] {
+    const dates: Date[] = []
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month, d)
+        if (dayNumbers.includes(date.getDay())) {
+            dates.push(date)
+        }
+    }
+    return dates
+}
+
 // GET - List sessions + attendances for a course
 export async function GET(request: NextRequest) {
     const admin = await getAdmin()
@@ -18,19 +62,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const courseId = searchParams.get('courseId')
     const action = searchParams.get('action')
+    const month = searchParams.get('month') // format: YYYY-MM
 
     if (action === 'courses') {
-        // Return only OFFLINE courses
         const courses = await prisma.course.findMany({
             where: { type: 'OFFLINE', isActive: true },
-            select: { id: true, title: true, titleRu: true, schedule: true, location: true },
+            select: { id: true, title: true, titleRu: true, schedule: true, scheduleRu: true, times: true, timesRu: true, location: true, locationRu: true },
             orderBy: { title: 'asc' },
         })
         return NextResponse.json(courses)
     }
 
     if (action === 'users' && courseId) {
-        // Return users subscribed to this offline course with subscription dates
         const users = await prisma.user.findMany({
             where: {
                 OR: [
@@ -79,27 +122,102 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'courseId required' }, { status: 400 })
     }
 
-    // List sessions with attendances
+    // Filter sessions by month if provided
+    let dateFilter: any = { courseId }
+    if (month) {
+        const [y, m] = month.split('-').map(Number)
+        const start = new Date(y, m - 1, 1)
+        const end = new Date(y, m, 0, 23, 59, 59)
+        dateFilter = { courseId, date: { gte: start, lte: end } }
+    }
+
     const sessions = await prisma.offlineSession.findMany({
-        where: { courseId },
+        where: dateFilter,
         include: {
             attendances: {
                 include: { user: { select: { id: true, firstName: true, lastName: true } } },
             },
         },
-        orderBy: { date: 'desc' },
+        orderBy: { date: 'asc' },
     })
 
     return NextResponse.json(sessions)
 }
 
-// POST - Create session or mark attendance
+// POST - Create session, mark attendance, or generate month
 export async function POST(request: NextRequest) {
     const admin = await getAdmin()
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const { action } = body
+
+    // Auto-generate sessions for a month based on course schedule
+    if (action === 'generate-month') {
+        const { courseId, month } = body // month: "YYYY-MM"
+        if (!courseId || !month) {
+            return NextResponse.json({ error: 'courseId and month required' }, { status: 400 })
+        }
+
+        const course = await prisma.course.findUnique({
+            where: { id: courseId },
+            select: { schedule: true, times: true },
+        })
+        if (!course?.schedule) {
+            return NextResponse.json({ error: 'Course has no schedule set' }, { status: 400 })
+        }
+
+        const [year, mon] = month.split('-').map(Number)
+        const scheduleDays = parseScheduleDays(course.schedule)
+        if (scheduleDays.length === 0) {
+            return NextResponse.json({ error: 'Could not parse schedule days' }, { status: 400 })
+        }
+
+        const monthDates = getMonthDates(year, mon - 1, scheduleDays)
+
+        // Get existing sessions for this month
+        const start = new Date(year, mon - 1, 1)
+        const end = new Date(year, mon, 0, 23, 59, 59)
+        const existing = await prisma.offlineSession.findMany({
+            where: { courseId, date: { gte: start, lte: end } },
+            select: { date: true },
+        })
+        const existingDates = new Set(existing.map(s => s.date.toISOString().split('T')[0]))
+
+        // Create missing sessions
+        let created = 0
+        for (const date of monthDates) {
+            const dateStr = date.toISOString().split('T')[0]
+            if (!existingDates.has(dateStr)) {
+                const dayName = date.toLocaleDateString('uz-UZ', { weekday: 'long' })
+                await prisma.offlineSession.create({
+                    data: {
+                        courseId,
+                        date,
+                        title: course.times ? `${dayName} · ${course.times}` : dayName,
+                    },
+                })
+                created++
+            }
+        }
+
+        return NextResponse.json({ success: true, created, total: monthDates.length })
+    }
+
+    if (action === 'update-schedule') {
+        const { courseId, schedule, times } = body
+        if (!courseId) {
+            return NextResponse.json({ error: 'courseId required' }, { status: 400 })
+        }
+        await prisma.course.update({
+            where: { id: courseId },
+            data: {
+                ...(schedule !== undefined && { schedule }),
+                ...(times !== undefined && { times }),
+            },
+        })
+        return NextResponse.json({ success: true })
+    }
 
     if (action === 'create-session') {
         const { courseId, date, title, notes } = body
@@ -114,11 +232,9 @@ export async function POST(request: NextRequest) {
 
     if (action === 'mark-attendance') {
         const { sessionId, attendances } = body
-        // attendances: [{ userId, status, note }]
         if (!sessionId || !attendances?.length) {
             return NextResponse.json({ error: 'sessionId and attendances required' }, { status: 400 })
         }
-
         const results = []
         for (const att of attendances) {
             const result = await prisma.offlineAttendance.upsert({
@@ -151,7 +267,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
 }
 
-// PUT - Update session
+// PUT - Update session or course schedule
 export async function PUT(request: NextRequest) {
     const admin = await getAdmin()
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
