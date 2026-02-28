@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Play, Clock } from 'lucide-react';
+import { Play, Clock, MessageSquare, MapPin } from 'lucide-react';
 import Image from 'next/image';
 
 interface CourseProgress {
@@ -276,7 +276,13 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                             <div
                                 key={subscription?.id || (purchase as any)?.id || course.id}
                                 className="bg-[var(--card-bg)] rounded-2xl border border-[var(--border)] overflow-hidden hover:shadow-2xl hover:shadow-[var(--primary)]/10 hover:-translate-y-1 transition-all cursor-pointer group"
-                                onClick={() => router.push(`/${lang}/learn/${course.id}`)}
+                                onClick={() => {
+                                    if (course.type === 'OFFLINE') {
+                                        router.push(`/${lang}/chat`);
+                                    } else {
+                                        router.push(`/${lang}/learn/${course.id}`);
+                                    }
+                                }}
                             >
                                 {/* Thumbnail — 16:9 aspect ratio */}
                                 <div className="relative aspect-video overflow-hidden bg-[var(--secondary)]">
@@ -302,16 +308,21 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
 
                                     {/* Lesson count badge */}
                                     <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded-md">
-                                        {progress.total} {lang === 'uz' ? 'dars' : 'урок'}
+                                        {course.type === 'OFFLINE'
+                                            ? (lang === 'uz' ? '📍 Offline' : '📍 Офлайн')
+                                            : `${progress.total} ${lang === 'uz' ? 'dars' : 'урок'}`
+                                        }
                                     </div>
 
-                                    {/* Progress bar at bottom of thumbnail */}
-                                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-                                        <div
-                                            className="h-full bg-[var(--primary)]"
-                                            style={{ width: `${progress.percentage}%` }}
-                                        />
-                                    </div>
+                                    {/* Progress bar at bottom of thumbnail (online only) */}
+                                    {course.type !== 'OFFLINE' && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+                                            <div
+                                                className="h-full bg-[var(--primary)]"
+                                                style={{ width: `${progress.percentage}%` }}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Card Body */}
@@ -331,11 +342,19 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                                         </span>
                                     </div>
 
-                                    {/* Progress text */}
-                                    <div className="flex items-center justify-between text-[11px] text-[var(--foreground)]/50 font-medium">
-                                        <span>{progress.completed}/{progress.total} {lang === 'uz' ? 'dars' : 'урок'}</span>
-                                        <span>{progress.percentage}%</span>
-                                    </div>
+                                    {/* Progress text (online only) */}
+                                    {course.type !== 'OFFLINE' && (
+                                        <div className="flex items-center justify-between text-[11px] text-[var(--foreground)]/50 font-medium">
+                                            <span>{progress.completed}/{progress.total} {lang === 'uz' ? 'dars' : 'урок'}</span>
+                                            <span>{progress.percentage}%</span>
+                                        </div>
+                                    )}
+                                    {course.type === 'OFFLINE' && (
+                                        <div className="flex items-center gap-1.5 text-[11px] text-amber-600 font-semibold">
+                                            <MapPin size={12} />
+                                            {lang === 'uz' ? 'Oflayn mashg\'ulot' : 'Офлайн занятие'}
+                                        </div>
+                                    )}
 
                                     {/* Days remaining / Purchase status */}
                                     <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${isUrgent ? 'text-red-500' : 'text-[var(--foreground)]/40'}`}>
@@ -346,12 +365,17 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                                         }
                                     </div>
 
-                                    {/* Continue button */}
+                                    {/* Action button */}
                                     <button className="w-full py-2.5 bg-[var(--primary)] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-md shadow-[var(--primary)]/20 flex items-center justify-center gap-2">
-                                        <Play size={14} fill="currentColor" />
-                                        {progress.completed > 0
-                                            ? lang === 'ru' ? 'Продолжить' : 'Davom ettirish'
-                                            : lang === 'ru' ? 'Начать' : 'Boshlash'}
+                                        {course.type === 'OFFLINE' ? (
+                                            <><MessageSquare size={14} /> Chat</>
+                                        ) : (
+                                            <><Play size={14} fill="currentColor" />
+                                                {progress.completed > 0
+                                                    ? lang === 'ru' ? 'Продолжить' : 'Davom ettirish'
+                                                    : lang === 'ru' ? 'Начать' : 'Boshlash'}
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
