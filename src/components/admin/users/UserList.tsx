@@ -306,7 +306,7 @@ export const UserList = () => {
                     render={(record: any) => {
                         if (record?.hasPendingPayment) {
                             return (
-                                <Box display="flex" alignItems="center" gap={0.5}>
+                                <Box display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
                                     <ApprovePaymentButton record={record} />
                                     <Tooltip title={`Skrinshot yuborilgan: ${record.pendingPaymentCourse}`}>
                                         <Chip
@@ -316,6 +316,26 @@ export const UserList = () => {
                                             sx={{ bgcolor: '#fef9c3', color: '#a16207', fontWeight: 700, fontSize: '0.65rem' }}
                                         />
                                     </Tooltip>
+                                    {record.pendingScreenshotUrl && (
+                                        <Tooltip title="Skrinshotni ko'rish">
+                                            <Chip
+                                                size="small"
+                                                label="📷 Skrinshot"
+                                                onClick={(e: React.MouseEvent) => {
+                                                    e.stopPropagation();
+                                                    window.open(record.pendingScreenshotUrl, '_blank');
+                                                }}
+                                                sx={{
+                                                    bgcolor: '#dbeafe',
+                                                    color: '#1d4ed8',
+                                                    fontWeight: 700,
+                                                    fontSize: '0.65rem',
+                                                    cursor: 'pointer',
+                                                    '&:hover': { bgcolor: '#bfdbfe' }
+                                                }}
+                                            />
+                                        </Tooltip>
+                                    )}
                                 </Box>
                             );
                         }

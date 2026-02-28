@@ -55,10 +55,16 @@ export function UserSidebar({ lang, user: userProp }: UserSidebarProps) {
             key: 'account'
         },
         {
-            href: `/${lang}/all-courses`,
+            href: `/${lang}/online-courses`,
+            icon: <PlayCircle className="w-[18px] h-[18px]" />,
+            label: lang === 'uz' ? 'Online Kurslar' : 'Онлайн Курсы',
+            key: 'online-courses'
+        },
+        {
+            href: `/${lang}/offline-courses`,
             icon: <BookOpen className="w-[18px] h-[18px]" />,
-            label: lang === 'uz' ? 'Barcha Kurslar' : 'Все Курсы',
-            key: 'all-courses'
+            label: lang === 'uz' ? 'Offline Kurslar' : 'Офлайн Курсы',
+            key: 'offline-courses'
         },
         {
             href: `/${lang}/my-courses`,

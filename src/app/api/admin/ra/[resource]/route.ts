@@ -223,6 +223,7 @@ export async function GET(
                     hasPendingPayment: pendingPayments.length > 0,
                     pendingPaymentCount: pendingPayments.length,
                     pendingPaymentCourse: pendingPayments[0]?.course?.title || null,
+                    pendingScreenshotUrl: pendingPayments[0]?.screenshotUrl || null,
                     _courseIds: subs.map((s: any) => s.course?.id).filter(Boolean),
                 };
             });
