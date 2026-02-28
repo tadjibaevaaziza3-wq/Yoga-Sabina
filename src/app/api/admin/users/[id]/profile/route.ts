@@ -10,18 +10,18 @@ async function getAdmin() {
     return verifyToken(session)
 }
 
-// GET - Fetch user profile for admin view
+// GET - Fetch user profile for admin view (from chat clicks)
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ userId: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const admin = await getAdmin()
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { userId } = await params
+    const { id } = await params
 
     const user = await prisma.user.findUnique({
-        where: { id: userId },
+        where: { id },
         select: {
             id: true,
             firstName: true,
