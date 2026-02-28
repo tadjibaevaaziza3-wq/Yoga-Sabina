@@ -3,19 +3,17 @@
 import { useState, useEffect, useRef } from 'react';
 import {
     Box, Typography, Paper, Avatar, TextField, IconButton,
-    Chip, CircularProgress, Divider, Badge, InputAdornment, Button
+    Chip, CircularProgress, Divider, Badge, Button,
+    Dialog, DialogTitle, DialogContent, DialogActions,
+    Table, TableBody, TableCell, TableRow,
+    Alert, Snackbar,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import ImageIcon from '@mui/icons-material/Image';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-
-/**
- * Telegram-like Course Chat Admin Panel
- * 1. Course list with latest message previews
- * 2. Click into course → full chat thread with admin reply
- */
+import PersonIcon from '@mui/icons-material/Person';
+import LockResetIcon from '@mui/icons-material/LockReset';
 
 interface CoursePreview {
     id: string;
@@ -43,6 +41,22 @@ interface ChatMsg {
         telegramUsername: string | null;
         telegramPhotoUrl: string | null;
     };
+}
+
+interface UserProfile {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    phone: string | null;
+    email: string | null;
+    telegramId: string | null;
+    telegramUsername: string | null;
+    role: string;
+    region: string;
+    language: string;
+    createdAt: string;
+    subscriptions: { course: { title: string }; status: string; endsAt: string }[];
+    purchases: { course: { title: string }; status: string; amount: number }[];
 }
 
 // ── Main Component ──
@@ -77,7 +91,7 @@ export const CourseChatsAdmin = () => {
     }
 
     return (
-        <Box p={3} maxWidth={800} mx="auto">
+        <Box p={3} maxWidth={1200} mx="auto">
             <Typography variant="h5" sx={{ color: '#114539', fontWeight: 800, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <ChatBubbleOutlineIcon /> Kurs chatlari
             </Typography>
@@ -153,12 +167,20 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
     const [sending, setSending] = useState(false);
     const [loading, setLoading] = useState(true);
     const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+    const [attachmentName, setAttachmentName] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // User profile dialog
+    const [profileOpen, setProfileOpen] = useState(false);
+    const [profileData, setProfileData] = useState<UserProfile | null>(null);
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
+
     useEffect(() => {
         fetchMessages();
-        const interval = setInterval(fetchMessages, 5000); // Auto-refresh every 5s
+        const interval = setInterval(fetchMessages, 10000); // Auto-refresh every 10s
         return () => clearInterval(interval);
     }, [courseId]);
 
@@ -174,7 +196,7 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
         try {
             const res = await fetch(`/api/admin/chats?action=messages&courseId=${courseId}`);
             const data = await res.json();
-            setMessages(data.messages || []);
+            setMessages(Array.isArray(data.messages) ? data.messages : (Array.isArray(data) ? data : []));
         } catch { }
         setLoading(false);
     };
@@ -183,47 +205,48 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
         if (!newMessage.trim() && !attachmentUrl) return;
         setSending(true);
         try {
-            const res = await fetch('/api/admin/chats', {
+            await fetch('/api/admin/chats', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ courseId, message: newMessage.trim() || '📎 Fayl', attachmentUrl }),
+                body: JSON.stringify({ courseId, message: newMessage || '📎', attachmentUrl }),
             });
-            if (res.ok) {
-                setNewMessage('');
-                setAttachmentUrl(null);
-                fetchMessages();
-            }
+            setNewMessage('');
+            setAttachmentUrl(null);
+            setAttachmentName(null);
+            fetchMessages();
         } catch { }
         setSending(false);
     };
 
+    // SECURE file upload — converts to base64 data URL, NOT GCS
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // 5MB limit
+        if (file.size > 5 * 1024 * 1024) {
+            setSnackbar({ open: true, message: "Fayl juda katta! Maksimal hajm: 5MB", severity: 'error' });
+            return;
+        }
+
         setUploading(true);
         try {
-            const resUrl = await fetch('/api/admin/videos/upload-url', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileName: file.name, contentType: file.type || 'application/octet-stream' }),
-            });
-            if (!resUrl.ok) throw new Error('Upload URL failed');
-            const { url, publicUrl } = await resUrl.json();
-
-            await new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('PUT', url, true);
-                xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-                xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve(xhr.response) : reject(new Error('Upload failed'));
-                xhr.onerror = () => reject(new Error('Network error'));
-                xhr.send(file);
-            });
-
-            setAttachmentUrl(publicUrl);
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch('/api/admin/chats/upload', { method: 'POST', body: formData });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Upload failed');
+            }
+            const { dataUrl, fileName } = await res.json();
+            setAttachmentUrl(dataUrl);
+            setAttachmentName(fileName);
         } catch (err: any) {
-            console.error('Upload error:', err);
+            setSnackbar({ open: true, message: err.message || 'Yuklash xatosi', severity: 'error' });
         }
         setUploading(false);
+        // Reset file input
+        e.target.value = '';
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -233,30 +256,96 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
         }
     };
 
-    const formatTime = (dateStr: string) => {
-        return new Date(dateStr).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+    // Open user profile
+    const openUserProfile = async (userId: string) => {
+        setProfileOpen(true);
+        setProfileLoading(true);
+        setProfileData(null);
+        try {
+            const res = await fetch(`/api/admin/users/${userId}/profile`);
+            if (res.ok) {
+                const data = await res.json();
+                setProfileData(data);
+            }
+        } catch { }
+        setProfileLoading(false);
     };
 
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' });
+    // Reset user password
+    const resetPassword = async () => {
+        if (!profileData) return;
+        if (!confirm(`${profileData.firstName || 'Foydalanuvchi'} uchun parolni yangilamoqchimisiz? Yangi parol Telegram orqali yuboriladi.`)) return;
+        setResetLoading(true);
+        try {
+            const res = await fetch('/api/admin/users/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: profileData.id }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.telegramSent) {
+                    setSnackbar({ open: true, message: '✅ Yangi parol Telegram orqali yuborildi!', severity: 'success' });
+                } else if (data.newPassword) {
+                    setSnackbar({ open: true, message: `⚠️ Telegram yuborilmadi. Yangi parol: ${data.newPassword}`, severity: 'success' });
+                } else {
+                    setSnackbar({ open: true, message: '⚠️ Parol yangilandi, lekin foydalanuvchida Telegram bog\'lanmagan', severity: 'error' });
+                }
+            } else {
+                setSnackbar({ open: true, message: 'Xatolik yuz berdi', severity: 'error' });
+            }
+        } catch {
+            setSnackbar({ open: true, message: 'Xatolik yuz berdi', severity: 'error' });
+        }
+        setResetLoading(false);
     };
+
+    const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+
+    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
     // Group messages by date
-    const groupedByDate: { date: string; msgs: ChatMsg[] }[] = [];
-    messages.forEach((msg) => {
+    const groupedByDate = messages.reduce<{ date: string; msgs: ChatMsg[] }[]>((groups, msg) => {
         const date = formatDate(msg.createdAt);
-        const last = groupedByDate[groupedByDate.length - 1];
+        const last = groups[groups.length - 1];
         if (last && last.date === date) {
             last.msgs.push(msg);
         } else {
-            groupedByDate.push({ date, msgs: [msg] });
+            groups.push({ date, msgs: [msg] });
         }
-    });
+        return groups;
+    }, []);
+
+    // Render attachment inline (for data: URLs or legacy GCS URLs)
+    const renderAttachment = (url: string) => {
+        const isImage = url.startsWith('data:image/') || url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+        const isVideo = url.startsWith('data:video/') || url.match(/\.(mp4|webm|mov)$/i);
+        const isAudio = url.startsWith('data:audio/') || url.match(/\.(mp3|ogg|wav)$/i);
+
+        if (isImage) return <img src={url} alt="" style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 200 }} />;
+        if (isVideo) return <video src={url} controls style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 200 }} />;
+        if (isAudio) return <audio src={url} controls style={{ width: '100%' }} />;
+        return (
+            <Chip
+                icon={<AttachFileIcon />}
+                label="Fayl"
+                size="small"
+                sx={{ borderColor: '#114539', color: '#114539' }}
+                variant="outlined"
+            />
+        );
+    };
 
     return (
-        <Box display="flex" flexDirection="column" height="calc(100vh - 100px)" maxWidth={800} mx="auto">
+        <Box display="flex" flexDirection="column" height="calc(100vh - 64px)" maxWidth={1200} mx="auto">
             {/* Header */}
-            <Paper sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, borderRadius: '14px 14px 0 0', bgcolor: '#114539', color: '#fff' }}>
+            <Paper
+                elevation={0}
+                sx={{
+                    display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5,
+                    bgcolor: '#114539', color: '#fff', borderRadius: '14px 14px 0 0',
+                }}
+            >
                 <IconButton onClick={onBack} sx={{ color: '#fff' }}><ArrowBackIcon /></IconButton>
                 <Avatar sx={{ bgcolor: '#0a8069', width: 36, height: 36, fontSize: '0.9rem', fontWeight: 700 }}>{courseTitle[0]}</Avatar>
                 <Box>
@@ -297,7 +386,11 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
                                             {!isAdmin && (
                                                 <Avatar
                                                     src={msg.user.telegramPhotoUrl || undefined}
-                                                    sx={{ width: 28, height: 28, bgcolor: '#114539', fontSize: '0.7rem' }}
+                                                    sx={{
+                                                        width: 28, height: 28, bgcolor: '#114539', fontSize: '0.7rem',
+                                                        cursor: 'pointer', '&:hover': { ring: 2, boxShadow: '0 0 0 2px #0a8069' },
+                                                    }}
+                                                    onClick={() => openUserProfile(msg.user.id)}
                                                 >
                                                     {userName[0]}
                                                 </Avatar>
@@ -312,30 +405,19 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
                                                 }}
                                             >
                                                 {!isAdmin && (
-                                                    <Typography variant="caption" sx={{ color: '#0a8069', fontWeight: 700, display: 'block', mb: 0.3 }}>
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                            color: '#0a8069', fontWeight: 700, display: 'block', mb: 0.3,
+                                                            cursor: 'pointer', '&:hover': { textDecoration: 'underline' },
+                                                        }}
+                                                        onClick={() => openUserProfile(msg.user.id)}
+                                                    >
                                                         {userName}
                                                     </Typography>
                                                 )}
                                                 {msg.attachmentUrl && (
-                                                    <Box mb={1}>
-                                                        {msg.attachmentUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                                            <img src={msg.attachmentUrl} alt="" style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 200 }} />
-                                                        ) : msg.attachmentUrl.match(/\.(mp4|webm|mov)$/i) ? (
-                                                            <video src={msg.attachmentUrl} controls style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 200 }} />
-                                                        ) : (
-                                                            <Chip
-                                                                icon={<AttachFileIcon />}
-                                                                label="Fayl"
-                                                                size="small"
-                                                                component="a"
-                                                                href={msg.attachmentUrl}
-                                                                target="_blank"
-                                                                clickable
-                                                                sx={{ borderColor: '#114539', color: '#114539' }}
-                                                                variant="outlined"
-                                                            />
-                                                        )}
-                                                    </Box>
+                                                    <Box mb={1}>{renderAttachment(msg.attachmentUrl)}</Box>
                                                 )}
                                                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.4 }}>
                                                     {msg.message}
@@ -359,8 +441,8 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
             {attachmentUrl && (
                 <Box sx={{ px: 2, py: 1, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', gap: 1 }}>
                     <AttachFileIcon sx={{ color: '#114539' }} />
-                    <Typography variant="caption" noWrap sx={{ flex: 1 }}>{attachmentUrl.split('/').pop()}</Typography>
-                    <IconButton size="small" onClick={() => setAttachmentUrl(null)} color="error">✕</IconButton>
+                    <Typography variant="caption" noWrap sx={{ flex: 1 }}>{attachmentName || 'Fayl'}</Typography>
+                    <IconButton size="small" onClick={() => { setAttachmentUrl(null); setAttachmentName(null); }} color="error">✕</IconButton>
                 </Box>
             )}
 
@@ -368,7 +450,7 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
             <Paper sx={{ p: 1.5, borderRadius: '0 0 14px 14px', display: 'flex', alignItems: 'center', gap: 1 }}>
                 <IconButton component="label" disabled={uploading} sx={{ color: '#114539' }}>
                     {uploading ? <CircularProgress size={20} /> : <AttachFileIcon />}
-                    <input type="file" hidden onChange={handleFileUpload} accept="image/*,video/*,audio/*,.pdf,.doc,.docx" />
+                    <input type="file" hidden onChange={handleFileUpload} accept="image/*,video/*,audio/*,.pdf" />
                 </IconButton>
                 <TextField
                     fullWidth
@@ -392,6 +474,87 @@ const ChatThread = ({ courseId, courseTitle, onBack }: { courseId: string; cours
                     {sending ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : <SendIcon sx={{ fontSize: 18 }} />}
                 </IconButton>
             </Paper>
+
+            {/* User Profile Dialog */}
+            <Dialog open={profileOpen} onClose={() => setProfileOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{ color: '#114539', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon /> Foydalanuvchi ma'lumotlari
+                </DialogTitle>
+                <DialogContent>
+                    {profileLoading ? (
+                        <Box textAlign="center" py={3}><CircularProgress sx={{ color: '#114539' }} /></Box>
+                    ) : profileData ? (
+                        <Box>
+                            <Table size="small">
+                                <TableBody>
+                                    <TableRow><TableCell sx={{ fontWeight: 700, color: '#114539', width: 140 }}>Ism</TableCell><TableCell>{profileData.firstName} {profileData.lastName}</TableCell></TableRow>
+                                    <TableRow><TableCell sx={{ fontWeight: 700, color: '#114539' }}>Telefon</TableCell><TableCell>{profileData.phone || '—'}</TableCell></TableRow>
+                                    <TableRow><TableCell sx={{ fontWeight: 700, color: '#114539' }}>Email</TableCell><TableCell>{profileData.email || '—'}</TableCell></TableRow>
+                                    <TableRow><TableCell sx={{ fontWeight: 700, color: '#114539' }}>Telegram</TableCell><TableCell>{profileData.telegramUsername ? `@${profileData.telegramUsername}` : profileData.telegramId || '—'}</TableCell></TableRow>
+                                    <TableRow><TableCell sx={{ fontWeight: 700, color: '#114539' }}>Rol</TableCell><TableCell>{profileData.role}</TableCell></TableRow>
+                                    <TableRow><TableCell sx={{ fontWeight: 700, color: '#114539' }}>Ro'yxatdan o'tgan</TableCell><TableCell>{new Date(profileData.createdAt).toLocaleDateString('uz-UZ')}</TableCell></TableRow>
+                                </TableBody>
+                            </Table>
+
+                            {profileData.subscriptions?.length > 0 && (
+                                <Box mt={2}>
+                                    <Typography variant="subtitle2" sx={{ color: '#114539', fontWeight: 700, mb: 1 }}>📚 Obunalar</Typography>
+                                    {profileData.subscriptions.map((sub, i) => (
+                                        <Chip
+                                            key={i}
+                                            label={`${sub.course.title} — ${sub.status}`}
+                                            size="small"
+                                            sx={{ mr: 0.5, mb: 0.5, bgcolor: sub.status === 'ACTIVE' ? '#dcfce7' : '#fee2e2', fontWeight: 600, fontSize: '0.7rem' }}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
+
+                            {profileData.purchases?.length > 0 && (
+                                <Box mt={2}>
+                                    <Typography variant="subtitle2" sx={{ color: '#114539', fontWeight: 700, mb: 1 }}>💳 Xaridlar</Typography>
+                                    {profileData.purchases.map((p, i) => (
+                                        <Chip
+                                            key={i}
+                                            label={`${p.course.title} — ${p.status}`}
+                                            size="small"
+                                            sx={{ mr: 0.5, mb: 0.5, bgcolor: p.status === 'APPROVED' || p.status === 'PAID' ? '#dcfce7' : '#fef3c7', fontWeight: 600, fontSize: '0.7rem' }}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
+                        </Box>
+                    ) : (
+                        <Alert severity="error">Ma'lumotlarni yuklashda xatolik</Alert>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    {profileData && (
+                        <Button
+                            startIcon={resetLoading ? <CircularProgress size={16} /> : <LockResetIcon />}
+                            onClick={resetPassword}
+                            disabled={resetLoading}
+                            variant="outlined"
+                            color="warning"
+                            sx={{ mr: 'auto', fontWeight: 700 }}
+                        >
+                            Parolni yangilash
+                        </Button>
+                    )}
+                    <Button onClick={() => setProfileOpen(false)} sx={{ fontWeight: 700 }}>Yopish</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+            >
+                <Alert severity={snackbar.severity} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
