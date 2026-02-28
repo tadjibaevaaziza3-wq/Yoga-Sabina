@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
                 subscriptions: {
                     where: { status: 'ACTIVE' },
                     select: { courseId: true }
+                },
+                offlineAttendances: {
+                    select: { session: { select: { courseId: true } } }
                 }
             }
         });
@@ -43,7 +46,8 @@ export async function GET(req: NextRequest) {
         } else if (userWithAccess) {
             const accessibleCourseIds = [
                 ...userWithAccess.purchases.map(p => p.courseId),
-                ...userWithAccess.subscriptions.map(s => s.courseId)
+                ...userWithAccess.subscriptions.map(s => s.courseId),
+                ...userWithAccess.offlineAttendances.map(a => a.session.courseId)
             ];
             uniqueCourseIds = Array.from(new Set(accessibleCourseIds));
         }

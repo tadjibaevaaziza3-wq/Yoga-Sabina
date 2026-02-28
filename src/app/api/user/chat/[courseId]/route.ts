@@ -26,12 +26,16 @@ export async function GET(
         select: {
             role: true,
             purchases: { where: { courseId, status: 'PAID' }, take: 1 },
-            subscriptions: { where: { courseId, status: 'ACTIVE' }, take: 1 }
+            subscriptions: { where: { courseId, status: 'ACTIVE' }, take: 1 },
+            offlineAttendances: {
+                where: { session: { courseId } },
+                take: 1
+            }
         }
     })
 
     if (!access) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const hasAccess = access.role === 'ADMIN' || access.purchases.length > 0 || access.subscriptions.length > 0
+    const hasAccess = access.role === 'ADMIN' || access.purchases.length > 0 || access.subscriptions.length > 0 || access.offlineAttendances.length > 0
     if (!hasAccess) return NextResponse.json({ error: 'Subscription required' }, { status: 403 })
 
     // Check if user is banned
@@ -99,12 +103,16 @@ export async function POST(
         select: {
             role: true,
             purchases: { where: { courseId, status: 'PAID' }, take: 1 },
-            subscriptions: { where: { courseId, status: 'ACTIVE' }, take: 1 }
+            subscriptions: { where: { courseId, status: 'ACTIVE' }, take: 1 },
+            offlineAttendances: {
+                where: { session: { courseId } },
+                take: 1
+            }
         }
     })
 
     if (!access) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const hasAccess = access.role === 'ADMIN' || access.purchases.length > 0 || access.subscriptions.length > 0
+    const hasAccess = access.role === 'ADMIN' || access.purchases.length > 0 || access.subscriptions.length > 0 || access.offlineAttendances.length > 0
     if (!hasAccess) return NextResponse.json({ error: 'Subscription required' }, { status: 403 })
 
     // Check if user is banned
