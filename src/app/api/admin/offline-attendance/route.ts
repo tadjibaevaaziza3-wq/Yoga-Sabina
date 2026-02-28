@@ -30,18 +30,49 @@ export async function GET(request: NextRequest) {
     }
 
     if (action === 'users' && courseId) {
-        // Return users subscribed to this offline course
+        // Return users subscribed to this offline course with subscription dates
         const users = await prisma.user.findMany({
             where: {
                 OR: [
                     { subscriptions: { some: { courseId, status: 'ACTIVE' } } },
-                    { purchases: { some: { courseId, status: 'APPROVED' } } },
+                    { purchases: { some: { courseId, status: { in: ['APPROVED', 'PAID'] } } } },
                 ],
             },
-            select: { id: true, firstName: true, lastName: true, phone: true, telegramUsername: true },
+            select: {
+                id: true, firstName: true, lastName: true, phone: true, telegramUsername: true,
+                subscriptions: {
+                    where: { courseId },
+                    select: { id: true, status: true, startsAt: true, endsAt: true },
+                    orderBy: { startsAt: 'desc' as const },
+                    take: 1,
+                },
+                purchases: {
+                    where: { courseId, status: { in: ['APPROVED', 'PAID'] } },
+                    select: { id: true, status: true, createdAt: true, amount: true },
+                    orderBy: { createdAt: 'desc' as const },
+                    take: 1,
+                },
+            },
             orderBy: { firstName: 'asc' },
         })
-        return NextResponse.json(users)
+        const now = new Date()
+        const enriched = users.map(u => {
+            const sub = u.subscriptions[0]
+            const purchase = u.purchases[0]
+            const isExpired = sub ? new Date(sub.endsAt) < now : false
+            return {
+                id: u.id,
+                firstName: u.firstName,
+                lastName: u.lastName,
+                phone: u.phone,
+                telegramUsername: u.telegramUsername,
+                subscriptionStart: sub?.startsAt || purchase?.createdAt || null,
+                subscriptionEnd: sub?.endsAt || null,
+                isExpired,
+                purchaseAmount: purchase?.amount ? Number(purchase.amount) : null,
+            }
+        })
+        return NextResponse.json(enriched)
     }
 
     if (!courseId) {

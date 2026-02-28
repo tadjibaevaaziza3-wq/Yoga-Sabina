@@ -151,6 +151,49 @@ export default function OfflineProgress({ lang }: Props) {
                             </div>
                         </div>
 
+                        {/* Progress Timeline Bar Chart */}
+                        {stat.sessions.length > 0 && (
+                            <div className="px-6 pb-4">
+                                <h5 className="text-xs font-bold uppercase tracking-widest text-[var(--primary)]/40 mb-2">
+                                    📊 {lang === 'uz' ? 'Davomat diagrammasi' : 'Диаграмма посещаемости'}
+                                </h5>
+                                <div className="flex gap-1 items-end h-16 p-2 bg-white rounded-xl border border-[var(--border)]">
+                                    {stat.sessions.map((session, idx) => {
+                                        const color = session.status === 'PRESENT' ? '#16a34a'
+                                            : session.status === 'LATE' ? '#d97706'
+                                                : session.status === 'ABSENT' ? '#dc2626'
+                                                    : session.status === 'EXCUSED' ? '#2563eb'
+                                                        : '#e5e7eb'
+                                        const height = session.status === 'PRESENT' ? '100%'
+                                            : session.status === 'LATE' ? '75%'
+                                                : session.status === 'ABSENT' ? '30%'
+                                                    : session.status === 'EXCUSED' ? '50%'
+                                                        : '15%'
+                                        return (
+                                            <div
+                                                key={session.id}
+                                                className="flex-1 rounded-sm transition-all hover:opacity-80 cursor-pointer group relative"
+                                                style={{ backgroundColor: color, height, minWidth: 6, maxWidth: 24 }}
+                                                title={`${new Date(session.date).toLocaleDateString(lang === 'uz' ? 'uz-UZ' : 'ru-RU', { day: 'numeric', month: 'short' })} — ${statusIcons[session.status || '']?.label[lang as 'uz' | 'ru'] || '—'}`}
+                                            />
+                                        )
+                                    })}
+                                </div>
+                                <div className="flex gap-3 mt-1.5 justify-center">
+                                    {[
+                                        { color: '#16a34a', label: lang === 'uz' ? 'Keldi' : 'Был' },
+                                        { color: '#d97706', label: lang === 'uz' ? 'Kechikdi' : 'Опозд.' },
+                                        { color: '#dc2626', label: lang === 'uz' ? 'Kelmadi' : 'Не был' },
+                                    ].map(l => (
+                                        <span key={l.color} className="flex items-center gap-1 text-[9px] text-[var(--text-secondary)]">
+                                            <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: l.color }} />
+                                            {l.label}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Session History */}
                         {stat.sessions.length > 0 ? (
                             <div className="px-6 pb-6">
