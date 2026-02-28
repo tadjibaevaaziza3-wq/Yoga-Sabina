@@ -8,6 +8,7 @@ import { i18nProvider } from '@/lib/admin/i18nProvider';
 import { Box, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import GroupIcon from '@mui/icons-material/Group';
 
 import users from '@/components/admin/users';
 import courses from '@/components/admin/courses';
@@ -23,6 +24,7 @@ import { AiAnalytics } from '@/components/admin/automations';
 import feedbacks from '@/components/admin/feedback';
 import { Dashboard } from '@/components/admin/dashboard/Dashboard';
 import { SystemSettings } from '@/components/admin/SystemSettings';
+import OfflineAttendanceManager from '@/components/admin/OfflineAttendanceManager';
 import { Route } from 'react-router-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -50,6 +52,7 @@ const CustomMenu = (props: any) => {
     const location = useLocation();
     const isDashboardActive = location.pathname === '/' || location.pathname === '';
     const isSettingsActive = location.pathname.includes('/system-settings');
+    const isAttendanceActive = location.pathname.includes('/davomat');
     return (
         <Menu {...props}>
             <Menu.Item
@@ -60,6 +63,13 @@ const CustomMenu = (props: any) => {
                 selected={isDashboardActive}
             />
             <Menu.ResourceItems />
+            <Menu.Item
+                to="/davomat"
+                primaryText="📋 Davomat"
+                leftIcon={<GroupIcon />}
+                onClick={() => navigate('/davomat')}
+                selected={isAttendanceActive}
+            />
             <Menu.Item
                 to="/system-settings"
                 primaryText="⚙️ Sozlamalar"
@@ -102,6 +112,7 @@ export const ReactAdminApp = () => (
         <CustomRoutes>
             <Route path="/ai-analytics" element={<AiAnalytics />} />
             <Route path="/system-settings" element={<SystemSettings />} />
+            <Route path="/davomat" element={<OfflineAttendanceManager />} />
         </CustomRoutes>
     </Admin>
 );

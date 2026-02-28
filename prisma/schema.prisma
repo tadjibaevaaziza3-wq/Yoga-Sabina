@@ -178,6 +178,7 @@ model User {
   communityMessages   CommunityMessage[]
   passwordResetTokens PasswordResetToken[]
   automationQueue     UserAutomationQueue[]
+  offlineAttendances  OfflineAttendance[]
 }
 
 model Profile {
@@ -272,7 +273,8 @@ model Course {
   chatMessages  ChatMessage[]
   courseChats        CourseChat[]
   courseChatMembers CourseChatMember[]
-  coupons       Coupon[]
+  coupons          Coupon[]
+  offlineSessions  OfflineSession[]
 }
 
 model Module {
@@ -949,5 +951,34 @@ model CommunityMessage {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+  @@index([userId])
+}
+
+// Offline Course Attendance
+model OfflineSession {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  date      DateTime
+  title     String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  attendances OfflineAttendance[]
+
+  @@index([courseId, date])
+}
+
+model OfflineAttendance {
+  id        String         @id @default(cuid())
+  sessionId String
+  session   OfflineSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String         @default("PRESENT") // PRESENT, ABSENT, LATE, EXCUSED
+  note      String?
+  createdAt DateTime       @default(now())
+
+  @@unique([sessionId, userId])
   @@index([userId])
 }

@@ -9,6 +9,7 @@ import MyCoursesGrid from "@/components/dashboard/MyCoursesGrid"
 import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap"
 import { getRecommendations } from "@/lib/recommendations"
 import YogaCalendar from "@/components/user/YogaCalendar"
+import OfflineProgress from "@/components/user/OfflineProgress"
 
 export default async function DashboardPage({
     params,
@@ -343,6 +344,11 @@ export default async function DashboardPage({
                 <div className="bg-white rounded-2xl border border-[var(--foreground)]/[0.04] p-5 shadow-sm overflow-x-auto">
                     <ActivityHeatmap data={activityData} lang={lang} />
                 </div>
+            </section>
+
+            {/* ── Offline Course Attendance ── */}
+            <section className="animate-fade-in" style={{ animationDelay: '0.45s' }}>
+                <OfflineProgress lang={lang} />
             </section>
 
             {/* ── Motivational ── */}
