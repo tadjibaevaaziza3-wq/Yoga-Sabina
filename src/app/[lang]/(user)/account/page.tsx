@@ -1,12 +1,11 @@
 
 import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
 import { prisma } from "@/lib/prisma"
-import { Clock, Play, Flame, Star, BookOpen, TrendingUp, ChevronRight } from "lucide-react"
+import { Clock, Play, Flame, Star, BookOpen, TrendingUp, ChevronRight, MapPin, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { getLocalUser } from "@/lib/auth/server"
 import MyCoursesGrid from "@/components/dashboard/MyCoursesGrid"
-import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap"
 import { getRecommendations } from "@/lib/recommendations"
 import YogaCalendar from "@/components/user/YogaCalendar"
 import OfflineProgress from "@/components/user/OfflineProgress"
@@ -23,6 +22,7 @@ export default async function DashboardPage({
     let myCourses: any[] = []
     let activityData: { date: string, count: number, level: number }[] = []
     let recommendationData: any = null
+    let offlineStats = { totalSessions: 0, attended: 0, totalCourses: 0, attendanceRate: 0 }
 
     if (user) {
         try {
@@ -110,6 +110,25 @@ export default async function DashboardPage({
         } catch (dbError) {
             console.error('Failed to fetch user data for account page (pgBouncer?):', dbError)
             // Page will render with basic user info from auth token
+        }
+
+        // Fetch offline course KPI data
+        try {
+            const offlineAttendances = await prisma.offlineAttendance.findMany({
+                where: { userId: user.id },
+                select: { status: true, session: { select: { courseId: true } } }
+            })
+            const offlineCourseSet = new Set(offlineAttendances.map(a => a.session.courseId))
+            const totalSessions = offlineAttendances.length
+            const attended = offlineAttendances.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length
+            offlineStats = {
+                totalSessions,
+                attended,
+                totalCourses: offlineCourseSet.size,
+                attendanceRate: totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 0
+            }
+        } catch (e) {
+            console.error('Failed to fetch offline stats:', e)
         }
     }
 
@@ -271,6 +290,30 @@ export default async function DashboardPage({
                 ))}
             </div>
 
+            {/* ── Offline Course KPI ── */}
+            {offlineStats.totalSessions > 0 && (
+                <div className="animate-fade-in">
+                    <h2 className="text-lg font-serif font-bold text-[var(--foreground)] mb-3">
+                        {lang === 'uz' ? "Offline Mashg'ulotlar" : "Офлайн занятия"}
+                    </h2>
+                    <div className="grid grid-cols-3 gap-3">
+                        {[
+                            { label: lang === 'uz' ? 'Kurslar' : 'Курсы', value: offlineStats.totalCourses, icon: <BookOpen className="w-4 h-4" />, color: 'text-amber-600 bg-amber-50' },
+                            { label: lang === 'uz' ? 'Davomat' : 'Посещ.', value: `${offlineStats.attended}/${offlineStats.totalSessions}`, icon: <CheckCircle className="w-4 h-4" />, color: 'text-emerald-600 bg-emerald-50' },
+                            { label: lang === 'uz' ? 'Foiz' : 'Процент', value: `${offlineStats.attendanceRate}%`, icon: <TrendingUp className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50' },
+                        ].map((s, i) => (
+                            <div key={i} className="bg-white rounded-2xl border border-[var(--foreground)]/[0.04] p-4 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${s.color}`}>{s.icon}</span>
+                                </div>
+                                <div className="text-xl font-black text-[var(--foreground)]">{s.value}</div>
+                                <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--foreground)]/20 mt-0.5">{s.label}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* ── Continue Watching / My Courses ── */}
             {myCourses.length > 0 && (
                 <section className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
@@ -336,15 +379,6 @@ export default async function DashboardPage({
                 </div>
             </section>
 
-            {/* ── Activity Heatmap ── */}
-            <section className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
-                <h2 className="text-lg font-serif font-bold text-[var(--foreground)] mb-4">
-                    {lang === 'uz' ? "Yillik Faollik" : "Годовая активность"}
-                </h2>
-                <div className="bg-white rounded-2xl border border-[var(--foreground)]/[0.04] p-5 shadow-sm overflow-x-auto">
-                    <ActivityHeatmap data={activityData} lang={lang} />
-                </div>
-            </section>
 
             {/* ── Offline Course Attendance ── */}
             <section className="animate-fade-in" style={{ animationDelay: '0.45s' }}>
