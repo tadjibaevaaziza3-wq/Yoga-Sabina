@@ -76,7 +76,7 @@ export default function AdminChatPage() {
 
     return (
         <div className="p-8 min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)]">
-            <div className="max-w-6xl mx-auto space-y-8 h-[calc(100vh-120px)] flex flex-col">
+            <div className="mx-auto space-y-8 h-[calc(100vh-120px)] flex flex-col">
                 <div>
                     <h1 className="text-4xl font-serif font-black text-[var(--foreground)] mb-2">Foydalanuvchi Chatlari</h1>
                     <p className="text-sm font-bold text-[var(--primary)] uppercase tracking-widest opacity-60">
