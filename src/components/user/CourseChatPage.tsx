@@ -11,6 +11,7 @@ interface Course {
     title: string
     titleRu?: string
     coverImage?: string
+    type?: string
     _count: { courseChats: number }
 }
 
@@ -129,7 +130,7 @@ export default function CourseChatPage() {
 
     return (
         <div className="min-h-screen bg-[var(--background)]">
-            <div className="max-w-4xl mx-auto pt-8 px-4">
+            <div className="max-w-6xl mx-auto pt-8 px-4">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
                     <Link href={`/${lang}/account`} className="p-3 rounded-xl bg-[var(--card-bg)] border border-[var(--border)] hover:shadow transition">
@@ -166,9 +167,16 @@ export default function CourseChatPage() {
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition">
-                                            {lang === 'ru' && course.titleRu ? course.titleRu : course.title}
-                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-bold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition">
+                                                {lang === 'ru' && course.titleRu ? course.titleRu : course.title}
+                                            </h3>
+                                            {course.type === 'OFFLINE' && (
+                                                <span className="text-[8px] font-black uppercase tracking-wider bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded-full flex-shrink-0">
+                                                    Offline
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-[10px] font-bold text-[var(--foreground)]/30 flex items-center gap-2 mt-1">
                                             <Users className="w-3 h-3" />
                                             {course._count.courseChats} {t.messages_count}

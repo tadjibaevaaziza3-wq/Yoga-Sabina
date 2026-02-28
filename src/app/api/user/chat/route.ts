@@ -46,6 +46,7 @@ export async function GET() {
                 title: true,
                 titleRu: true,
                 coverImage: true,
+                type: true,
                 _count: { select: { courseChats: true } }
             },
             orderBy: { createdAt: 'desc' }
@@ -57,6 +58,7 @@ export async function GET() {
                 title: true,
                 titleRu: true,
                 coverImage: true,
+                type: true,
                 _count: { select: { courseChats: true } }
             },
             orderBy: { createdAt: 'desc' }
