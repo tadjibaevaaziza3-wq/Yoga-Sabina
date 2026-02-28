@@ -15,6 +15,7 @@ interface CourseFilterGridProps {
         descriptionRu?: string | null
         coverImage?: string | null
         price?: number | null
+        type?: string
         lessonCount: number
         freeLessons: number
         purchaseCount: number
@@ -22,7 +23,7 @@ interface CourseFilterGridProps {
     }[]
 }
 
-type FilterStatus = 'all' | 'unlocked' | 'locked' | 'has_free'
+type FilterStatus = 'all' | 'unlocked' | 'locked' | 'has_free' | 'offline'
 
 export default function CourseFilterGrid({ lang, courses }: CourseFilterGridProps) {
     const [search, setSearch] = useState('')
@@ -39,7 +40,8 @@ export default function CourseFilterGrid({ lang, courses }: CourseFilterGridProp
             statusFilter === 'all' ||
             (statusFilter === 'unlocked' && course.isUnlocked) ||
             (statusFilter === 'locked' && !course.isUnlocked) ||
-            (statusFilter === 'has_free' && course.freeLessons > 0)
+            (statusFilter === 'has_free' && course.freeLessons > 0) ||
+            (statusFilter === 'offline' && course.type === 'OFFLINE')
 
         return matchesSearch && matchesStatus
     })
@@ -48,6 +50,7 @@ export default function CourseFilterGrid({ lang, courses }: CourseFilterGridProp
         { key: 'all', label: lang === 'uz' ? 'Hammasi' : 'Все' },
         { key: 'unlocked', label: lang === 'uz' ? 'Mening' : 'Мои' },
         { key: 'has_free', label: lang === 'uz' ? 'Bepul darsli' : 'С бесп. уроком' },
+        { key: 'offline', label: lang === 'uz' ? 'Offline' : 'Оффлайн' },
         { key: 'locked', label: lang === 'uz' ? 'Premium' : 'Премиум' },
     ]
 
@@ -106,6 +109,10 @@ export default function CourseFilterGrid({ lang, courses }: CourseFilterGridProp
                                     {course.isUnlocked ? (
                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/90 text-white text-[8px] font-bold uppercase tracking-wider backdrop-blur-sm">
                                             <Play className="w-3 h-3" /> {lang === 'uz' ? "Ochiq" : "Доступен"}
+                                        </span>
+                                    ) : course.type === 'OFFLINE' ? (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600/90 text-white text-[8px] font-bold uppercase tracking-wider backdrop-blur-sm">
+                                            📍 Offline
                                         </span>
                                     ) : (
                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--primary)]/90 text-white text-[8px] font-bold uppercase tracking-wider backdrop-blur-sm">

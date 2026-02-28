@@ -13,7 +13,7 @@ export default async function AllCoursesPage({
     const user = await getLocalUser()
 
     const courses = await prisma.course.findMany({
-        where: { isActive: true, type: 'ONLINE' },
+        where: { isActive: true },
         orderBy: { createdAt: 'desc' },
         include: {
             lessons: { select: { id: true, isFree: true } },
@@ -23,6 +23,7 @@ export default async function AllCoursesPage({
 
     let purchasedIds: string[] = []
     let subscribedIds: string[] = []
+    let offlineCourseIds: string[] = []
     if (user) {
         const purchases = await prisma.purchase.findMany({
             where: { userId: user.id, status: 'PAID' },
@@ -32,8 +33,13 @@ export default async function AllCoursesPage({
             where: { userId: user.id, status: 'ACTIVE' },
             select: { courseId: true }
         })
+        const offlineAttendances = await prisma.offlineAttendance.findMany({
+            where: { userId: user.id },
+            select: { session: { select: { courseId: true } } }
+        })
         purchasedIds = purchases.map(p => p.courseId).filter(Boolean) as string[]
         subscribedIds = subscriptions.map(s => s.courseId).filter(Boolean) as string[]
+        offlineCourseIds = [...new Set(offlineAttendances.map(a => a.session.courseId))]
     }
 
     const processedCourses = courses.map(course => ({
@@ -44,10 +50,11 @@ export default async function AllCoursesPage({
         descriptionRu: course.descriptionRu,
         coverImage: course.coverImage,
         price: course.price ? Number(course.price) : null,
+        type: course.type,
         lessonCount: course.lessons.length,
         freeLessons: course.lessons.filter(l => l.isFree).length,
         purchaseCount: course._count.purchases,
-        isUnlocked: purchasedIds.includes(course.id) || subscribedIds.includes(course.id),
+        isUnlocked: purchasedIds.includes(course.id) || subscribedIds.includes(course.id) || offlineCourseIds.includes(course.id),
     }))
 
     return (
