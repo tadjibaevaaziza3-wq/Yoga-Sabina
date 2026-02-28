@@ -277,9 +277,7 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                                 key={subscription?.id || (purchase as any)?.id || course.id}
                                 className="bg-[var(--card-bg)] rounded-2xl border border-[var(--border)] overflow-hidden hover:shadow-2xl hover:shadow-[var(--primary)]/10 hover:-translate-y-1 transition-all cursor-pointer group"
                                 onClick={() => {
-                                    if (course.type === 'OFFLINE') {
-                                        router.push(`/${lang}/chat`);
-                                    } else {
+                                    if (course.type !== 'OFFLINE') {
                                         router.push(`/${lang}/learn/${course.id}`);
                                     }
                                 }}
@@ -299,12 +297,13 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                                         </div>
                                     )}
 
-                                    {/* Play overlay on hover */}
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
-                                        <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-300 shadow-xl">
-                                            <Play size={22} className="text-[var(--primary)] fill-current ml-1" />
+                                    {course.type !== 'OFFLINE' && (
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+                                            <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-300 shadow-xl">
+                                                <Play size={22} className="text-[var(--primary)] fill-current ml-1" />
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     {/* Lesson count badge */}
                                     <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded-md">
@@ -366,17 +365,26 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                                     </div>
 
                                     {/* Action button */}
-                                    <button className="w-full py-2.5 bg-[var(--primary)] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-md shadow-[var(--primary)]/20 flex items-center justify-center gap-2">
-                                        {course.type === 'OFFLINE' ? (
-                                            <><MessageSquare size={14} /> Chat</>
-                                        ) : (
-                                            <><Play size={14} fill="currentColor" />
-                                                {progress.completed > 0
-                                                    ? lang === 'ru' ? 'Продолжить' : 'Davom ettirish'
-                                                    : lang === 'ru' ? 'Начать' : 'Boshlash'}
-                                            </>
-                                        )}
-                                    </button>
+                                    {course.type === 'OFFLINE' ? (
+                                        <div className="space-y-2">
+                                            <div className="w-full py-2 text-center bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-xl text-xs font-bold">
+                                                ✅ {lang === 'uz' ? 'Obuna qilingan' : 'Подписано'}
+                                            </div>
+                                            <button
+                                                className="w-full py-2 bg-[var(--primary)]/10 text-[var(--primary)] rounded-xl text-xs font-bold hover:bg-[var(--primary)]/20 transition-colors flex items-center justify-center gap-2"
+                                                onClick={(e) => { e.stopPropagation(); router.push(`/${lang}/chat`) }}
+                                            >
+                                                <MessageSquare size={14} /> Chat
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button className="w-full py-2.5 bg-[var(--primary)] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-md shadow-[var(--primary)]/20 flex items-center justify-center gap-2">
+                                            <Play size={14} fill="currentColor" />
+                                            {progress.completed > 0
+                                                ? lang === 'ru' ? 'Продолжить' : 'Davom ettirish'
+                                                : lang === 'ru' ? 'Начать' : 'Boshlash'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

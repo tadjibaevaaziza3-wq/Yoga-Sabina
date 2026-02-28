@@ -138,25 +138,48 @@ export default function CourseFilterGrid({ lang, courses }: CourseFilterGridProp
                                 </p>
 
                                 <div className="flex items-center gap-3 text-[9px] text-[var(--foreground)]/20 font-semibold">
-                                    <span className="flex items-center gap-1">
-                                        <Play className="w-3 h-3" /> {course.lessonCount} {lang === 'uz' ? "dars" : "уроков"}
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                        <Users className="w-3 h-3" /> {course.purchaseCount}
-                                    </span>
+                                    {course.type === 'OFFLINE' ? (
+                                        <span className="flex items-center gap-1">
+                                            📍 {lang === 'uz' ? "Oflayn mashg'ulot" : "Офлайн занятие"}
+                                        </span>
+                                    ) : (
+                                        <>
+                                            <span className="flex items-center gap-1">
+                                                <Play className="w-3 h-3" /> {course.lessonCount} {lang === 'uz' ? "dars" : "уроков"}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Users className="w-3 h-3" /> {course.purchaseCount}
+                                            </span>
+                                        </>
+                                    )}
                                 </div>
 
-                                <Link
-                                    href={course.isUnlocked ? `/${lang}/learn/${course.id}` : `/${lang}/all-courses/${course.id}`}
-                                    className={`block w-full text-center py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all ${course.isUnlocked
-                                        ? 'bg-[var(--primary)] text-white shadow-sm hover:shadow-md'
-                                        : 'bg-[#c9a96e]/8 text-[#c9a96e] hover:bg-[#c9a96e]/15 border border-[#c9a96e]/10'
-                                        }`}
-                                >
-                                    {course.isUnlocked
-                                        ? (lang === 'uz' ? "Davom etish" : "Продолжить")
-                                        : (lang === 'uz' ? "Batafsil" : "Подробнее")}
-                                </Link>
+                                {course.type === 'OFFLINE' ? (
+                                    course.isUnlocked ? (
+                                        <div className="w-full text-center py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                            ✅ {lang === 'uz' ? "Obuna qilingan" : "Подписано"}
+                                        </div>
+                                    ) : (
+                                        <Link
+                                            href={`/${lang}/all-courses/${course.id}`}
+                                            className="block w-full text-center py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest bg-[#c9a96e]/8 text-[#c9a96e] hover:bg-[#c9a96e]/15 border border-[#c9a96e]/10 transition-all"
+                                        >
+                                            {lang === 'uz' ? "Batafsil" : "Подробнее"}
+                                        </Link>
+                                    )
+                                ) : (
+                                    <Link
+                                        href={course.isUnlocked ? `/${lang}/learn/${course.id}` : `/${lang}/all-courses/${course.id}`}
+                                        className={`block w-full text-center py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all ${course.isUnlocked
+                                            ? 'bg-[var(--primary)] text-white shadow-sm hover:shadow-md'
+                                            : 'bg-[#c9a96e]/8 text-[#c9a96e] hover:bg-[#c9a96e]/15 border border-[#c9a96e]/10'
+                                            }`}
+                                    >
+                                        {course.isUnlocked
+                                            ? (lang === 'uz' ? "Davom etish" : "Продолжить")
+                                            : (lang === 'uz' ? "Batafsil" : "Подробнее")}
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     )
