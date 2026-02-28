@@ -41,6 +41,10 @@ export function LoginForm({ lang, dictionary, isAdmin }: LoginFormProps) {
     const [currentDevices, setCurrentDevices] = useState<DeviceInfo[]>([])
     const [removingDeviceId, setRemovingDeviceId] = useState<string | null>(null)
     const [pendingLoginData, setPendingLoginData] = useState<LoginFormValues | null>(null)
+    const [resetMode, setResetMode] = useState(false)
+    const [resetPhone, setResetPhone] = useState('')
+    const [resetLoading, setResetLoading] = useState(false)
+    const [resetMessage, setResetMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
     const form = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
@@ -73,6 +77,48 @@ export function LoginForm({ lang, dictionary, isAdmin }: LoginFormProps) {
         } finally {
             setRemovingDeviceId(null)
         }
+    }
+
+    const handleResetPassword = async () => {
+        setResetLoading(true)
+        setResetMessage(null)
+        try {
+            const res = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: resetPhone }),
+            })
+            const data = await res.json()
+            if (data.success) {
+                setResetMessage({
+                    text: lang === 'uz'
+                        ? '✅ Yangi parol Telegram orqali yuborildi! Iltimos tekshiring.'
+                        : '✅ Новый пароль отправлен через Telegram! Проверьте.',
+                    type: 'success',
+                })
+            } else if (data.error === 'user_not_found') {
+                setResetMessage({
+                    text: lang === 'uz' ? '❌ Bu raqam bilan foydalanuvchi topilmadi' : '❌ Пользователь не найден',
+                    type: 'error',
+                })
+            } else if (data.error === 'no_telegram') {
+                setResetMessage({
+                    text: lang === 'uz' ? '❌ Bu foydalanuvchida Telegram bog\'lanmagan' : '❌ У пользователя нет Telegram',
+                    type: 'error',
+                })
+            } else {
+                setResetMessage({
+                    text: lang === 'uz' ? '❌ Xatolik yuz berdi' : '❌ Произошла ошибка',
+                    type: 'error',
+                })
+            }
+        } catch {
+            setResetMessage({
+                text: lang === 'uz' ? '❌ Server xatosi' : '❌ Ошибка сервера',
+                type: 'error',
+            })
+        }
+        setResetLoading(false)
     }
 
     const onSubmit = async (data: LoginFormValues) => {
@@ -223,14 +269,57 @@ export function LoginForm({ lang, dictionary, isAdmin }: LoginFormProps) {
 
             {!isAdmin && (
                 <div className="text-right">
-                    <a
-                        href="https://t.me/baxtli_men_bot?start=recovery"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] font-bold text-[var(--primary)]/60 hover:text-[var(--primary)] transition-colors uppercase tracking-wider"
-                    >
-                        {lang === 'uz' ? "Parolni unutdingizmi?" : "Забыли пароль?"}
-                    </a>
+                    {!resetMode ? (
+                        <button
+                            type="button"
+                            onClick={() => setResetMode(true)}
+                            className="text-[10px] font-bold text-[var(--primary)]/60 hover:text-[var(--primary)] transition-colors uppercase tracking-wider"
+                        >
+                            {lang === 'uz' ? "Parolni unutdingizmi?" : "Забыли пароль?"}
+                        </button>
+                    ) : (
+                        <div className="bg-[var(--primary)]/5 rounded-2xl p-4 text-left space-y-3 border border-[var(--primary)]/10">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]/60">
+                                {lang === 'uz' ? "📱 Telefon raqamingizni kiriting — yangi parol Telegram orqali yuboriladi" : "📱 Введите номер телефона — новый пароль будет отправлен через Telegram"}
+                            </p>
+                            <input
+                                type="tel"
+                                value={resetPhone}
+                                onChange={(e) => setResetPhone(e.target.value)}
+                                placeholder={lang === 'uz' ? "+998 XX XXX XX XX" : "+998 XX XXX XX XX"}
+                                className="w-full bg-white border border-[var(--primary)]/10 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                            />
+                            {resetMessage && (
+                                <p className={`text-xs font-bold ${resetMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                                    {resetMessage.text}
+                                </p>
+                            )}
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleResetPassword}
+                                    disabled={resetLoading || !resetPhone.trim()}
+                                    className="flex-1 bg-[var(--primary)] text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-[var(--primary)]/90 transition-all disabled:opacity-50"
+                                >
+                                    {resetLoading ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                            {lang === 'uz' ? "Yuborilmoqda..." : "Отправка..."}
+                                        </span>
+                                    ) : (
+                                        lang === 'uz' ? "📩 Telegram orqali yuborish" : "📩 Отправить через Telegram"
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setResetMode(false); setResetPhone(''); setResetMessage(null); }}
+                                    className="px-4 bg-gray-100 text-gray-500 text-[10px] font-bold uppercase tracking-wider py-3 rounded-xl hover:bg-gray-200 transition-all"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
