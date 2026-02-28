@@ -51,18 +51,31 @@ export async function getLocalUser() {
         const userId = verifyToken(authToken)
         if (!userId) return null
 
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                email: true,
-                phone: true,
-                firstName: true,
-                lastName: true,
-                role: true,
-                telegramUsername: true
-            }
-        })
+        // Validate basic CUID format before passing to Prisma to prevent crash
+        if (typeof userId !== 'string' || userId.length < 20 || !userId.startsWith('c')) {
+            console.error('Invalid User ID format from token:', userId)
+            return null
+        }
+
+        let user = null
+        try {
+            user = await prisma.user.findUnique({
+                where: { id: userId },
+                select: {
+                    id: true,
+                    userNumber: true,
+                    email: true,
+                    phone: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                    telegramUsername: true
+                }
+            })
+        } catch (e) {
+            console.error('Invalid User ID or PRISMA Error during getLocalUser:', e)
+            return null
+        }
 
         return user
     } catch (error) {

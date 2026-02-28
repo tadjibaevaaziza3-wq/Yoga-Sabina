@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface DynamicWatermarkProps {
     userId: string;
     phone: string;
+    userNumber?: number;
     containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export const DynamicWatermark: React.FC<DynamicWatermarkProps> = ({ userId, phone, containerRef }) => {
+export const DynamicWatermark: React.FC<DynamicWatermarkProps> = ({ userId, phone, userNumber, containerRef }) => {
     const [position, setPosition] = useState({ x: 10, y: 10 });
     const [isVisible, setIsVisible] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -62,7 +63,8 @@ export const DynamicWatermark: React.FC<DynamicWatermarkProps> = ({ userId, phon
                             lineHeight: '1.4',
                         }}
                     >
-                        <div>ID: {userId}</div>
+                        {userNumber && <div style={{ fontSize: '14px', fontWeight: 900, letterSpacing: '0.05em' }}>#{userNumber}</div>}
+                        <div>ID: {userId.slice(-8)}</div>
                         <div>PH: {phone}</div>
                         <div>{currentTime.toLocaleDateString()}</div>
                         <div>{currentTime.toLocaleTimeString()}</div>

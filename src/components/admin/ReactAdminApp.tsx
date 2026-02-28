@@ -90,7 +90,7 @@ export const ReactAdminApp = () => (
         <Resource name="appcontents" {...appcontents} options={{ label: 'Kontent' }} />
         <Resource name="aitrainings" {...aitrainings} options={{ label: 'AI sozlamalar' }} />
         <Resource name="faqs" {...faqs} options={{ label: 'Savol-javoblar' }} />
-        <Resource name="chatmessages" {...chatmessages} options={{ label: 'Xabarlar' }} />
+
         <Resource name="coursechats" {...coursechats} options={{ label: 'Kurs chatlari' }} />
         <Resource name="automations" {...automations} options={{ label: 'Avtomatizatsiya' }} />
         <Resource name="triggers" />

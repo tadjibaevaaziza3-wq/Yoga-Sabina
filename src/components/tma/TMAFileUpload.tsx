@@ -31,12 +31,12 @@ export default function TMAFileUpload({
         setProgress(10);
 
         try {
-            // 1. Get Signed URL
-            const res = await fetch('/api/admin/assets/upload-url', {
+            // 1. Get Signed URL (user-facing endpoint, not admin-only)
+            const res = await fetch('/api/payments/upload-screenshot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fileName: `payments/${Date.now()}-${fileToUpload.name.replace(/\s+/g, '-')}`,
+                    fileName: `${Date.now()}-${fileToUpload.name.replace(/\s+/g, '-')}`,
                     contentType: fileToUpload.type,
                 }),
             });

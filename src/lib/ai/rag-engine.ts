@@ -118,7 +118,8 @@ export class RAGEngine {
             if (keywordResult) {
                 return this.generateResponse(keywordResult, userQuery, lang, options)
             }
-            return this.noResultResponse(lang, options)
+            // No KB match — use Gemini freeform intelligence
+            return this.generateFreeformResponse(userQuery, lang, options)
         }
 
         // 3. Use best result
@@ -281,10 +282,86 @@ ${!isSubscribed ? (lang === 'uz' ? "\nJavob oxirida obuna yoki administrator bil
         return `🧘‍♂️ **Совет Тренера:**\n\nЯ нашла подходящий урок: **"${data.title}"**.\n\n📄 **Содержание:** ${data.text}\n\nРекомендую посмотреть и выполнить на нашей платформе! 🙏${ctaSuffix}`
     }
 
-    private static noResultResponse(lang: Locale, options: QueryOptions = {}): string {
-        return lang === 'uz'
-            ? "Kechirasiz, darslarimiz orasidan bu savolga mos video topa olmadim 🙏\n\nLekin sizga yordam berishni xohlayman! Quyidagilarni sinab ko'ring:\n\n📞 Murabbiy Sabina bilan bog'laning: @Sabina_Radjapovna\n💬 Savolni boshqacharoq bering\n📚 Kurslar ro'yxatini ko'ring\n\nSabina barcha savollarga javob beradi! ✨"
-            : "Извините, я не нашла подходящего видео среди наших уроков 🙏\n\nНо я хочу помочь! Попробуйте:\n\n📞 Связаться с тренером Сабиной: @Sabina_Radjapovna\n💬 Перефразировать вопрос\n📚 Посмотреть список курсов\n\nСабина ответит на все вопросы! ✨"
+    /**
+     * Generate a smart Gemini response even without a knowledge base match.
+     * This is the key intelligence — the AI answers ANY question using Sabina's persona.
+     */
+    private static async generateFreeformResponse(query: string, lang: Locale, options: QueryOptions = {}): Promise<string> {
+        try {
+            const { isSubscribed = false, userName, conversationHistory = [], gender, age, healthIssues, isPregnant, emotionalToneInstructions, userMemoryContext } = options
+
+            const historyContext = conversationHistory.length > 0
+                ? `\n\nOldingi suhbat:\n${conversationHistory.map(m => `${m.role}: ${m.content.substring(0, 150)}`).join('\n')}`
+                : ''
+
+            const greeting = userName ? (lang === 'uz' ? `Foydalanuvchi ismi: ${userName}.` : `Имя пользователя: ${userName}.`) : ''
+
+            let personalizationContext = ''
+            if (gender || age || healthIssues || isPregnant) {
+                const parts: string[] = []
+                if (gender) parts.push(lang === 'uz' ? `Jinsi: ${gender === 'male' ? 'erkak' : 'ayol'}` : `Пол: ${gender === 'male' ? 'мужчина' : 'женщина'}`)
+                if (age) parts.push(lang === 'uz' ? `Yoshi: ${age}` : `Возраст: ${age}`)
+                if (healthIssues) parts.push(lang === 'uz' ? `Sog'liq muammolari: ${healthIssues}` : `Проблемы со здоровьем: ${healthIssues}`)
+                if (isPregnant) parts.push(lang === 'uz' ? 'Homilador' : 'Беременна')
+                personalizationContext = `\n${lang === 'uz' ? 'Foydalanuvchi haqida' : 'О пользователе'}: ${parts.join(', ')}.`
+            }
+
+            let emotionalContext = ''
+            if (emotionalToneInstructions) {
+                emotionalContext = `\n\n--- EMOTIONAL INTELLIGENCE ---\n${emotionalToneInstructions}\nResponse structure: (1) Emotional alignment, (2) Personalized insight, (3) Clear recommendation, (4) Gentle motivation, (5) Optional course suggestion.\n---`
+            }
+
+            let memoryCtx = ''
+            if (userMemoryContext) {
+                memoryCtx = `\n${userMemoryContext}`
+            }
+
+            const subscriptionCta = isSubscribed
+                ? ''
+                : (lang === 'uz'
+                    ? "\nJavob oxirida tegishli bo'lsa kurslarimizni yoki @Sabina_Radjapovna bilan bog'lanishni tavsiya qil."
+                    : "\nВ конце, если уместно, рекомендуй курсы или связаться с @Sabina_Radjapovna.")
+
+            const prompt = `${lang === 'uz'
+                ? `Sen Sabina Polatova — 7+ yillik tajribali yoga terapevti va "Baxtli Men" platformasining asoschisi. Sen iliq, ishonchli, motivatsion va professional. ${greeting}${personalizationContext}${emotionalContext}${memoryCtx}
+
+Sen yoga, salomatlik, nafas mashqlari, meditatsiya, stress boshqarish, umumiy tana salomatligi, ovqatlanish, uyqu va hayot tarzi haqida maslahat bera olasan.
+
+MUHIM QOIDALAR:
+- Tibbiy tashxis QOYMA, lekin umumiy yoga va salomatlik maslahatlari ber
+- Jiddiy muammolarda shifokorga murojaat qilishni maslahat ber
+- Har doim foydali, aniq va amaliy javob ber
+- Faqat "video topa olmadim" dema, DOIMO foydali javob ber
+- Qisqa va tushunarli yoz (3-6 gap)${subscriptionCta}`
+                : `Ты — Сабина Полатова, опытный йога-терапевт с 7+ лет стажа и основатель платформы "Baxtli Men". Ты тёплая, уверенная и профессиональная. ${greeting}${personalizationContext}${emotionalContext}${memoryCtx}
+
+Ты можешь давать советы по йоге, здоровью, дыхательным практикам, медитации, управлению стрессом, общему здоровью тела, питанию, сну и образу жизни.
+
+ВАЖНЫЕ ПРАВИЛА:
+- НЕ ставь медицинские диагнозы, но давай общие советы по йоге и здоровью
+- При серьёзных проблемах рекомендуй обратиться к врачу
+- ВСЕГДА давай полезный, конкретный и практичный ответ
+- НИКОГДА не говори "видео не найдено", ВСЕГДА давай полезный ответ
+- Пиши кратко и понятно (3-6 предложений)${subscriptionCta}`
+                }${historyContext}
+
+${lang === 'uz' ? 'Foydalanuvchi savoli' : 'Вопрос пользователя'}: "${query}"
+
+${lang === 'uz' ? 'Foydali, aniq va amaliy javob ber:' : 'Дай полезный, конкретный и практичный ответ:'}`
+
+            const response = await geminiFlashModel.generateContent({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 700 }
+            })
+
+            return response.response.text().trim()
+        } catch (e) {
+            console.error('[RAG] Freeform response generation failed:', e)
+            // Ultimate fallback — static message only if Gemini itself fails
+            return lang === 'uz'
+                ? "Kechirasiz, hozir javob berishda muammo yuz berdi 🙏 Iltimos, qaytadan urinib ko'ring yoki Sabina murabbiy bilan bog'laning: @Sabina_Radjapovna"
+                : "Извините, возникла проблема с ответом 🙏 Попробуйте ещё раз или свяжитесь с тренером Сабиной: @Sabina_Radjapovna"
+        }
     }
 
     // ─── Admin Methods ───

@@ -20,17 +20,20 @@ export function CheckoutForm({ item, lang, type, dictionary }: CheckoutFormProps
     const [paymentMethod, setPaymentMethod] = useState<'payme' | 'click' | 'manual'>('payme')
     const [screenshotUrl, setScreenshotUrl] = useState('')
     const [isSuccess, setIsSuccess] = useState(false)
-    const [cardConfig, setCardConfig] = useState({ number: 'Tizimda karta kiritilmagan', owner: '-' })
+    const [cards, setCards] = useState<{ number: string; owner: string }[]>([])
 
     useEffect(() => {
         fetch('/api/checkout/config')
             .then(res => res.json())
             .then(data => {
-                if (data.success && data.config) {
-                    setCardConfig({
+                if (data.success && data.cards) {
+                    setCards(data.cards)
+                } else if (data.success && data.config) {
+                    // Legacy fallback
+                    setCards([{
                         number: data.config.MANUAL_CARD_NUMBER || 'Tizimda karta kiritilmagan',
                         owner: data.config.MANUAL_CARD_OWNER || '-'
-                    })
+                    }])
                 }
             })
             .catch(console.error)
@@ -275,10 +278,15 @@ export function CheckoutForm({ item, lang, type, dictionary }: CheckoutFormProps
                                     <div className="w-2 h-2 rounded-full bg-[#114539]"></div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-[#114539]">Bank rekvizitlari</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-[#114539] font-bold">{cardConfig.number}</p>
-                                    <p className="text-[10px] text-[#114539] uppercase tracking-widest opacity-60">{cardConfig.owner}</p>
-                                </div>
+                                {cards.map((card, idx) => (
+                                    <div key={idx} className={`space-y-1 ${idx > 0 ? 'pt-3 border-t border-emerald-200' : ''}`}>
+                                        <p className="text-sm text-[#114539] font-bold font-mono tracking-wider">{card.number}</p>
+                                        <p className="text-[10px] text-[#114539] uppercase tracking-widest opacity-60">{card.owner}</p>
+                                    </div>
+                                ))}
+                                {cards.length === 0 && (
+                                    <p className="text-sm text-[#114539]/40 italic">Tizimda karta kiritilmagan</p>
+                                )}
                             </div>
 
                             <TMAFileUpload

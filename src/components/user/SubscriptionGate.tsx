@@ -42,7 +42,7 @@ export function SubscriptionGate({ isSubscribed, children, lang, featureName }: 
                 </p>
 
                 <div className="flex flex-col gap-3">
-                    <Link href={`/${lang}/courses`}
+                    <Link href={`/${lang}/all-courses`}
                         className="bg-[var(--primary)] text-white py-3.5 px-8 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[var(--primary)]/90 transition-all shadow-lg shadow-[var(--primary)]/20">
                         <Crown className="w-4 h-4" />
                         {lang === 'uz' ? "Obunani faollashtirish" : "Активировать подписку"}

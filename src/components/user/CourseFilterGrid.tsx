@@ -71,8 +71,8 @@ export default function CourseFilterGrid({ lang, courses }: CourseFilterGridProp
                             key={btn.key}
                             onClick={() => setStatusFilter(btn.key)}
                             className={`px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${statusFilter === btn.key
-                                    ? 'bg-[var(--primary)] text-white shadow-sm'
-                                    : 'bg-white text-[var(--foreground)]/30 hover:text-[var(--foreground)]/50 border border-[var(--foreground)]/[0.06]'
+                                ? 'bg-[var(--primary)] text-white shadow-sm'
+                                : 'bg-white text-[var(--foreground)]/30 hover:text-[var(--foreground)]/50 border border-[var(--foreground)]/[0.06]'
                                 }`}
                         >
                             {btn.label}
@@ -140,7 +140,7 @@ export default function CourseFilterGrid({ lang, courses }: CourseFilterGridProp
                                 </div>
 
                                 <Link
-                                    href={course.isUnlocked ? `/${lang}/learn/${course.id}` : `/${lang}/all-courses`}
+                                    href={course.isUnlocked ? `/${lang}/learn/${course.id}` : `/${lang}/all-courses/${course.id}`}
                                     className={`block w-full text-center py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all ${course.isUnlocked
                                         ? 'bg-[var(--primary)] text-white shadow-sm hover:shadow-md'
                                         : 'bg-[#c9a96e]/8 text-[#c9a96e] hover:bg-[#c9a96e]/15 border border-[#c9a96e]/10'

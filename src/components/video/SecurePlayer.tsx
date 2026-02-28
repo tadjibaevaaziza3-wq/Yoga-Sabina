@@ -11,6 +11,7 @@ interface SecurePlayerProps {
     musicUrl?: string;
     userId: string;
     phone: string;
+    userNumber?: number;
     onProgress?: (progress: number, duration: number) => void;
     onComplete?: () => void;
     lessonId?: string;
@@ -27,6 +28,7 @@ export const SecurePlayer: React.FC<SecurePlayerProps> = ({
     musicUrl,
     userId,
     phone,
+    userNumber,
     onProgress,
     onComplete,
     lessonId,
@@ -176,7 +178,7 @@ export const SecurePlayer: React.FC<SecurePlayerProps> = ({
 
             {/* Dynamic Watermark Layer */}
             {/* @ts-ignore */}
-            <DynamicWatermark userId={userId} phone={phone} containerRef={containerRef} />
+            <DynamicWatermark userId={userId} phone={phone} userNumber={userNumber} containerRef={containerRef} />
 
             {/* Independent Music Toggle (Overlay) */}
             {musicUrl && (

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createOrExtendSubscription } from '@/lib/payments/subscription'
+import { addUserToCourseChat } from '@/lib/chat/auto-join'
 import crypto from 'crypto'
 
 /**
@@ -125,6 +126,9 @@ export async function POST(request: Request) {
                 purchase.courseId,
                 purchase.course.durationDays || 30
             )
+
+            // Auto-add user to course chat
+            await addUserToCourseChat(purchase.userId, purchase.courseId)
 
             return NextResponse.json({
                 click_trans_id,

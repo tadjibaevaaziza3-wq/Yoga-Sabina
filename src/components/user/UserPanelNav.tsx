@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, BarChart3, BookOpen, MessageSquare, Settings, ArrowLeft, Play } from "lucide-react"
+import { LayoutDashboard, BarChart3, BookOpen, MessageSquare, Settings, ArrowLeft, Play, Scale, Users } from "lucide-react"
 
 interface UserPanelNavProps {
     lang: 'uz' | 'ru'
@@ -15,18 +15,16 @@ export function UserPanelNav({ lang }: UserPanelNavProps) {
         { href: `/${lang}/account`, icon: <LayoutDashboard className="w-5 h-5" />, label: lang === 'uz' ? 'Bosh sahifa' : 'Главная', key: 'account' },
         { href: `/${lang}/kpi`, icon: <BarChart3 className="w-5 h-5" />, label: lang === 'uz' ? "Ko'rsatkichlar" : 'Показатели', key: 'kpi' },
         { href: `/${lang}/my-courses`, icon: <BookOpen className="w-5 h-5" />, label: lang === 'uz' ? 'Kurslarim' : 'Мои курсы', key: 'my-courses' },
+        { href: `/${lang}/body-tracking`, icon: <Scale className="w-5 h-5" />, label: lang === 'uz' ? "Tana kuzatuvi" : 'Трекер тела', key: 'body-tracking' },
         { href: `/${lang}/chat`, icon: <MessageSquare className="w-5 h-5" />, label: lang === 'uz' ? 'Chat' : 'Чат', key: 'chat', premium: true },
+        { href: `/${lang}/community`, icon: <Users className="w-5 h-5" />, label: lang === 'uz' ? 'Jamoa' : 'Сообщество', key: 'community' },
         { href: `/${lang}/settings`, icon: <Settings className="w-5 h-5" />, label: lang === 'uz' ? 'Sozlamalar' : 'Настройки', key: 'settings' },
     ]
 
     const isActive = (key: string) => {
         const p = pathname || ''
         if (key === 'account') return p.includes('/account')
-        if (key === 'kpi') return p.includes('/kpi')
-        if (key === 'my-courses') return p.includes('/my-courses')
-        if (key === 'chat') return p.includes('/chat')
-        if (key === 'settings') return p.includes('/settings')
-        return false
+        return p.includes(`/${key}`)
     }
 
     return (

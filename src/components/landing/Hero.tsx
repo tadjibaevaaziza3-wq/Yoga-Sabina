@@ -6,7 +6,17 @@ import { Container } from "../ui/Container"
 import { useDictionary } from "../providers/DictionaryProvider"
 import Image from "next/image"
 
-export function Hero({ photoUrl = "/images/hero-sabina.png" }: { photoUrl?: string }) {
+interface HeroProps {
+    photoUrl?: string;
+    heroTitle?: string;
+    heroSubtitle?: string;
+    trainerName?: string;
+    ctaText?: string;
+    heroBadge?: string;
+    membersCount?: string;
+}
+
+export function Hero({ photoUrl = "/images/hero-sabina.png", heroTitle, heroSubtitle, trainerName, ctaText, heroBadge, membersCount }: HeroProps) {
     const { dictionary, lang } = useDictionary()
 
     return (
@@ -27,20 +37,20 @@ export function Hero({ photoUrl = "/images/hero-sabina.png" }: { photoUrl?: stri
                             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-[var(--accent)]/5 border border-[var(--accent)]/10 w-fit">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse"></span>
                                 <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-[var(--accent)]">
-                                    {dictionary.landing.heroBadge || "Garmoniya va Go'zallik"}
+                                    {heroBadge || dictionary.landing.heroBadge || "Garmoniya va Go'zallik"}
                                 </span>
                             </div>
                             <div className="text-[10px] font-bold uppercase tracking-[0.5em] text-[var(--primary)]/40 ml-1">
-                                By Sabina Polatova
+                                By {trainerName || 'Sabina Polatova'}
                             </div>
                         </div>
 
                         <h1 className="text-7xl md:text-8xl lg:text-[10rem] font-editorial font-bold mb-12 leading-[0.8] tracking-tight text-[var(--primary)]">
-                            {dictionary.landing.heroTitle}
+                            {heroTitle || dictionary.landing.heroTitle}
                         </h1>
 
                         <p className="text-xl text-[var(--primary)]/50 mb-16 max-w-xl leading-relaxed font-medium tracking-wide">
-                            {dictionary.landing.heroSubtitle}
+                            {heroSubtitle || dictionary.landing.heroSubtitle}
                         </p>
 
                         <div className="flex flex-wrap gap-8">
@@ -71,7 +81,7 @@ export function Hero({ photoUrl = "/images/hero-sabina.png" }: { photoUrl?: stri
                                 ))}
                             </div>
                             <div className="text-[10px] font-bold text-[var(--primary)]/30 uppercase tracking-[0.2em]">
-                                <span className="text-[var(--primary)] font-black mr-2">500+</span>
+                                <span className="text-[var(--primary)] font-black mr-2">{membersCount || '500+'}</span>
                                 {dictionary.landing.happyClients || "Baxtli a'zolar"}
                             </div>
                         </div>
@@ -98,7 +108,7 @@ export function Hero({ photoUrl = "/images/hero-sabina.png" }: { photoUrl?: stri
 
                             {/* Float Badge - Ultra Minimalist */}
                             <div className="absolute bottom-10 left-10 right-10 p-10 bg-white/60 backdrop-blur-3xl border border-white/30 rounded-[3.5rem] shadow-xl">
-                                <div className="text-[9px] font-bold uppercase tracking-[0.4em] text-[var(--accent)] mb-3">Sabina Polatova</div>
+                                <div className="text-[9px] font-bold uppercase tracking-[0.4em] text-[var(--accent)] mb-3">{trainerName || 'Sabina Polatova'}</div>
                                 <div className="text-base font-serif italic text-[var(--primary)]/80 leading-snug">
                                     {lang === 'uz' ? '7 yillik tajribaga ega Yoga murabbiyi va Yoga-terapevt' : '7 лет опыта, Йога-тренер и Йога-терапевт'}
                                 </div>
@@ -110,8 +120,8 @@ export function Hero({ photoUrl = "/images/hero-sabina.png" }: { photoUrl?: stri
                         <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-[var(--accent)]/5 blur-3xl rounded-full"></div>
                     </motion.div>
                 </div>
-            </Container>
-        </section>
+            </Container >
+        </section >
     )
 }
 

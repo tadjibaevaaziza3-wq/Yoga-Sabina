@@ -70,24 +70,23 @@ export default function TMACoursesPage() {
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                console.log("Fetching TMA initial data...");
-                const meRes = await fetch('/api/tma/me')
-                console.log("Me response status:", meRes.status);
+                // Fetch user data and courses IN PARALLEL
+                const [meRes, coursesRes] = await Promise.all([
+                    fetch('/api/tma/me'),
+                    fetch('/api/tma/courses')
+                ]);
+
                 if (meRes.ok) {
-                    const meData = await meRes.json().catch(() => null)
-                    console.log("Me data success:", meData?.success);
-                    if (meData?.success) setUserData(meData.user)
+                    const meData = await meRes.json().catch(() => null);
+                    if (meData?.success) setUserData(meData.user);
                 }
 
-                const coursesRes = await fetch('/api/tma/courses')
-                console.log("Courses response status:", coursesRes.status);
                 if (coursesRes.ok) {
-                    const coursesData = await coursesRes.json().catch(() => null)
-                    console.log("Courses count received:", coursesData?.courses?.length);
-                    if (coursesData?.success) setCourses(coursesData.courses)
+                    const coursesData = await coursesRes.json().catch(() => null);
+                    if (coursesData?.success) setCourses(coursesData.courses);
                 }
             } catch (error) {
-                console.error("Failed to load TMA courses initial data", error)
+                console.error("Failed to load TMA courses data", error);
             }
         }
         loadInitialData()

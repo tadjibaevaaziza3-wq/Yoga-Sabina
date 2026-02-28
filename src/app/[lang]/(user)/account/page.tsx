@@ -24,81 +24,99 @@ export default async function DashboardPage({
     let recommendationData: any = null
 
     if (user) {
-        const fullUser = await prisma.user.findUnique({
-            where: { id: user.id },
-            include: {
-                purchases: { where: { status: 'PAID' } },
-                subscriptions: { where: { status: 'ACTIVE' } },
-                profile: true,
-                enhancedProgress: {
-                    orderBy: { lastWatched: 'desc' },
-                    include: {
-                        lesson: {
-                            include: {
-                                course: { select: { title: true, coverImage: true, lessons: { select: { id: true } } } }
+        try {
+            const fullUser = await prisma.user.findUnique({
+                where: { id: user.id },
+                include: {
+                    purchases: { where: { status: 'PAID' }, select: { courseId: true } },
+                    subscriptions: { where: { status: 'ACTIVE' }, select: { courseId: true, endsAt: true } },
+                    profile: true,
+                    enhancedProgress: {
+                        orderBy: { lastWatched: 'desc' },
+                        select: {
+                            lessonId: true, progress: true, duration: true,
+                            completed: true, lastWatched: true,
+                            lesson: {
+                                select: {
+                                    id: true, title: true,
+                                    course: { select: { title: true, coverImage: true, lessons: { select: { id: true } } } }
+                                }
                             }
                         }
-                    }
-                },
-                progress: { where: { completed: true } },
-                eventLogs: {
-                    where: {
-                        createdAt: {
-                            gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1))
-                        }
                     },
-                    select: { createdAt: true }
+                    progress: { where: { completed: true }, select: { lessonId: true } },
+                }
+            })
+
+            if (fullUser) {
+                user = fullUser as any
+
+                const activityMap = new Map<string, { count: number, minutes: number, lessonIds: Set<string> }>()
+                // Build activity from enhancedProgress: count unique lessons per day, sum real minutes
+                fullUser.enhancedProgress.forEach(prog => {
+                    const date = prog.lastWatched.toISOString().split('T')[0]
+                    const existing = activityMap.get(date) || { count: 0, minutes: 0, lessonIds: new Set<string>() }
+                    // Only count each lesson once per day
+                    if (!existing.lessonIds.has(prog.lessonId)) {
+                        existing.lessonIds.add(prog.lessonId)
+                        existing.count += 1
+                    }
+                    // Use actual watched seconds converted to minutes
+                    existing.minutes += Math.round((prog.progress || 0) / 60)
+                    activityMap.set(date, existing)
+                })
+                activityData = Array.from(activityMap.entries()).map(([date, data]) => ({
+                    date, count: data.count, level: Math.min(4, Math.ceil(data.count / 2))
+                }))
+
+                try {
+                    const allDbCourses = await prisma.course.findMany({
+                        where: { isActive: true, type: 'ONLINE' },
+                        orderBy: { createdAt: 'desc' },
+                        include: { lessons: { select: { id: true } } }
+                    })
+
+                    const processedCourses = allDbCourses.map(course => {
+                        const hasPurchase = (user as any).purchases?.some((p: any) => p.courseId === course.id)
+                        const hasSubscription = (user as any).subscriptions?.some((s: any) => s.courseId === course.id)
+                        const courseLessonIds = course.lessons.map(l => l.id)
+                        const completedInCourse = (user as any).progress.filter((p: any) => courseLessonIds.includes(p.lessonId)).length
+                        const totalLessons = course.lessons.length
+                        const progressPercent = totalLessons > 0 ? Math.round((completedInCourse / totalLessons) * 100) : 0
+
+                        return {
+                            ...course,
+                            price: course.price ? Number(course.price) : null,
+                            lessons: undefined,
+                            isUnlocked: hasPurchase || hasSubscription,
+                            lessonCount: totalLessons,
+                            completedCount: completedInCourse,
+                            progress: progressPercent
+                        }
+                    })
+
+                    myCourses = processedCourses.filter(c => c.isUnlocked)
+                } catch (courseError) {
+                    console.error('Failed to fetch courses for dashboard:', courseError)
+                }
+
+                try {
+                    recommendationData = await getRecommendations(fullUser.id)
+                } catch (recError) {
+                    console.error('Failed to fetch recommendations:', recError)
                 }
             }
-        })
-
-        if (fullUser) {
-            user = fullUser as any
-
-            const activityMap = new Map<string, number>()
-            fullUser.eventLogs.forEach(log => {
-                const date = log.createdAt.toISOString().split('T')[0]
-                activityMap.set(date, (activityMap.get(date) || 0) + 1)
-            })
-            fullUser.enhancedProgress.forEach(prog => {
-                const date = prog.lastWatched.toISOString().split('T')[0]
-                activityMap.set(date, (activityMap.get(date) || 0) + 1)
-            })
-            activityData = Array.from(activityMap.entries()).map(([date, count]) => ({
-                date, count, level: Math.min(4, Math.ceil(count / 2))
-            }))
-
-            const allDbCourses = await prisma.course.findMany({
-                where: { isActive: true, type: 'ONLINE' },
-                orderBy: { createdAt: 'desc' },
-                include: { lessons: { select: { id: true } } }
-            })
-
-            const processedCourses = allDbCourses.map(course => {
-                const hasPurchase = (user as any).purchases?.some((p: any) => p.courseId === course.id)
-                const hasSubscription = (user as any).subscriptions?.some((s: any) => s.courseId === course.id)
-                const courseLessonIds = course.lessons.map(l => l.id)
-                const completedInCourse = (user as any).progress.filter((p: any) => courseLessonIds.includes(p.lessonId)).length
-                const totalLessons = course.lessons.length
-                const progressPercent = totalLessons > 0 ? Math.round((completedInCourse / totalLessons) * 100) : 0
-
-                return {
-                    ...course,
-                    price: course.price ? Number(course.price) : null,
-                    lessons: undefined,
-                    isUnlocked: hasPurchase || hasSubscription,
-                    lessonCount: totalLessons,
-                    completedCount: completedInCourse,
-                    progress: progressPercent
-                }
-            })
-
-            myCourses = processedCourses.filter(c => c.isUnlocked)
-            recommendationData = await getRecommendations(fullUser.id)
+        } catch (dbError) {
+            console.error('Failed to fetch user data for account page (pgBouncer?):', dbError)
+            // Page will render with basic user info from auth token
         }
     }
 
-    const totalMinutesWatched = Math.round(((user as any)?.profile?.totalYogaTime || 0) / 60)
+    // Compute stats from enhancedProgress (actual video player data)
+    const enhancedProgressData = (user as any)?.enhancedProgress || []
+    const completedVideos = enhancedProgressData.filter((p: any) => p.completed).length
+    const totalWatchedSeconds = enhancedProgressData.reduce((sum: number, p: any) => sum + (p.progress || 0), 0)
+    const totalMinutesWatched = Math.round(totalWatchedSeconds / 60)
     const currentStreak = (user as any)?.profile?.currentStreak || 0
     const activeSubscription = (user as any)?.subscriptions?.[0]
     let daysRemaining = 0
@@ -106,12 +124,12 @@ export default async function DashboardPage({
         const diff = new Date(activeSubscription.endsAt).getTime() - Date.now()
         daysRemaining = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
     }
-    const totalVideos = (user as any)?.progress?.length || 0
+    const totalVideos = enhancedProgressData.length
     const totalHours = Math.floor(totalMinutesWatched / 60)
     const totalMins = totalMinutesWatched % 60
 
-    // XP calculation (simple: videos watched * 10 + streak * 5)
-    const xpTotal = (totalVideos * 10) + (currentStreak * 5)
+    // XP calculation (videos watched * 10 + completed * 25 + streak * 5)
+    const xpTotal = (totalVideos * 10) + (completedVideos * 25) + (currentStreak * 5)
     const level = Math.floor(xpTotal / 100) + 1
     const xpInLevel = xpTotal % 100
     const xpPercent = xpInLevel
@@ -312,7 +330,7 @@ export default async function DashboardPage({
                     <YogaCalendar
                         lang={lang}
                         initialCycleData={(user as any)?.profile?.cycleData}
-                        practiceData={activityData.map(d => ({ date: d.date, minutes: d.count * 15, sessions: d.count }))}
+                        practiceData={activityData.map(d => ({ date: d.date, minutes: d.count > 0 ? Math.max(d.count * 5, 1) : 0, sessions: d.count }))}
                     />
                 </div>
             </section>

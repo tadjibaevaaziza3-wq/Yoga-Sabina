@@ -141,10 +141,19 @@ export default async function RootLayout({
 
   let isConsultationEnabled = true;
   try {
-    const consultationSetting = await prisma.systemSetting.findUnique({
-      where: { key: 'IS_CONSULTATION_ENABLED' }
-    });
-    isConsultationEnabled = consultationSetting?.value !== 'false';
+    // Cache this in-memory: fetching a setting on EVERY page load is expensive
+    const { unstable_cache } = await import('next/cache');
+    const getCachedSetting = unstable_cache(
+      async () => {
+        const setting = await prisma.systemSetting.findUnique({
+          where: { key: 'IS_CONSULTATION_ENABLED' }
+        });
+        return setting?.value !== 'false';
+      },
+      ['consultation-enabled'],
+      { revalidate: 60 } // Re-check every 60 seconds
+    );
+    isConsultationEnabled = await getCachedSetting();
   } catch {
     // SystemSetting table may not exist yet — default to enabled
   }

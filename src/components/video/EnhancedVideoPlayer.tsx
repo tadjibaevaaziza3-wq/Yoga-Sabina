@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, PictureInPicture, RotateCcw, RotateCw } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, PictureInPicture, RotateCcw, RotateCw, Monitor, Music, Music2 } from 'lucide-react';
 import { DynamicWatermark } from './DynamicWatermark';
 
 interface EnhancedVideoPlayerProps {
@@ -8,8 +8,10 @@ interface EnhancedVideoPlayerProps {
     userId: string;
     email: string;
     phoneNumber?: string;
+    userNumber?: number;
+    audioUrl?: string;
     className?: string;
-    onComplete?: () => void;
+    onComplete?: (durationSeconds: number) => void;
 }
 
 export interface EnhancedVideoPlayerRef {
@@ -19,7 +21,7 @@ export interface EnhancedVideoPlayerRef {
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlayerProps>((
-    { assetId, lessonId, userId, email, phoneNumber, className = '', onComplete },
+    { assetId, lessonId, userId, email, phoneNumber, userNumber, audioUrl, className = '', onComplete },
     ref
 ) => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -28,6 +30,7 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
     const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const hideControlsTimerRef = useRef<NodeJS.Timeout | null>(null);
     const tapTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const audioRef = useRef<HTMLAudioElement>(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -45,6 +48,10 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
     const [showQualityMenu, setShowQualityMenu] = useState(false);
     const [showCenterIcon, setShowCenterIcon] = useState<'play' | 'pause' | 'seekBack' | 'seekForward' | null>(null);
     const [tapSide, setTapSide] = useState<'left' | 'right' | null>(null);
+    const [castSupported, setCastSupported] = useState(false);
+    const [bgAudioUrl, setBgAudioUrl] = useState<string | null>(null);
+    const [audioEnabled, setAudioEnabled] = useState(true);
+    const [audioVolume, setAudioVolume] = useState(0.3);
     const [isMouseOnControls, setIsMouseOnControls] = useState(false);
 
     // Expose seekTo
@@ -251,9 +258,10 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                 });
 
                 if (!urlResponse.ok) {
-                    // Auto-retry once on 503 (transient DB error)
-                    if (urlResponse.status === 503 && retryCount < 2) {
-                        console.warn(`[EnhancedVideoPlayer] Got 503, retrying in 2s (attempt ${retryCount + 1})...`);
+                    // Auto-retry on transient errors (401 can happen if DB auth check fails due to pgBouncer)
+                    const retryableStatuses = [401, 500, 503];
+                    if (retryableStatuses.includes(urlResponse.status) && retryCount < 3) {
+                        console.warn(`[EnhancedVideoPlayer] Got ${urlResponse.status}, retrying in 2s (attempt ${retryCount + 1})...`);
                         await new Promise(r => setTimeout(r, 2000));
                         if (!cancelled) return fetchVideoData(retryCount + 1);
                         return;
@@ -269,11 +277,15 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                 if (progressResponse.ok) {
                     const progressData = await progressResponse.json();
                     if (progressData.success && progressData.progress) {
-                        const { progress: watchedSeconds, preferredSpeed } = progressData.progress;
+                        const { progress: watchedSeconds, preferredSpeed, duration: savedDuration } = progressData.progress;
                         if (videoRef.current && watchedSeconds > 0) {
                             videoRef.current.currentTime = watchedSeconds;
                         }
                         if (preferredSpeed) setPlaybackRate(preferredSpeed);
+                        // Set initial duration from DB so time display shows duration before play
+                        if (savedDuration && savedDuration > 0 && !durationSetRef.current) {
+                            setDuration(savedDuration);
+                        }
                     }
                 }
             } catch (err) {
@@ -285,6 +297,70 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
         fetchVideoData();
         return () => { cancelled = true; };
     }, [assetId, lessonId]);
+
+    // Fetch signed audio URL if lesson has audioUrl
+    useEffect(() => {
+        if (!audioUrl) { setBgAudioUrl(null); return; }
+        let cancelled = false;
+        const fetchAudio = async () => {
+            try {
+                const res = await fetch('/api/video/get-signed-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lessonId, type: 'audio' }),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!cancelled) setBgAudioUrl(data.signedUrl);
+                }
+            } catch (e) {
+                console.warn('[EnhancedVideoPlayer] Failed to fetch audio URL:', e);
+            }
+        };
+        fetchAudio();
+        return () => { cancelled = true; };
+    }, [audioUrl, lessonId]);
+
+    // Sync audio with video play/pause
+    useEffect(() => {
+        const video = videoRef.current;
+        const audio = audioRef.current;
+        if (!video || !audio || !bgAudioUrl) return;
+
+        audio.volume = audioEnabled ? audioVolume : 0;
+
+        const onPlay = () => {
+            if (audioEnabled) audio.play().catch(() => { });
+        };
+        const onPause = () => { audio.pause(); };
+        const onSeeked = () => {
+            // Don't sync audio time — it loops independently
+        };
+
+        video.addEventListener('play', onPlay);
+        video.addEventListener('pause', onPause);
+        video.addEventListener('seeked', onSeeked);
+
+        // If video already playing, start audio
+        if (!video.paused && audioEnabled) {
+            audio.play().catch(() => { });
+        }
+
+        return () => {
+            video.removeEventListener('play', onPlay);
+            video.removeEventListener('pause', onPause);
+            video.removeEventListener('seeked', onSeeked);
+            audio.pause();
+        };
+    }, [bgAudioUrl, audioEnabled, audioVolume]);
+
+    // Detect Cast/Remote Playback API support
+    useEffect(() => {
+        const video = videoRef.current;
+        if (video && (video as any).remote) {
+            setCastSupported(true);
+        }
+    }, [videoUrl]);
 
     // Auto-save progress every 10s while playing
     useEffect(() => {
@@ -357,15 +433,54 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
         const onEnded = () => {
             setIsPlaying(false);
             setShowControls(true);
-            if (onComplete) onComplete();
+            if (onComplete) {
+                const watchedDuration = video.duration || 0;
+                onComplete(Math.floor(watchedDuration));
+            }
+        };
+        const onError = () => {
+            const mediaError = video.error;
+            if (mediaError) {
+                const codes: Record<number, string> = {
+                    1: 'Video loading aborted',
+                    2: 'Network error while loading video',
+                    3: 'Video decoding failed',
+                    4: 'Video format not supported',
+                };
+                console.error('[EnhancedVideoPlayer] Media error:', codes[mediaError.code] || 'Unknown', mediaError.message);
+                setError(codes[mediaError.code] || 'Failed to load video');
+            }
+        };
+        const onCanPlay = () => {
+            setIsLoading(false);
+            setDurationOnce(video.duration);
         };
 
-        // CRITICAL FIX: If metadata already loaded before listeners attached,
-        // read duration immediately (readyState >= 1 means HAVE_METADATA)
-        if (video.readyState >= 1) {
+        // CRITICAL FIX: Sync ALL video state immediately, handling the race
+        // condition where the video loads before React effects run.
+        const syncState = () => {
+            if (!video) return;
             setDurationOnce(video.duration);
-            video.playbackRate = playbackRate;
-        }
+            setCurrentTime(video.currentTime);
+            setIsPlaying(!video.paused);
+            setIsMuted(video.muted);
+            setVolume(video.volume);
+            if (video.readyState >= 1) {
+                video.playbackRate = playbackRate;
+            }
+            if (video.readyState >= 3) {
+                setIsLoading(false);
+            }
+            if (video.buffered.length > 0) {
+                setBuffered(video.buffered.end(video.buffered.length - 1));
+            }
+        };
+
+        // Immediate sync on mount/videoUrl change
+        syncState();
+
+        // Poll every 500ms as failsafe for missed events
+        const syncInterval = setInterval(syncState, 500);
 
         video.addEventListener('loadedmetadata', handleMetadata);
         video.addEventListener('durationchange', onDurationChange);
@@ -374,8 +489,11 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
         video.addEventListener('pause', onPause);
         video.addEventListener('volumechange', onVolume);
         video.addEventListener('ended', onEnded);
+        video.addEventListener('error', onError);
+        video.addEventListener('canplay', onCanPlay);
 
         return () => {
+            clearInterval(syncInterval);
             video.removeEventListener('loadedmetadata', handleMetadata);
             video.removeEventListener('durationchange', onDurationChange);
             video.removeEventListener('timeupdate', onTimeUpdate);
@@ -383,6 +501,8 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
             video.removeEventListener('pause', onPause);
             video.removeEventListener('volumechange', onVolume);
             video.removeEventListener('ended', onEnded);
+            video.removeEventListener('error', onError);
+            video.removeEventListener('canplay', onCanPlay);
         };
     }, [videoUrl, playbackRate, onComplete, saveLessonDuration]);
 
@@ -422,7 +542,7 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
     const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
     const bufferedPct = duration > 0 ? (buffered / duration) * 100 : 0;
 
-    return (
+    return (<>
         <div
             ref={containerRef}
             className={`relative bg-black overflow-hidden select-none ${className}`}
@@ -442,14 +562,15 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
             <video
                 ref={videoRef}
                 src={videoUrl || undefined}
+                crossOrigin="anonymous"
                 className="w-full h-full"
                 controlsList="nodownload nofullscreen noremoteplayback"
-                preload="metadata"
+                preload="auto"
                 playsInline
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             />
 
-            <DynamicWatermark userId={userId} phone={phoneNumber || email} containerRef={containerRef} />
+            <DynamicWatermark userId={userId} phone={phoneNumber || email} userNumber={userNumber} containerRef={containerRef} />
 
             {/* Double-tap ripple feedback */}
             {tapSide && (
@@ -477,18 +598,6 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                 </div>
             )}
 
-            {/* Big center play button when paused and controls visible */}
-            {!isPlaying && showControls && !showCenterIcon && (
-                <button
-                    className="absolute inset-0 flex items-center justify-center z-20 w-full h-full"
-                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                >
-                    <div className="w-20 h-20 bg-white/15 hover:bg-white/25 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 transition-all duration-200 hover:scale-110 active:scale-95">
-                        <Play className="w-8 h-8 text-white fill-white ml-1" />
-                    </div>
-                </button>
-            )}
-
             {/* Controls bar */}
             <div
                 className={`absolute bottom-0 left-0 right-0 z-40 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
@@ -503,7 +612,7 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                     {/* Progress bar */}
                     <div
                         ref={progressBarRef}
-                        className="relative h-1.5 bg-white/20 rounded-full cursor-pointer group"
+                        className="relative h-2 bg-white/20 rounded-full cursor-pointer group hover:h-3 transition-all"
                         onClick={handleProgressClick}
                     >
                         {/* Buffered */}
@@ -516,9 +625,9 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                             className="absolute inset-y-0 left-0 bg-[var(--accent,#ff7d52)] rounded-full transition-all"
                             style={{ width: `${progress}%` }}
                         />
-                        {/* Scrubber thumb */}
+                        {/* Scrubber thumb — always visible */}
                         <div
-                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg ring-2 ring-[var(--accent,#ff7d52)] transition-transform group-hover:scale-125"
                             style={{ left: `${progress}%` }}
                         />
                     </div>
@@ -549,7 +658,7 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                                 />
                             </div>
 
-                            <span className="text-white/70 text-xs font-mono tabular-nums">
+                            <span className="text-white/80 text-sm font-mono tabular-nums">
                                 {formatTime(currentTime)} / {formatTime(duration)}
                             </span>
                         </div>
@@ -613,6 +722,20 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                             <button onClick={togglePictureInPicture} className="text-white/70 hover:text-white transition-colors p-1" title="Picture in Picture">
                                 <PictureInPicture size={18} />
                             </button>
+                            {castSupported && (
+                                <button
+                                    onClick={() => {
+                                        const video = videoRef.current;
+                                        if (video && (video as any).remote) {
+                                            (video as any).remote.prompt().catch((e: any) => console.warn('Cast prompt error:', e));
+                                        }
+                                    }}
+                                    className="text-white/70 hover:text-white transition-colors p-1"
+                                    title="Cast to TV"
+                                >
+                                    <Monitor size={18} />
+                                </button>
+                            )}
                             <button onClick={toggleFullscreen} className="text-white/70 hover:text-white transition-colors p-1" title="Fullscreen">
                                 <Maximize size={18} />
                             </button>
@@ -636,7 +759,60 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                     100% { opacity: 0; transform: scale(1.3); }
                 }
             `}</style>
+
+            {/* Hidden audio element for background music */}
+            {bgAudioUrl && (
+                <audio ref={audioRef} src={bgAudioUrl} loop preload="auto" />
+            )}
         </div>
+
+        {/* Background Audio Control Bar — below the video */}
+        {bgAudioUrl && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-[var(--card-bg,#1a1a2e)] border-t border-white/5 rounded-b-2xl">
+                <button
+                    onClick={() => {
+                        const newState = !audioEnabled;
+                        setAudioEnabled(newState);
+                        const audio = audioRef.current;
+                        if (!audio) return;
+                        if (!newState) {
+                            audio.pause();
+                        } else if (videoRef.current && !videoRef.current.paused) {
+                            audio.play().catch(() => { });
+                        }
+                    }}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${audioEnabled
+                        ? 'bg-[var(--primary,#0a8069)] text-white shadow-lg shadow-[var(--primary,#0a8069)]/30'
+                        : 'bg-white/10 text-white/40 hover:bg-white/20'
+                        }`}
+                    title={audioEnabled ? 'Mute background music' : 'Enable background music'}
+                >
+                    {audioEnabled ? <Music2 size={16} /> : <Music size={16} />}
+                </button>
+
+                <div className="flex-1 flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest whitespace-nowrap">
+                        🎵 Background Music
+                    </span>
+                    <input
+                        type="range"
+                        min="0" max="1" step="0.05"
+                        value={audioEnabled ? audioVolume : 0}
+                        onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            setAudioVolume(v);
+                            if (audioRef.current) audioRef.current.volume = v;
+                            if (v > 0 && !audioEnabled) setAudioEnabled(true);
+                        }}
+                        className="flex-1 h-1 accent-[var(--primary,#0a8069)] cursor-pointer max-w-[160px]"
+                    />
+                    <span className="text-[10px] font-bold text-white/30 w-8 text-right">
+                        {Math.round((audioEnabled ? audioVolume : 0) * 100)}%
+                    </span>
+                </div>
+            </div>
+        )}
+    </>
     );
 });
 

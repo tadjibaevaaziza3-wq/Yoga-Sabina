@@ -364,70 +364,26 @@ export class MasterAgent {
     // ─── SUB-AGENTS ───
 
     private static contentGuard(query: string, lang: Locale, isSubscribed: boolean, gender?: string | null, subscribedCourseName?: string | null): { isSafe: boolean, message: string } {
-        const backPainKeywords = ['bel', 'umurtqa', 'spine', 'back', 'позвоночник', 'спин', 'грыжа', 'gryja', 'hernia']
-        const genericMedicalKeywords = [
-            'kasal', 'davolash', 'shifokor', 'bol', 'pain', 'hurt', 'doctor', 'cure', 'боль', 'болит', 'лечить', 'врач',
-            'cancer', 'treat', 'operation', 'jarrohlik', 'rak', 'operatsiya', 'shifo'
+        // ONLY block truly dangerous medical topics that require a doctor
+        // Common health questions (back pain, headaches, stress, joints) go to Gemini for smart answers
+        const dangerousMedicalKeywords = [
+            'cancer', 'rak', 'рак', 'operation', 'operatsiya', 'операция', 'jarrohlik',
+            'surgery', 'хирургия', 'tumor', 'o\'sma', 'опухоль',
+            'insulin', 'диабет', 'diabet', 'epilepsy', 'эпилепсия', 'epilepsiya',
+            'infarkt', 'инфаркт', 'insult', 'инсульт'
         ]
-        const pregnancyKeywords = ['homilador', 'pregnant', 'беременн']
-        const jointKeywords = ['tizza', 'bo\'g\'im', 'joint', 'knee', 'koleno', 'сустав', 'локоть', 'tirsak']
-        const stressKeywords = ['stress', 'uyqusizlik', 'insomnia', 'charchoq', 'депрессия', 'бессонница', 'стресс', 'tired']
 
         const lowerQuery = query.toLowerCase()
 
-        // Pick course name based on gender
-        const courseName = subscribedCourseName
-            || (gender === 'female' ? 'Baxtli ayollar klubi' : 'Men\'s Yoga Standard')
-
-        // Back pain — helpful response with gender-appropriate course suggestion
-        if (backPainKeywords.some(k => lowerQuery.includes(k))) {
-            const subscriberExtra = isSubscribed
-                ? (lang === 'uz' ? `\n\n🎯 Sizning kursingizda 'Bel va Umurtqa salomatligi' bo'limi bor — uni hoziroq ko'ring!` : `\n\n🎯 В вашем курсе есть раздел 'Здоровье спины и позвоночника' — посмотрите прямо сейчас!`)
-                : (lang === 'uz' ? "\n\n✨ Batafsil mashqlar va murabbiy yo'riqnomasi uchun kurslarimizga obuna bo'ling yoki administrator bilan bog'laning!" : "\n\n✨ Для детальных упражнений и руководства тренера подпишитесь на курсы или свяжитесь с администратором!")
+        // Only block serious medical queries that we absolutely should NOT answer
+        if (dangerousMedicalKeywords.some(k => lowerQuery.includes(k))) {
             const msg = lang === 'uz'
-                ? `Bel og'rig'i juda ko'p uchraydi, lekin tushkunlikka tushmang! ✨ Bizning '${courseName}' kursimizda umurtqa pog'onasini mustahkamlash uchun maxsus mashqlar bor. Iltimos, keskin harakatlardan qoching va mashqlarni Sabina ko'rsatganidek, nafasga asoslanib bajaring. (Eslatma: bu tibbiy maslahat emas, jiddiy og'riq bo'lsa shifokor bilan maslahatlashing)${subscriberExtra}`
-                : `Боль в спине — это частое явление, но не унывайте! ✨ В нашем курсе '${courseName}' есть специальные упражнения для укрепления позвоночника. Избегайте резких движений и выполняйте асаны плавно, следуя инструкциям Сабины. (Примечание: это не медицинский совет, при острой боли обратитесь к врачу)${subscriberExtra}`
+                ? "Bu mavzu bo'yicha men maslahat bera olmayman 🙏 Iltimos, shifokoringiz bilan maslahatlashing. Yoga va salomatlik bo'yicha boshqa savollarga men doimo tayyorman! ✨"
+                : "По этой теме я не могу давать советы 🙏 Пожалуйста, проконсультируйтесь с врачом. По вопросам йоги и здоровья я всегда готова помочь! ✨"
             return { isSafe: false, message: msg }
         }
 
-        // Joints
-        if (jointKeywords.some(k => lowerQuery.includes(k))) {
-            const subscriberExtra = isSubscribed
-                ? (lang === 'uz' ? "\n\n🎯 Kursingizdagi 'Artikulyar gimnastika' bo'limini ko'ring!" : "\n\n🎯 Посмотрите раздел 'Суставная гимнастика' в вашем курсе!")
-                : (lang === 'uz' ? "\n\n✨ Kurslarimizga obuna bo'lib, maxsus mashqlarni ko'ring!" : "\n\n✨ Подпишитесь на курсы, чтобы получить доступ к специальным упражнениям!")
-            const msg = lang === 'uz'
-                ? `Bo'g'imlardagi noqulaylikni tushunaman 🙏. Yoga orqali ularni yumshoq harakatlar bilan qizdirish va mustahkamlash mumkin. Mashqlarni juda ehtiyotkorlik bilan, og'riq sezmasdan bajaring.${subscriberExtra}`
-                : `Я понимаю ваш дискомфорт в суставах 🙏. С помощью йоги можно мягко разогреть и укрепить их. Выполняйте упражнения очень осторожно, не допуская боли.${subscriberExtra}`
-            return { isSafe: false, message: msg }
-        }
-
-        // Stress/Insomnia
-        if (stressKeywords.some(k => lowerQuery.includes(k))) {
-            const subscriberExtra = isSubscribed
-                ? (lang === 'uz' ? "\n\n🎯 'Stressdan chiqish va Ruhiy xotirjamlik' darsini hoziroq boshlang!" : "\n\n🎯 Начните урок 'Снятие стресса и душевное спокойствие' прямо сейчас!")
-                : (lang === 'uz' ? "\n\n✨ To'liq kurs va murabbiy bilan ishlash uchun obuna bo'ling!" : "\n\n✨ Подпишитесь для полного доступа к курсу и работе с тренером!")
-            const msg = lang === 'uz'
-                ? `Stress va charchoq hissi? ✨ Yoga va nafas mashqlari (Pranayama) asab tizimini tinchlantirishga yordam beradi. 'Kechki tinchlantiruvchi yoga' darsimizni sinab ko'ring — bu chuqur uyqu va xotirjamlikka erishishning eng yaxshi yo'li.${subscriberExtra}`
-                : `Чувствуете стресс или усталость? ✨ Йога и дыхательные практики (Пранаяма) отлично помогают успокоить нервную систему. Попробуйте наш урок 'Вечерняя расслабляющая йога' — это лучший путь к глубокому сну и спокойствию.${subscriberExtra}`
-            return { isSafe: false, message: msg }
-        }
-
-        // Generic medical
-        if (genericMedicalKeywords.some(k => lowerQuery.includes(k))) {
-            const msg = lang === 'uz'
-                ? "Uzr, men tibbiy maslahat bera olmayman 🙏. Agar sizda o'tkir og'riq yoki jarohat bo'lsa, iltimos, shifokor bilan maslahatlashing. Yoga orqali yengil tiklanish uchun kurslarimizni ko'rib chiqing yoki murabbiyimiz bilan bog'laning!"
-                : "Извините, я не могу давать медицинские советы 🙏. Если у вас острая боль или травма, проконсультируйтесь с врачом. Для мягкого восстановления через практику ознакомьтесь с нашими курсами или свяжитесь с тренером!"
-            return { isSafe: false, message: msg }
-        }
-
-        // Pregnancy
-        if (pregnancyKeywords.some(k => lowerQuery.includes(k))) {
-            const msg = lang === 'uz'
-                ? "Tabriklaymiz! 🤰 Homiladorlik davrida mashq qilishdan oldin shifokoringiz bilan maslahatlashing. Bizda homiladorlar uchun xavfsiz mashqlar ham bor! Batafsil ma'lumot uchun administrator bilan bog'laning."
-                : "Поздравляю! 🤰 Перед началом занятий во время беременности проконсультируйтесь с врачом. У нас есть безопасные практики для этого периода! Для подробной информации свяжитесь с администратором."
-            return { isSafe: false, message: msg }
-        }
-
+        // Everything else is safe — let Gemini handle it intelligently
         return { isSafe: true, message: "" }
     }
 

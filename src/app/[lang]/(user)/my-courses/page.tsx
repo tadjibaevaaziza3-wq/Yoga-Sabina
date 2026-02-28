@@ -2,6 +2,7 @@ import { getDictionary, Locale } from "@/dictionaries/get-dictionary"
 import { redirect } from "next/navigation"
 import { getLocalUser } from "@/lib/auth/server"
 import MyCourses from "@/components/user/MyCourses"
+import AnnouncementBanner from "@/components/shared/AnnouncementBanner"
 
 export default async function MyCoursesPage({
     params,
@@ -28,6 +29,8 @@ export default async function MyCoursesPage({
                         : "Ваши приобретённые курсы и прогресс обучения"}
                 </p>
             </div>
+
+            <AnnouncementBanner lang={lang} variant="compact" maxItems={3} />
 
             <MyCourses lang={lang} />
         </div>

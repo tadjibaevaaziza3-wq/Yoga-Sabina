@@ -214,67 +214,302 @@ const ModuleDialog = ({ open, onClose, onSave, module }: any) => {
     );
 };
 
-// ── Lesson Dialog (Create/Edit) ──
+// ── Lesson Dialog (Create/Edit) — FULL FEATURED ──
 const LessonDialog = ({ open, onClose, onSave, lesson }: any) => {
-    const [title, setTitle] = useState(lesson?.title || '');
-    const [titleRu, setTitleRu] = useState(lesson?.titleRu || '');
-    const [description, setDescription] = useState(lesson?.description || '');
-    const [isFree, setIsFree] = useState(lesson?.isFree || false);
+    const [activeTab, setActiveTab] = useState(0);
+    const [form, setForm] = useState({
+        title: '', titleRu: '', description: '', descriptionRu: '',
+        duration: 0, isFree: false, videoUrl: '', audioUrl: '', pdfUrl: '',
+        thumbnailUrl: '', searchKeywords: '', content: '',
+    });
+    const [uploading, setUploading] = useState<Record<string, boolean>>({});
+    const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+    const [translating, setTranslating] = useState(false);
 
     useEffect(() => {
-        setTitle(lesson?.title || '');
-        setTitleRu(lesson?.titleRu || '');
-        setDescription(lesson?.description || '');
-        setIsFree(lesson?.isFree || false);
-    }, [lesson]);
+        setForm({
+            title: lesson?.title || '', titleRu: lesson?.titleRu || '',
+            description: lesson?.description || '', descriptionRu: lesson?.descriptionRu || '',
+            duration: lesson?.duration || 0, isFree: lesson?.isFree || false,
+            videoUrl: lesson?.videoUrl || '', audioUrl: lesson?.audioUrl || '',
+            pdfUrl: lesson?.pdfUrl || '', thumbnailUrl: lesson?.thumbnailUrl || '',
+            searchKeywords: lesson?.searchKeywords || '', content: lesson?.content || '',
+        });
+        setActiveTab(0);
+    }, [lesson, open]);
+
+    const updateField = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
+
+    // GCS upload helper
+    const handleUpload = async (file: File, field: string, contentType?: string) => {
+        setUploading(prev => ({ ...prev, [field]: true }));
+        setUploadProgress(prev => ({ ...prev, [field]: 0 }));
+        try {
+            const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+            const res = await fetch('/api/admin/videos/upload-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileName, contentType: contentType || file.type || 'application/octet-stream' }),
+            });
+            if (!res.ok) throw new Error('Upload URL xatosi');
+            const { url, publicUrl } = await res.json();
+
+            await new Promise<void>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', url, true);
+                xhr.setRequestHeader('Content-Type', contentType || file.type || 'application/octet-stream');
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) setUploadProgress(prev => ({ ...prev, [field]: Math.round((e.loaded / e.total) * 100) }));
+                };
+                xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`));
+                xhr.onerror = () => reject(new Error('Network error'));
+                xhr.send(file);
+            });
+
+            updateField(field, publicUrl);
+        } catch (err: any) {
+            console.error(`Upload ${field} error:`, err);
+            alert(`Yuklash xatosi: ${err.message}`);
+        } finally {
+            setUploading(prev => ({ ...prev, [field]: false }));
+            setUploadProgress(prev => ({ ...prev, [field]: 0 }));
+        }
+    };
+
+    // Auto-translate UZ → RU
+    const handleTranslate = async () => {
+        if (!form.title && !form.description) return;
+        setTranslating(true);
+        try {
+            // Translate title
+            if (form.title && !form.titleRu) {
+                const res = await fetch('/api/admin/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: form.title, from: 'uz', to: 'ru' }),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.translated) updateField('titleRu', data.translated);
+                }
+            }
+            // Translate description
+            if (form.description && !form.descriptionRu) {
+                const res = await fetch('/api/admin/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: form.description, from: 'uz', to: 'ru' }),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.translated) updateField('descriptionRu', data.translated);
+                }
+            }
+        } catch (err) {
+            console.error('Translation error:', err);
+        } finally {
+            setTranslating(false);
+        }
+    };
+
+    const tabs = ['Asosiy', 'Media', 'Fayllar'];
+    const fileShortName = (url: string) => url ? decodeURIComponent(url.split('/').pop() || '').slice(0, 40) : '';
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ fontWeight: 700, color: '#114539' }}>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+            <DialogTitle sx={{ fontWeight: 700, color: '#114539', borderBottom: '1px solid rgba(17,69,57,0.08)', pb: 1 }}>
                 {lesson ? "Darsni tahrirlash" : "Yangi dars/video qo'shish"}
             </DialogTitle>
-            <DialogContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-                    <MuiTextField
-                        label="Dars nomi (UZ)"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        fullWidth
-                        required
-                    />
-                    <MuiTextField
-                        label="Dars nomi (RU)"
-                        value={titleRu}
-                        onChange={(e) => setTitleRu(e.target.value)}
-                        fullWidth
-                    />
-                    <MuiTextField
-                        label="Tavsif"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        fullWidth
-                        multiline
-                        rows={3}
-                    />
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <input
-                            type="checkbox"
-                            checked={isFree}
-                            onChange={(e) => setIsFree(e.target.checked)}
-                            id="lesson-free"
+
+            {/* Tabs */}
+            <Box sx={{ display: 'flex', gap: 0.5, px: 3, pt: 2, borderBottom: '1px solid rgba(17,69,57,0.06)' }}>
+                {tabs.map((tab, i) => (
+                    <Button
+                        key={tab}
+                        onClick={() => setActiveTab(i)}
+                        sx={{
+                            fontWeight: activeTab === i ? 700 : 500,
+                            color: activeTab === i ? '#114539' : '#999',
+                            borderBottom: activeTab === i ? '2px solid #0a8069' : '2px solid transparent',
+                            borderRadius: 0, px: 2, pb: 1, textTransform: 'none', fontSize: '0.85rem',
+                        }}
+                    >
+                        {tab}
+                    </Button>
+                ))}
+            </Box>
+
+            <DialogContent sx={{ minHeight: 400 }}>
+                {/* Tab 0: Basic */}
+                {activeTab === 0 && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+                        {/* Titles */}
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <MuiTextField label="Dars nomi (UZ) *" value={form.title} onChange={e => updateField('title', e.target.value)} fullWidth required />
+                            <MuiTextField label="Дарс номи (RU)" value={form.titleRu} onChange={e => updateField('titleRu', e.target.value)} fullWidth />
+                        </Box>
+                        {/* Auto-translate button */}
+                        <Button
+                            onClick={handleTranslate}
+                            disabled={translating || (!form.title && !form.description)}
+                            size="small"
+                            sx={{ alignSelf: 'flex-start', color: '#0a8069', textTransform: 'none', fontWeight: 600, fontSize: '0.75rem' }}
+                        >
+                            {translating ? '🔄 Tarjima qilinmoqda...' : '🌐 UZ → RU avtomatik tarjima'}
+                        </Button>
+                        {/* Descriptions */}
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <MuiTextField label="Tavsif (UZ)" value={form.description} onChange={e => updateField('description', e.target.value)} fullWidth multiline rows={3} />
+                            <MuiTextField label="Описание (RU)" value={form.descriptionRu} onChange={e => updateField('descriptionRu', e.target.value)} fullWidth multiline rows={3} />
+                        </Box>
+                        {/* Duration + Order + Free */}
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <MuiTextField label="Davomiylik (soniya)" type="number" value={form.duration || ''} onChange={e => updateField('duration', parseInt(e.target.value) || 0)} sx={{ width: 180 }} />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 2 }}>
+                                <input type="checkbox" id="lesson-free-dlg" checked={form.isFree} onChange={e => updateField('isFree', e.target.checked)} />
+                                <label htmlFor="lesson-free-dlg" style={{ fontSize: 14, fontWeight: 600, color: '#114539' }}>Bepul dars</label>
+                            </Box>
+                        </Box>
+                        {/* Search keywords */}
+                        <MuiTextField
+                            label="Qidiruv kalit so'zlari"
+                            value={form.searchKeywords}
+                            onChange={e => updateField('searchKeywords', e.target.value)}
+                            fullWidth
+                            size="small"
+                            helperText="Vergul bilan ajrating: yoga, nafas olish, meditatsiya"
                         />
-                        <label htmlFor="lesson-free" style={{ fontSize: 14, fontWeight: 600 }}>
-                            Bepul dars (hamma ko'rishi mumkin)
-                        </label>
                     </Box>
-                </Box>
+                )}
+
+                {/* Tab 1: Media */}
+                {activeTab === 1 && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
+                        {/* Video */}
+                        <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#114539', mb: 1 }}>🎥 Video</Typography>
+                            {form.videoUrl ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, border: '1px solid rgba(17,69,57,0.15)', borderRadius: 2, bgcolor: 'rgba(16,163,127,0.04)' }}>
+                                    <PlayCircle sx={{ color: '#0a8069' }} />
+                                    <Typography variant="body2" sx={{ flex: 1, fontSize: '0.8rem', color: '#114539', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        ✅ {fileShortName(form.videoUrl)}
+                                    </Typography>
+                                    <IconButton size="small" onClick={() => updateField('videoUrl', '')} sx={{ color: '#d32f2f' }}><DeleteIcon fontSize="small" /></IconButton>
+                                </Box>
+                            ) : (
+                                <Box>
+                                    <Button variant="outlined" component="label" disabled={uploading.videoUrl}
+                                        startIcon={uploading.videoUrl ? <LinearProgress sx={{ width: 20 }} /> : <VideoLibrary />}
+                                        sx={{ borderColor: '#114539', color: '#114539', textTransform: 'none', fontWeight: 600 }}>
+                                        {uploading.videoUrl ? `Yuklanmoqda ${uploadProgress.videoUrl || 0}%` : 'Video yuklash'}
+                                        <input type="file" hidden accept="video/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f, 'videoUrl', f.type); }} />
+                                    </Button>
+                                    {uploading.videoUrl && <LinearProgress variant="determinate" value={uploadProgress.videoUrl || 0} sx={{ mt: 1, height: 4, borderRadius: 2 }} />}
+                                    <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: '#999' }}>MP4, WebM — bulutga yuklash</Typography>
+                                </Box>
+                            )}
+                        </Box>
+
+                        <Divider />
+
+                        {/* Audio */}
+                        <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#114539', mb: 1 }}>🎵 Audio</Typography>
+                            {form.audioUrl ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, border: '1px solid rgba(100,100,200,0.2)', borderRadius: 2, bgcolor: 'rgba(100,100,200,0.04)' }}>
+                                    <Typography variant="body2" sx={{ flex: 1, fontSize: '0.8rem', color: '#114539' }}>✅ {fileShortName(form.audioUrl)}</Typography>
+                                    <IconButton size="small" onClick={() => updateField('audioUrl', '')} sx={{ color: '#d32f2f' }}><DeleteIcon fontSize="small" /></IconButton>
+                                </Box>
+                            ) : (
+                                <Box>
+                                    <Button variant="outlined" component="label" disabled={uploading.audioUrl}
+                                        sx={{ borderColor: '#6366f1', color: '#6366f1', textTransform: 'none', fontWeight: 600 }}>
+                                        {uploading.audioUrl ? `Yuklanmoqda ${uploadProgress.audioUrl || 0}%` : 'Audio yuklash'}
+                                        <input type="file" hidden accept="audio/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f, 'audioUrl', f.type); }} />
+                                    </Button>
+                                    {uploading.audioUrl && <LinearProgress variant="determinate" value={uploadProgress.audioUrl || 0} sx={{ mt: 1, height: 4, borderRadius: 2 }} />}
+                                    <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: '#999' }}>MP3, WAV — meditatsiya, musiqa</Typography>
+                                </Box>
+                            )}
+                        </Box>
+
+                        <Divider />
+
+                        {/* Thumbnail */}
+                        <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#114539', mb: 1 }}>📷 Muqova rasmi</Typography>
+                            {form.thumbnailUrl ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box component="img" src={form.thumbnailUrl} sx={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 2, border: '1px solid #ddd' }} />
+                                    <IconButton size="small" onClick={() => updateField('thumbnailUrl', '')} sx={{ color: '#d32f2f' }}><DeleteIcon fontSize="small" /></IconButton>
+                                </Box>
+                            ) : (
+                                <Box>
+                                    <Button variant="outlined" component="label" disabled={uploading.thumbnailUrl}
+                                        sx={{ borderColor: '#c89632', color: '#c89632', textTransform: 'none', fontWeight: 600 }}>
+                                        {uploading.thumbnailUrl ? `Yuklanmoqda ${uploadProgress.thumbnailUrl || 0}%` : 'Rasm yuklash'}
+                                        <input type="file" hidden accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f, 'thumbnailUrl', f.type); }} />
+                                    </Button>
+                                    {uploading.thumbnailUrl && <LinearProgress variant="determinate" value={uploadProgress.thumbnailUrl || 0} sx={{ mt: 1, height: 4, borderRadius: 2 }} />}
+                                </Box>
+                            )}
+                        </Box>
+                    </Box>
+                )}
+
+                {/* Tab 2: Files & Content */}
+                {activeTab === 2 && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
+                        {/* PDF / Documents */}
+                        <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#114539', mb: 1 }}>📄 Hujjatlar (PDF / PPT)</Typography>
+                            {form.pdfUrl ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, border: '1px solid rgba(200,150,50,0.2)', borderRadius: 2, bgcolor: 'rgba(200,150,50,0.04)' }}>
+                                    <Typography variant="body2" sx={{ flex: 1, fontSize: '0.8rem', color: '#114539' }}>✅ {fileShortName(form.pdfUrl)}</Typography>
+                                    <IconButton size="small" onClick={() => updateField('pdfUrl', '')} sx={{ color: '#d32f2f' }}><DeleteIcon fontSize="small" /></IconButton>
+                                </Box>
+                            ) : (
+                                <Box>
+                                    <Button variant="outlined" component="label" disabled={uploading.pdfUrl}
+                                        sx={{ borderColor: '#c89632', color: '#c89632', textTransform: 'none', fontWeight: 600 }}>
+                                        {uploading.pdfUrl ? `Yuklanmoqda ${uploadProgress.pdfUrl || 0}%` : 'Fayl yuklash'}
+                                        <input type="file" hidden accept=".pdf,.ppt,.pptx,.doc,.docx,.zip,.rar" onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f, 'pdfUrl'); }} />
+                                    </Button>
+                                    {uploading.pdfUrl && <LinearProgress variant="determinate" value={uploadProgress.pdfUrl || 0} sx={{ mt: 1, height: 4, borderRadius: 2 }} />}
+                                    <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: '#999' }}>PDF, PPT, DOC, ZIP</Typography>
+                                </Box>
+                            )}
+                        </Box>
+
+                        <Divider />
+
+                        {/* Text content */}
+                        <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#114539', mb: 1 }}>📝 Matnli kontent</Typography>
+                            <MuiTextField
+                                value={form.content}
+                                onChange={e => updateField('content', e.target.value)}
+                                fullWidth multiline rows={6}
+                                placeholder="Dars haqida batafsil ma'lumot, ko'rsatmalar, transkriptsiya..."
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                            />
+                        </Box>
+                    </Box>
+                )}
             </DialogContent>
-            <DialogActions>
+
+            <DialogActions sx={{ px: 3, pb: 2, borderTop: '1px solid rgba(17,69,57,0.06)' }}>
+                {/* Upload indicators */}
+                {Object.values(uploading).some(Boolean) && (
+                    <Typography variant="caption" sx={{ mr: 'auto', color: '#c89632', fontWeight: 600 }}>
+                        ⏳ Fayl yuklanmoqda...
+                    </Typography>
+                )}
                 <Button onClick={onClose}>Bekor qilish</Button>
                 <Button
-                    onClick={() => onSave({ title, titleRu, description, isFree })}
+                    onClick={() => onSave(form)}
                     variant="contained"
-                    disabled={!title.trim()}
+                    disabled={!form.title.trim() || Object.values(uploading).some(Boolean)}
                     sx={{ bgcolor: '#0a8069', '&:hover': { bgcolor: '#087a63' } }}
                 >
                     {lesson ? "Saqlash" : "Qo'shish"}

@@ -49,48 +49,52 @@ export default function TMAPage({ params }: { params: any }) {
             const lang = resolvedParams.lang || 'uz';
             setCurrentLang(lang);
 
-            // Fetch dynamic settings
-            try {
-                const res = await fetch(`/api/settings/public?keys=${SETTING_KEYS}`);
-                const data = await res.json();
-                setSettings(prev => {
-                    const merged = { ...prev };
-                    Object.keys(prev).forEach(k => {
-                        if (data[k]) (merged as any)[k] = data[k];
-                    });
-                    return merged;
-                });
-            } catch { }
+            // Fetch settings and check auth IN PARALLEL
+            const settingsPromise = fetch(`/api/settings/public?keys=${SETTING_KEYS}`)
+                .then(r => r.json())
+                .catch(() => ({}));
 
-            // Check if user is already registered
-            if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
-                const tg = (window as any).Telegram.WebApp;
-                const tgUser = tg.initDataUnsafe?.user;
-                const isDev = window.location.hostname === 'localhost';
+            // Check if user is already registered — POST Telegram data so existing web-registered
+            // users get their telegramId auto-linked immediately on first TMA visit
+            const tg = typeof window !== "undefined" ? (window as any).Telegram?.WebApp : null;
+            const tgUser = tg?.initDataUnsafe?.user;
+            const isDev = typeof window !== "undefined" && window.location.hostname === 'localhost';
 
-                if (tgUser?.id) {
-                    try {
-                        const res = await fetch(`/api/tma/register?telegramId=${tgUser.id}`)
-                        const data = await res.json()
-                        if (data.success && data.isRegistered) {
-                            window.location.replace(`/${lang}/tma/dashboard`);
-                            return;
-                        } else {
-                            setLoading(false);
-                        }
-                    } catch (err) {
-                        console.error("Auth check failed:", err);
-                        setLoading(false);
-                    }
-                } else if (isDev) {
-                    console.log("Dev Mode: Skipping auto-redirect");
-                    setLoading(false);
-                } else {
-                    setLoading(false);
-                }
+            let authPromise: Promise<any>;
+            if (tgUser?.id) {
+                // POST to auto-link telegramId + check registration
+                authPromise = fetch('/api/tma/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        telegramId: tgUser.id,
+                        telegramUsername: tgUser.username || null,
+                        firstName: tgUser.first_name || null,
+                        lastName: tgUser.last_name || null,
+                        lang,
+                    }),
+                }).then(r => r.json()).catch(() => null);
             } else {
-                setLoading(false);
+                authPromise = Promise.resolve(null);
             }
+
+            const [settingsData, authData] = await Promise.all([settingsPromise, authPromise]);
+
+            // Apply settings
+            setSettings(prev => {
+                const merged = { ...prev };
+                Object.keys(prev).forEach(k => {
+                    if (settingsData[k]) (merged as any)[k] = settingsData[k];
+                });
+                return merged;
+            });
+
+            // Handle auth redirect
+            if (authData?.success && authData?.isRegistered) {
+                window.location.replace(`/${lang}/tma/dashboard`);
+                return;
+            }
+            setLoading(false);
         };
         init();
     }, [params]);

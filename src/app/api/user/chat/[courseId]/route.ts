@@ -34,12 +34,17 @@ export async function GET(
     const hasAccess = access.role === 'ADMIN' || access.purchases.length > 0 || access.subscriptions.length > 0
     if (!hasAccess) return NextResponse.json({ error: 'Subscription required' }, { status: 403 })
 
+    // Check if user is banned
+    const member = await prisma.courseChatMember.findUnique({
+        where: { courseId_userId: { courseId, userId } },
+    })
+
     const { searchParams } = new URL(request.url)
     const cursor = searchParams.get('cursor')
     const take = 50
 
     const messages = await prisma.courseChat.findMany({
-        where: { courseId },
+        where: { courseId, isDeleted: false },
         orderBy: { createdAt: 'desc' },
         take,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -50,11 +55,17 @@ export async function GET(
                     firstName: true,
                     lastName: true,
                     avatar: true,
-                    telegramPhotoUrl: true
+                    telegramPhotoUrl: true,
+                    role: true,
                 }
             }
         }
     })
+
+    // Auto-register user as member
+    if (!member) {
+        try { await prisma.courseChatMember.create({ data: { courseId, userId } }) } catch { }
+    }
 
     const course = await prisma.course.findUnique({
         where: { id: courseId },
@@ -66,7 +77,9 @@ export async function GET(
         messages: messages.reverse(),
         course,
         hasMore: messages.length === take,
-        nextCursor: messages.length === take ? messages[messages.length - 1]?.id : null
+        nextCursor: messages.length === take ? messages[messages.length - 1]?.id : null,
+        isBanned: member?.isBanned || false,
+        banReason: member?.banReason || null,
     })
 }
 
@@ -94,14 +107,25 @@ export async function POST(
     const hasAccess = access.role === 'ADMIN' || access.purchases.length > 0 || access.subscriptions.length > 0
     if (!hasAccess) return NextResponse.json({ error: 'Subscription required' }, { status: 403 })
 
+    // Check if user is banned
+    const member = await prisma.courseChatMember.findUnique({
+        where: { courseId_userId: { courseId, userId } },
+    })
+    if (member?.isBanned) {
+        return NextResponse.json({ error: 'Siz chatdan bloklangansiz', reason: member.banReason }, { status: 403 })
+    }
+
     const { message } = await request.json()
     if (!message?.trim()) return NextResponse.json({ error: 'Empty message' }, { status: 400 })
+
+    const isAdmin = access?.role === 'ADMIN' || access?.role === 'SUPER_ADMIN'
 
     const chatMessage = await prisma.courseChat.create({
         data: {
             courseId,
             userId,
-            message: message.trim()
+            message: message.trim(),
+            senderRole: isAdmin ? 'ADMIN' : 'USER',
         },
         include: {
             user: {
@@ -110,7 +134,8 @@ export async function POST(
                     firstName: true,
                     lastName: true,
                     avatar: true,
-                    telegramPhotoUrl: true
+                    telegramPhotoUrl: true,
+                    role: true,
                 }
             }
         }

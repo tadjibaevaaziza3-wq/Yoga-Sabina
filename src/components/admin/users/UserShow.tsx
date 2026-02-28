@@ -292,11 +292,18 @@ const UserShowContent = () => {
                                     return <Chip label={labels[r.role] || r.role} color={colors[r.role] || 'default'} size="small" />;
                                 }}
                             />
+                            <FunctionField
+                                label="ID raqami"
+                                render={(r: any) => r.userNumber ? (
+                                    <Chip label={`#${r.userNumber}`} size="small" sx={{ fontFamily: 'monospace', fontWeight: 700, bgcolor: '#11453915', color: '#114539' }} />
+                                ) : <Typography variant="body2" color="text.secondary">—</Typography>}
+                            />
                             <TextField source="firstName" label="Ism" emptyText="—" />
                             <TextField source="lastName" label="Familiya" emptyText="—" />
                             <EmailField source="email" label="Email" emptyText="—" />
                             <TextField source="phone" label="Telefon" emptyText="—" />
                             <TextField source="telegramUsername" label="Telegram" emptyText="—" />
+                            <TextField source="telegramId" label="Telegram ID" emptyText="—" />
                             <DateField source="createdAt" label="Ro'yxatdan o'tgan sana" showTime />
                             <FunctionField
                                 render={(r: any) => {

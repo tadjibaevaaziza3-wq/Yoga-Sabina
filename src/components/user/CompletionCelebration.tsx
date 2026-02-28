@@ -148,7 +148,7 @@ export function CompletionCelebration({
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
                                 className="flex flex-col gap-3">
                                 {nextLessonId && courseId && (
-                                    <Link href={`/${lang}/courses/${courseId}/lesson/${nextLessonId}`}
+                                    <Link href={`/${lang}/learn/${courseId}?lesson=${nextLessonId}`}
                                         className="w-full bg-[var(--primary)] text-white py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[var(--primary)]/90 transition-all shadow-lg shadow-[var(--primary)]/20">
                                         {lang === 'uz' ? "Keyingi dars" : "Следующий урок"}
                                         <ArrowRight className="w-4 h-4" />

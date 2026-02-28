@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Locale } from "@/dictionaries/types"
 import { Play, FileText, MessageCircle, Heart, Download, ChevronLeft, ChevronRight, Menu, X, Send, Paperclip, Search, Bookmark, BookmarkCheck, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import EnhancedVideoPlayer from "../video/EnhancedVideoPlayer"
 import CourseChat from "../user/CourseChat"
 import LessonComments from "./LessonComments"
+import { VideoCompletionCelebration } from "../video/VideoCompletionCelebration"
 
 interface CourseLearningInterfaceProps {
     course: any
@@ -25,6 +26,12 @@ export function CourseLearningInterface({ course, user, lang, dictionary }: Cour
     const [chatInput, setChatInput] = useState("")
     const [searchQuery, setSearchQuery] = useState("")
     const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({})
+    const [showCelebration, setShowCelebration] = useState(false)
+    const [celebrationData, setCelebrationData] = useState<{ watchedMinutes: number; completedCount: number; streak: number; xpEarned: number }>({ watchedMinutes: 0, completedCount: 0, streak: 0, xpEarned: 0 })
+    const [thumbnailCache, setThumbnailCache] = useState<Record<string, string>>({})
+    const [localCompletedIds, setLocalCompletedIds] = useState<string[]>(
+        () => user.progress?.filter((p: any) => p.completed).map((p: any) => p.lessonId) || []
+    )
 
     const [messages, setMessages] = useState<{ role: 'user' | 'ai', text: string }[]>([
         { role: 'ai', text: lang === 'uz' ? "Assalomu alaykum! Kurs bo'yicha qanday yordam bera olaman?" : "Здравствуйте! Чем могу помочь по курсу?" }
@@ -49,6 +56,40 @@ export function CourseLearningInterface({ course, user, lang, dictionary }: Cour
         if (activeLessonIndex < course.lessons.length - 1) {
             setActiveLessonId(course.lessons[activeLessonIndex + 1].id)
         }
+    }
+
+    const handleVideoComplete = async (durationSeconds: number) => {
+        // Update completed lessons state immediately for KPI refresh
+        if (activeLessonId && !localCompletedIds.includes(activeLessonId)) {
+            setLocalCompletedIds(prev => [...prev, activeLessonId])
+        }
+
+        // Log the session to update streak and totalYogaTime in the database
+        try {
+            const res = await fetch('/api/user/kpi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'log_session', durationSeconds })
+            })
+            const data = await res.json()
+            if (data.streak) {
+                // Use the real streak from the server
+                setCelebrationData(prev => ({ ...prev, streak: data.streak }))
+            }
+        } catch (e) {
+            console.error('Failed to log session:', e)
+        }
+
+        // Show celebration with the ACTUAL video duration
+        const watchedMinutes = Math.max(1, Math.round(durationSeconds / 60))
+
+        setCelebrationData({
+            watchedMinutes,
+            completedCount: localCompletedIds.length + 1,
+            streak: 1,
+            xpEarned: Math.round(durationSeconds / 60) * 2 + 10,
+        })
+        setShowCelebration(true)
     }
 
     const handlePrev = () => {
@@ -133,9 +174,75 @@ export function CourseLearningInterface({ course, user, lang, dictionary }: Cour
         }
     }
 
-    const completedLessonIds = user.progress?.map((p: any) => p.lessonId) || []
+    const completedLessonIds = localCompletedIds
     const completedCount = course.lessons.filter((l: any) => completedLessonIds.includes(l.id)).length
     const progressPercent = course.lessons.length > 0 ? Math.round((completedCount / course.lessons.length) * 100) : 0
+
+    // Auto-generate thumbnails from video first frame (YouTube-style)
+    useEffect(() => {
+        const lessonsNeedingThumbnails = course.lessons.filter(
+            (l: any) => !l.thumbnailUrl && l.videoUrl && !thumbnailCache[l.id]
+        )
+        if (lessonsNeedingThumbnails.length === 0) return
+
+        const generateThumbnail = async (lesson: any) => {
+            try {
+                // Use our proxy API which serves video from our own domain (no CORS issues)
+                const proxyUrl = `/api/video/thumbnail/${lesson.id}`
+
+                const video = document.createElement('video')
+                video.preload = 'auto'
+                video.muted = true
+                video.playsInline = true
+                video.src = proxyUrl
+
+                await new Promise<void>((resolve) => {
+                    video.onloadeddata = () => {
+                        video.currentTime = 2 // seek to 2s for a good frame
+                    }
+                    video.onseeked = () => {
+                        try {
+                            const canvas = document.createElement('canvas')
+                            canvas.width = 320
+                            canvas.height = 180
+                            const ctx = canvas.getContext('2d')
+                            if (ctx) {
+                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+                                const dataUrl = canvas.toDataURL('image/jpeg', 0.75)
+                                // Only save if it's not a blank frame
+                                if (dataUrl.length > 1000) {
+                                    setThumbnailCache(prev => ({ ...prev, [lesson.id]: dataUrl }))
+                                }
+                            }
+                        } catch (e) {
+                            console.debug('Thumbnail capture failed for:', lesson.title, e)
+                        }
+                        video.src = '' // free memory
+                        resolve()
+                    }
+                    video.onerror = () => {
+                        video.src = ''
+                        resolve()
+                    }
+                    // Timeout after 12s
+                    setTimeout(() => { video.src = ''; resolve(); }, 12000)
+                })
+            } catch (e) {
+                // silently skip
+            }
+        }
+
+        // Generate thumbnails sequentially to avoid overloading
+        let cancelled = false
+            ; (async () => {
+                for (const lesson of lessonsNeedingThumbnails) {
+                    if (cancelled) break
+                    await generateThumbnail(lesson)
+                }
+            })()
+
+        return () => { cancelled = true }
+    }, [course.lessons])
 
     // Filter and group lessons
     const filteredLessons = course.lessons.filter((l: any) =>
@@ -174,15 +281,23 @@ export function CourseLearningInterface({ course, user, lang, dictionary }: Cour
             >
                 {/* Thumbnail / Status Icon */}
                 <div className="relative w-20 aspect-video rounded-lg overflow-hidden bg-[var(--background)] shrink-0 border border-[var(--border)]/10">
-                    {lesson.thumbnailUrl ? (
+                    {(lesson.thumbnailUrl || thumbnailCache[lesson.id]) ? (
                         <img
-                            src={lesson.thumbnailUrl}
+                            src={lesson.thumbnailUrl || thumbnailCache[lesson.id]}
                             alt={lesson.title}
                             className="w-full h-full object-cover transition-transform group-hover:scale-110"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[var(--secondary)]/30">
-                            <Play className={cn("w-4 h-4", activeLessonId === lesson.id ? "text-white/40" : "text-[var(--primary)]/20")} />
+                        <div className={cn(
+                            "w-full h-full flex items-center justify-center font-black text-base relative overflow-hidden",
+                            activeLessonId === lesson.id
+                                ? "text-white/50"
+                                : "text-white/70"
+                        )}
+                            style={{
+                                background: `linear-gradient(135deg, hsl(${(globalIdx * 47 + 160) % 360}, 35%, 35%) 0%, hsl(${(globalIdx * 47 + 200) % 360}, 40%, 25%) 100%)`
+                            }}>
+                            <span className="relative z-10 drop-shadow-md">{globalIdx + 1}</span>
                         </div>
                     )}
 
@@ -390,8 +505,10 @@ export function CourseLearningInterface({ course, user, lang, dictionary }: Cour
                                         assetId={activeLesson.id}
                                         userId={user.id}
                                         email={user.email}
+                                        userNumber={user.userNumber}
+                                        audioUrl={activeLesson.audioUrl}
                                         className="w-full"
-                                        onComplete={handleNext}
+                                        onComplete={handleVideoComplete}
                                     />
                                 )
                             ) : (
@@ -580,6 +697,22 @@ export function CourseLearningInterface({ course, user, lang, dictionary }: Cour
                     )}
                 </div>
             </main>
+
+            {/* Video Completion Celebration */}
+            <VideoCompletionCelebration
+                isOpen={showCelebration}
+                onClose={() => setShowCelebration(false)}
+                onNextLesson={activeLessonIndex < course.lessons.length - 1 ? () => {
+                    setShowCelebration(false)
+                    handleNext()
+                } : undefined}
+                lessonTitle={activeLesson?.title || ''}
+                watchedMinutes={celebrationData.watchedMinutes}
+                completedCount={celebrationData.completedCount}
+                streak={celebrationData.streak}
+                xpEarned={celebrationData.xpEarned}
+                lang={lang as 'uz' | 'ru'}
+            />
         </div>
     )
 }

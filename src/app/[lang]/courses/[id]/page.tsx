@@ -67,14 +67,29 @@ export default async function CoursePage({
 }: Props) {
     const { lang, id } = await params
 
-    // Fetch course for schema
+    // Fetch course - try direct ID lookup first, then title search fallback
     let course: any = null
     try {
-        course = await prisma.course.findUnique({
-            where: { id }
-        })
+        course = await prisma.course.findUnique({ where: { id } })
     } catch (e) {
-        // Invalid ID format (e.g. slug from static data)
+        // ID format error - continue to fallback
+    }
+
+    // Fallback: search by slug pattern in title (e.g. "face-yoga" -> "Face Yoga")
+    if (!course) {
+        try {
+            const searchTerm = id.replace(/-/g, ' ')
+            course = await prisma.course.findFirst({
+                where: {
+                    OR: [
+                        { title: { contains: searchTerm, mode: 'insensitive' } },
+                        { titleRu: { contains: searchTerm, mode: 'insensitive' } },
+                    ]
+                }
+            })
+        } catch (e) {
+            // DB query failed
+        }
     }
 
     if (!course) notFound()

@@ -43,17 +43,34 @@ export const authProvider: AuthProvider = {
 
     // Called when the user navigates to a new location, to check for authentication
     checkAuth: async () => {
-        const response = await fetch('/api/admin/profile');
-        if (response.status < 200 || response.status >= 300) {
-            return Promise.reject();
+        // Retry once on failure for pgBouncer resilience
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const response = await fetch('/api/admin/profile');
+                if (response.status >= 200 && response.status < 300) {
+                    const data = await response.json().catch(() => null);
+                    if (data && data.id && data.displayName) {
+                        return Promise.resolve();
+                    }
+                }
+                // 401 means genuinely unauthorized — don't retry
+                if (response.status === 401) {
+                    return Promise.reject();
+                }
+                // Other errors (500, 503) — retry
+                if (attempt === 0) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    continue;
+                }
+            } catch (fetchError) {
+                // Network error — retry
+                if (attempt === 0) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    continue;
+                }
+            }
         }
-
-        const data = await response.json();
-        if (!data || !data.id || !data.displayName) {
-            return Promise.reject();
-        }
-
-        return Promise.resolve();
+        return Promise.reject();
     },
 
     // Called when the user navigates to a new location, to check for permissions / roles

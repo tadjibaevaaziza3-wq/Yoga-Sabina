@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
                 type: true,
                 _count: {
                     select: {
-                        courseChats: true
+                        courseChats: { where: { isDeleted: false } }
                     }
                 }
             },

@@ -30,36 +30,40 @@ export async function GET(
     { params }: { params: Promise<{ resource: string, id: string }> }
 ) {
     const admin = await getAdminFromRequest(request);
-    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!admin) {
+        console.error('[RA getOne] Unauthorized - no admin session');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const p = await params;
     const resource = p.resource;
     const id = p.id;
 
+    console.log(`[RA getOne] resource=${resource}, id=${id}, admin=${admin.username}`);
+
     try {
         const modelName = resourceToModel[resource] || (resource as keyof typeof prisma);
         const delegate = prisma[modelName] as any;
 
-        if (!delegate) {
+        if (!delegate || typeof delegate.findUnique !== 'function') {
+            console.error(`[RA getOne] No delegate for resource=${resource}, modelName=${String(modelName)}`);
             return NextResponse.json({ error: `Resource '${resource}' (mapped to Prisma '${String(modelName)}') not found` }, { status: 404 });
         }
 
         let whereClause: any = { id };
-
-        // Handle models that don't use 'id' as primary key if necessary
-        // Assume 'id' for general Prisma conventions
 
         const data = await delegate.findUnique({
             where: whereClause
         });
 
         if (!data) {
+            console.error(`[RA getOne] Record not found: resource=${resource}, id=${id}`);
             return NextResponse.json({ error: 'Record not found' }, { status: 404 });
         }
 
         return NextResponse.json(data);
     } catch (error: any) {
-        console.error(`Error querying ${resource}/${id}:`, error);
+        console.error(`[RA getOne] Error querying ${resource}/${id}:`, error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

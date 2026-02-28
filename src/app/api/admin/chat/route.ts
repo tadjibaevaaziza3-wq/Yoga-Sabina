@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from 'next/headers'
-import { verifyToken } from '@/lib/auth/server'
-
-async function isAdmin(): Promise<boolean> {
-    const cookieStore = await cookies();
-    const adminSession = cookieStore.get('admin_session')?.value;
-    if (!adminSession) return false;
-    return !!verifyToken(adminSession);
-}
+import { getAdminFromSession } from '@/lib/auth/admin-auth'
 
 export async function GET(req: NextRequest) {
     try {
-        if (!await isAdmin()) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const admin = await getAdminFromSession()
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         // Fetch courses that have chats
         const coursesWithChats = await prisma.course.findMany({
@@ -49,13 +40,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
-        if (!await isAdmin()) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const cookieStore = await cookies();
-        const adminSession = cookieStore.get('admin_session')?.value;
-        const adminUserId = verifyToken(adminSession!);
+        const admin = await getAdminFromSession()
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const body = await req.json();
         const { courseId, message } = body;
@@ -64,11 +50,37 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'CourseId and message are required' }, { status: 400 });
         }
 
+        // CourseChat.userId references User table, not AdminUser table.
+        // Find or create a User record for this admin to send messages.
+        let senderUser = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email: admin.email || undefined },
+                    { firstName: admin.displayName, role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+                ],
+            },
+            select: { id: true },
+        })
+
+        if (!senderUser) {
+            senderUser = await prisma.user.create({
+                data: {
+                    firstName: admin.displayName || admin.username,
+                    email: admin.email || `${admin.username}@admin.local`,
+                    role: 'ADMIN',
+                    phone: '',
+                    registrationSource: 'WEB',
+                },
+                select: { id: true },
+            })
+        }
+
         const chatMessage = await prisma.courseChat.create({
             data: {
                 courseId,
-                userId: adminUserId!,
-                message: message.trim()
+                userId: senderUser.id,
+                message: message.trim(),
+                senderRole: 'ADMIN',
             },
             include: {
                 user: { select: { id: true, firstName: true, lastName: true, email: true, role: true } }
@@ -81,3 +93,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 }
+

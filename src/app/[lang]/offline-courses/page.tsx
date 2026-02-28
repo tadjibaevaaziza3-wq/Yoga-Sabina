@@ -42,10 +42,15 @@ export default async function OfflineCoursesPage({
         console.error("Database connection failed", e)
     }
 
-    const bannerSetting = await prisma.systemSetting.findUnique({
-        where: { key: 'BANNER_OFFLINE_COURSES' }
-    })
-    const bannerUrl = bannerSetting?.value || "/images/sabina-intro.png"
+    let bannerUrl = "/images/sabina-intro.png"
+    try {
+        const bannerSetting = await prisma.systemSetting.findUnique({
+            where: { key: 'BANNER_OFFLINE_COURSES' }
+        })
+        if (bannerSetting?.value) bannerUrl = bannerSetting.value
+    } catch (e) {
+        // SystemSetting table may not exist yet
+    }
 
     if (courses.length === 0) {
         courses = coursesData[lang].filter(c => c.type === 'OFFLINE')

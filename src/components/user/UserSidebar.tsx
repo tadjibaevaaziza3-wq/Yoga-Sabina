@@ -5,7 +5,8 @@ import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import {
     LayoutDashboard, BookOpen, PlayCircle, Activity,
-    User, MessageSquare, ArrowLeft, LogOut, Menu, X, Sparkles
+    User, MessageSquare, ArrowLeft, LogOut, Menu, X, Sparkles,
+    Scale
 } from "lucide-react"
 import { useState, useEffect } from "react"
 
@@ -66,11 +67,18 @@ export function UserSidebar({ lang, user: userProp }: UserSidebarProps) {
             key: 'my-courses'
         },
         {
+            href: `/${lang}/body-tracking`,
+            icon: <Scale className="w-[18px] h-[18px]" />,
+            label: lang === 'uz' ? 'Tana kuzatuvi' : 'Трекер тела',
+            key: 'body-tracking'
+        },
+        {
             href: `/${lang}/activity`,
             icon: <Activity className="w-[18px] h-[18px]" />,
             label: lang === 'uz' ? 'Faollik' : 'Активность',
             key: 'activity'
         },
+
         {
             href: `/${lang}/profile`,
             icon: <User className="w-[18px] h-[18px]" />,
@@ -80,7 +88,7 @@ export function UserSidebar({ lang, user: userProp }: UserSidebarProps) {
         {
             href: `/${lang}/chat`,
             icon: <MessageSquare className="w-[18px] h-[18px]" />,
-            label: lang === 'uz' ? 'AI Yordamchi' : 'AI Помощник',
+            label: lang === 'uz' ? 'Chat' : 'Чат',
             key: 'chat',
             badge: 'AI'
         },

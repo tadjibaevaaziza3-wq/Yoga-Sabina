@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Container } from "@/components/ui/Container";
-import { ChevronLeft, Play, Clock, Star, Lock, CheckCircle2, Activity, BookOpen, MessageCircle, ArrowLeft } from "lucide-react";
+import { ChevronLeft, Play, CheckCircle2, Activity, MessageCircle, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,7 +30,9 @@ export default function TMACourseDetails() {
             price: "Kurs narxi",
             buy: "HOZIR SOTIB OLISH",
             cancel: "BEKOR QILISH",
-            viewing: "KO'RISHNI BOSHLASH",
+            viewing: "USER PANEL DA KO'RISH",
+            alreadyActive: "Bu kurs allaqachon faol!",
+            alreadyActiveDesc: "Darslarni ko'rish uchun User Panel ga o'ting",
             contact: "MENEDJER BILAN ALOQA",
             about: "KURS HAQIDA",
             features: "AFZALLIKLARI",
@@ -51,7 +53,9 @@ export default function TMACourseDetails() {
             price: "Стоимость курса",
             buy: "КУПИТЬ СЕЙЧАС",
             cancel: "ОТМЕНА",
-            viewing: "НАЧАТЬ ПРОСМОТР",
+            viewing: "СМОТРЕТЬ В ПАНЕЛИ",
+            alreadyActive: "Этот курс уже активен!",
+            alreadyActiveDesc: "Перейдите в Панель для просмотра уроков",
             contact: "СВЯЗАТЬСЯ С МЕНЕДЖЕРОМ",
             about: "О КУРСЕ",
             features: "ПРЕИМУЩЕСТВА",
@@ -193,81 +197,23 @@ export default function TMACourseDetails() {
                     </div>
                 </section>
 
-                {/* Modules & Lessons */}
-                <section className="space-y-6">
-                    <div className="flex items-center justify-between px-2">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#114539]/50">{t.content}</h4>
-                        <span className="text-[10px] font-black text-[#114539]/30 uppercase tracking-widest">{course.modules?.length || 0} {t.module}</span>
-                    </div>
-
-                    {/* Determine access once for the lesson list */}
-                    {(() => {
-                        const hasAccess = userData?.subscriptions?.some(
-                            (s: any) => s.courseId === course.id && s.status === 'ACTIVE'
-                        ) || userData?.purchases?.some(
-                            (p: any) => p.courseId === course.id && p.status === 'PAID'
-                        ) || course.isFree;
-
-                        return (
-                            <div className="space-y-4">
-                                {course.modules?.map((module: any, idx: number) => (
-                                    <div key={module.id} className="bg-white rounded-[2rem] border border-[#114539]/5 shadow-soft overflow-hidden">
-                                        <div className="p-6 border-b border-[#114539]/5 bg-[#f6f9fe]/50 flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-8 h-8 rounded-full bg-[#114539] flex items-center justify-center text-white text-[10px] font-bold">
-                                                    {idx + 1}
-                                                </div>
-                                                <div>
-                                                    <h5 className="font-bold text-[#114539] text-sm">
-                                                        {lang === 'ru' && module.titleRu ? module.titleRu : module.title}
-                                                    </h5>
-                                                    <p className="text-[9px] font-bold text-[#114539]/40 uppercase tracking-widest">{module.lessons?.length || 0} {t.lesson}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="divide-y divide-[#114539]/5">
-                                            {module.lessons?.map((lesson: any) => {
-                                                const isAccessible = hasAccess || lesson.isFree;
-                                                return (
-                                                    <div
-                                                        key={lesson.id}
-                                                        className={`p-5 flex items-center justify-between transition-colors ${isAccessible ? 'active:bg-[#114539]/5 cursor-pointer' : 'opacity-60'}`}
-                                                        onClick={() => {
-                                                            if (isAccessible) {
-                                                                window.location.href = `/${lang}/tma/player/${lesson.id}`;
-                                                            }
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center gap-4">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isAccessible ? 'bg-[#114539]/10' : 'bg-[#f6f9fe]'}`}>
-                                                                {isAccessible
-                                                                    ? <Play className="w-4 h-4 text-[#114539] fill-[#114539]" />
-                                                                    : <Lock className="w-4 h-4 text-[#114539]/20" />
-                                                                }
-                                                            </div>
-                                                            <div>
-                                                                <div className="text-xs font-bold text-[#114539]">
-                                                                    {lang === 'ru' && lesson.titleRu ? lesson.titleRu : lesson.title}
-                                                                </div>
-                                                                <div className="text-[9px] font-bold text-[#114539]/40 uppercase tracking-widest">
-                                                                    {Math.floor(lesson.duration / 60)} {t.min}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        {isAccessible && (
-                                                            <div className="w-6 h-6 rounded-full bg-[#114539]/5 flex items-center justify-center">
-                                                                <Play className="w-3 h-3 text-[#114539]/40" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
+                {/* Course Stats - no lesson details, TMA is sales-only */}
+                <section className="bg-white rounded-[2rem] border border-[#114539]/5 shadow-soft p-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#114539]/10 flex items-center justify-center">
+                                <Activity className="w-5 h-5 text-[#114539]" />
                             </div>
-                        );
-                    })()}
+                            <div>
+                                <p className="text-xs font-bold text-[#114539]">
+                                    {course.modules?.reduce((sum: number, m: any) => sum + (m.lessons?.length || 0), 0) || 0} {t.lesson}
+                                </p>
+                                <p className="text-[9px] font-bold text-[#114539]/40 uppercase tracking-widest">
+                                    {course.modules?.length || 0} {t.module}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 {/* Secondary Actions */}
@@ -301,21 +247,26 @@ export default function TMACourseDetails() {
                             ) || course.isFree;
 
                             if (isSubscribed) {
-                                // Find first lesson ID
-                                const firstLesson = course.modules?.[0]?.lessons?.[0];
                                 return (
-                                    <div className="w-full">
+                                    <div className="w-full space-y-3">
+                                        <div className="text-center">
+                                            <p className="text-[10px] font-black text-white/60 uppercase tracking-widest">✅ {t.alreadyActive}</p>
+                                            <p className="text-[8px] font-bold text-white/30 mt-1">{t.alreadyActiveDesc}</p>
+                                        </div>
                                         <button
                                             onClick={() => {
-                                                if (firstLesson) {
-                                                    router.push(`/${lang}/tma/player/${firstLesson.id}`);
-                                                }
+                                                window.location.href = `/${lang}/checkout?id=${course.id}&type=course&from=tma`;
                                             }}
                                             className="w-full bg-white text-[#114539] py-5 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3"
                                         >
-                                            <Play className="w-4 h-4 fill-current" />
-                                            {t.viewing}
+                                            🔄 {lang === 'ru' ? 'ПРОДЛИТЬ ПОДПИСКУ' : 'OBUNANI UZAYTIRISH'}
                                         </button>
+                                        <a
+                                            href={`/${lang}/account`}
+                                            className="w-full block text-center text-[9px] font-bold text-white/40 uppercase tracking-widest py-2"
+                                        >
+                                            {t.viewing}
+                                        </a>
                                     </div>
                                 );
                             }

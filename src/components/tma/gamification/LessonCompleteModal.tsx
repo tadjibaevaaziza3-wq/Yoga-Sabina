@@ -92,10 +92,10 @@ export default function LessonCompleteModal({ isOpen, onClose, nextLessonId, cou
                             <div className="space-y-3 pt-2">
                                 {nextLessonId ? (
                                     <button
-                                        onClick={() => router.push(`/tma/player/${nextLessonId}`)}
+                                        onClick={() => router.push('/tma/courses')}
                                         className="w-full btn-luxury py-4 px-6 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest shadow-xl shadow-yellow-500/20"
                                     >
-                                        Keyingi Dars <ArrowRight className="w-4 h-4" />
+                                        Kurslar <ArrowRight className="w-4 h-4" />
                                     </button>
                                 ) : (
                                     <button

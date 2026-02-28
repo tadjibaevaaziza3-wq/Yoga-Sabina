@@ -97,7 +97,7 @@ export default function CourseCatalog({ lang = 'uz', initialType = 'ALL' }: Cour
     };
 
     const handleCourseClick = (courseId: string) => {
-        router.push(`/${lang}/courses/${courseId}`);
+        router.push(`/${lang}/all-courses/${courseId}`);
     };
 
     if (loading) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getLocalUser } from '@/lib/auth/server';
+import { addUserToCourseChat } from '@/lib/chat/auto-join';
 
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth/server';
@@ -114,6 +115,9 @@ export async function POST(request: NextRequest) {
                     })
                 ]);
             }
+
+            // Auto-add user to course chat
+            await addUserToCourseChat(purchase.userId, purchase.courseId);
         } else if (action === 'REJECT') {
             await prisma.purchase.update({
                 where: { id: purchaseId },

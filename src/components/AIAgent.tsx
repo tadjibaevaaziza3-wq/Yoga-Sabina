@@ -18,13 +18,13 @@ const QUICK_ACTIONS = {
         { label: "Bel og'rig'i", query: "Bel og'rig'i uchun qanday mashqlar qilish kerak?" },
         { label: "Stress", query: "Stressni kamaytirishda yoga qanday yordam beradi?" },
         { label: "Kurslar", query: "Qanday kurslar bor va narxlari qancha?" },
-        { label: "Murabbiy bilan bog'lanish", query: "Sabina murabbiy bilan qanday bog'lanaman?" },
+        { label: "💬 Murabbiy bilan bog'lanish", href: "https://t.me/Sabina_Radjapovna" },
     ],
     ru: [
         { label: "Боль в спине", query: "Какие упражнения помогут при боли в спине?" },
         { label: "Стресс", query: "Как йога помогает справиться со стрессом?" },
         { label: "Курсы", query: "Какие курсы есть и сколько стоят?" },
-        { label: "Связаться с тренером", query: "Как связаться с тренером Сабиной?" },
+        { label: "💬 Связаться с тренером", href: "https://t.me/Sabina_Radjapovna" },
     ],
 }
 
@@ -209,14 +209,26 @@ export function AIAgent({ lang }: AIAgentProps) {
                                         {lang === 'uz' ? "Tez savollar:" : "Быстрые вопросы:"}
                                     </p>
                                     <div className="flex flex-wrap gap-2">
-                                        {QUICK_ACTIONS[lang].map((action, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => handleSend(action.query)}
-                                                className="px-3 py-2 bg-[var(--primary)]/5 hover:bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold rounded-xl transition-all border border-[var(--primary)]/10 hover:border-[var(--primary)]/20"
-                                            >
-                                                {action.label}
-                                            </button>
+                                        {QUICK_ACTIONS[lang].map((action: any, idx: number) => (
+                                            action.href ? (
+                                                <a
+                                                    key={idx}
+                                                    href={action.href}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-3 py-2 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[var(--primary)] text-xs font-bold rounded-xl transition-all border border-[var(--accent)]/20 hover:border-[var(--accent)]/40"
+                                                >
+                                                    {action.label}
+                                                </a>
+                                            ) : (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => handleSend(action.query)}
+                                                    className="px-3 py-2 bg-[var(--primary)]/5 hover:bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold rounded-xl transition-all border border-[var(--primary)]/10 hover:border-[var(--primary)]/20"
+                                                >
+                                                    {action.label}
+                                                </button>
+                                            )
                                         ))}
                                     </div>
                                 </div>
@@ -243,7 +255,7 @@ export function AIAgent({ lang }: AIAgentProps) {
                         <div className="px-5 py-2 bg-[var(--primary)]/3 border-t border-[var(--primary)]/5 flex items-center justify-center gap-2">
                             <Phone className="w-3 h-3 text-[var(--primary)]/50" />
                             <a
-                                href="https://t.me/baxtli_men_admin"
+                                href="https://t.me/Sabina_Radjapovna"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-[9px] font-bold uppercase tracking-widest text-[var(--primary)]/50 hover:text-[var(--primary)] transition-colors"

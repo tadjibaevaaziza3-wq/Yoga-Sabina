@@ -259,6 +259,22 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // 🔄 Auto-create course chat room with welcome message
+        try {
+            await prisma.courseChat.create({
+                data: {
+                    courseId: course.id,
+                    userId: 'system', // System message
+                    message: `🎉 "${course.title}" kursi uchun chat yaratildi! Obunachilarga xush kelibsiz.`,
+                    isAdmin: true,
+                },
+            });
+            console.log(`✅ Auto-created chat for course: ${course.title}`);
+        } catch (chatError) {
+            console.error('Failed to auto-create course chat:', chatError);
+            // Non-critical — don't fail course creation
+        }
+
         // Revalidate public pages
         revalidatePath('/[lang]/courses', 'page');
         revalidatePath('/[lang]/', 'page');

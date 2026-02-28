@@ -12,17 +12,19 @@ export async function GET() {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        const decoded = verifyToken(token) as unknown as { userId: string };
-        if (!decoded || !decoded.userId) {
+        const userId = verifyToken(token);
+        if (!userId) {
             return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
         }
 
         const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+            where: { id: userId },
             include: {
                 profile: {
                     select: {
                         name: true,
+                        location: true,
+                        healthIssues: true,
                         totalYogaTime: true,
                         currentStreak: true,
                         longestStreak: true,
@@ -56,6 +58,10 @@ export async function GET() {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 phone: user.phone,
+                email: user.email,
+                avatar: user.avatar,
+                telegramId: user.telegramId,
+                telegramUsername: user.telegramUsername,
                 profile: user.profile,
                 subscriptions: user.subscriptions,
                 purchases: user.purchases,

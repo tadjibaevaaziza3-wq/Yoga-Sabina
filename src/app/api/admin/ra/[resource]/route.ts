@@ -34,15 +34,29 @@ function parseQuery(url: URL) {
     }
 
     let prismaWhere: any = {};
+    let customFilters: Record<string, string> = {};
+    // Custom filter keys that are computed post-query (not direct Prisma fields)
+    // courseId is only custom for 'users' resource (post-processing); for modules/lessons it's a real Prisma field
+    const ALWAYS_CUSTOM_KEYS = ['paymentStatus', 'expiryAlarm', 'subscriptionCount'];
+    const USERS_ONLY_CUSTOM_KEYS = ['courseId'];
+
+    // Determine which resource we're dealing with
+    const urlPath = url.pathname;
+    const resourceSegment = urlPath.split('/').pop() || '';
+    const isUsersResource = resourceSegment === 'users';
+    const CUSTOM_FILTER_KEYS = isUsersResource ? [...ALWAYS_CUSTOM_KEYS, ...USERS_ONLY_CUSTOM_KEYS] : ALWAYS_CUSTOM_KEYS;
+
     if (filter) {
         try {
             const parsedFilter = JSON.parse(filter);
 
-            // Handle React-Admin Reference Inputs (e.g. courseId: [1, 2, 3])
-            // or q for full-text search
             Object.keys(parsedFilter).forEach(key => {
+                // Extract custom filters for post-processing
+                if (CUSTOM_FILTER_KEYS.includes(key)) {
+                    customFilters[key] = parsedFilter[key];
+                    return;
+                }
                 if (key === 'q') {
-                    // Multi-field search for users
                     const searchTerm = parsedFilter[key];
                     if (searchTerm && searchTerm.length > 0) {
                         prismaWhere.OR = [
@@ -57,8 +71,6 @@ function parseQuery(url: URL) {
                 } else if (Array.isArray(parsedFilter[key])) {
                     prismaWhere[key] = { in: parsedFilter[key] };
                 } else if (typeof parsedFilter[key] === 'string' && parsedFilter[key].length > 0) {
-                    // Check if it's an exact match vs contains
-                    // In generic implementation we will do exact matches for IDs/Enums 
                     prismaWhere[key] = parsedFilter[key];
                 } else {
                     prismaWhere[key] = parsedFilter[key];
@@ -68,7 +80,7 @@ function parseQuery(url: URL) {
         } catch (e) { }
     }
 
-    return { prismaSort, prismaRange, prismaWhere };
+    return { prismaSort, prismaRange, prismaWhere, customFilters };
 }
 
 const resourceToModel: Record<string, keyof typeof prisma> = {
@@ -104,7 +116,7 @@ export async function GET(
 
     const resource = (await params).resource;
     const url = new URL(request.url);
-    const { prismaSort, prismaRange, prismaWhere } = parseQuery(url);
+    const { prismaSort, prismaRange, prismaWhere, customFilters } = parseQuery(url);
 
     try {
         const modelName = resourceToModel[resource] || (resource as keyof typeof prisma);
@@ -175,26 +187,25 @@ export async function GET(
                     ? subs.reduce((earliest: any, s: any) => new Date(s.startsAt) < new Date(earliest.startsAt) ? s : earliest)
                     : null;
 
-                // Latest active subscription dates
                 const latestActiveSub = activeSubs.length > 0
                     ? activeSubs.reduce((latest: any, s: any) => new Date(s.endsAt) > new Date(latest.endsAt) ? s : latest)
                     : null;
 
-                // Check if subscription is expiring within 3 days
                 const isExpiringSoon = latestActiveSub
                     ? new Date(latestActiveSub.endsAt) <= threeDaysFromNow
                     : false;
+                const isExpired = latestActiveSub ? new Date(latestActiveSub.endsAt) < now : false;
 
-                // Check for pending payment screenshots
                 const pendingPayments = purchases.filter(
                     (p: any) => p.screenshotUrl && !p.verifiedByAdmin && p.status === 'PENDING'
                 );
 
-                // Build summary string
                 const summaryParts = subs.map((s: any) => {
                     const isActive = s.status === 'ACTIVE' && new Date(s.endsAt) > now;
                     const statusLabel = isActive ? 'Faol' : s.status === 'EXPIRED' ? 'Tugagan' : 'Bekor';
-                    return `${s.course?.title || '—'} (${statusLabel})`;
+                    const title = s.course?.title;
+                    const displayTitle = typeof title === 'object' ? ((title as any)?.uz || (title as any)?.ru || '—') : (title || '—');
+                    return `${displayTitle} (${statusLabel})`;
                 });
 
                 return {
@@ -205,15 +216,50 @@ export async function GET(
                     activeSubscriptionCount: activeSubs.length,
                     activeSubscriptionsSummary: summaryParts.join(', ') || '—',
                     firstSubscriptionDate: firstSub?.startsAt || null,
-                    // New fields
                     subStartDate: latestActiveSub?.startsAt || null,
                     subEndDate: latestActiveSub?.endsAt || null,
                     isExpiringSoon,
+                    isExpired,
                     hasPendingPayment: pendingPayments.length > 0,
                     pendingPaymentCount: pendingPayments.length,
                     pendingPaymentCourse: pendingPayments[0]?.course?.title || null,
+                    _courseIds: subs.map((s: any) => s.course?.id).filter(Boolean),
                 };
             });
+
+            // Apply custom filters (these depend on post-processed data)
+            if (customFilters.paymentStatus) {
+                if (customFilters.paymentStatus === 'paid') {
+                    data = data.filter((u: any) => u.activeSubscriptionCount > 0);
+                } else if (customFilters.paymentStatus === 'unpaid') {
+                    data = data.filter((u: any) => u.activeSubscriptionCount === 0 && !u.hasPendingPayment);
+                } else if (customFilters.paymentStatus === 'pending') {
+                    data = data.filter((u: any) => u.hasPendingPayment);
+                }
+            }
+            if (customFilters.courseId) {
+                data = data.filter((u: any) => u._courseIds?.includes(customFilters.courseId));
+            }
+            if (customFilters.expiryAlarm) {
+                if (customFilters.expiryAlarm === 'expiring_3d') {
+                    data = data.filter((u: any) => u.isExpiringSoon && !u.isExpired);
+                } else if (customFilters.expiryAlarm === 'expired') {
+                    data = data.filter((u: any) => u.isExpired || (u.totalSubscriptionCount > 0 && u.activeSubscriptionCount === 0));
+                } else if (customFilters.expiryAlarm === 'active') {
+                    data = data.filter((u: any) => u.activeSubscriptionCount > 0 && !u.isExpiringSoon);
+                }
+            }
+            if (customFilters.subscriptionCount) {
+                const count = parseInt(customFilters.subscriptionCount, 10);
+                if (count === 0) {
+                    data = data.filter((u: any) => u.activeSubscriptionCount === 0);
+                } else {
+                    data = data.filter((u: any) => u.activeSubscriptionCount >= count);
+                }
+            }
+
+            // Recalculate total after custom filtering
+            total = data.length;
         }
 
         return new NextResponse(JSON.stringify(data), {

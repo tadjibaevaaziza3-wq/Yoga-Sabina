@@ -76,94 +76,95 @@ export function CourseCard({
             (isRecommended ? styles.recommended : styles.general))
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -5 }}
-            className={cn(
-                "rounded-[2.5rem] overflow-hidden flex flex-col h-full transition-all duration-300 shadow-sm hover:shadow-xl border border-[var(--secondary)] bg-white",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2",
-            )}
-        >
-            {/* Header Block with Image or Icon */}
-            <div className={cn("h-64 relative overflow-hidden bg-[var(--secondary)]", !imageUrl && currentStyle.header)}>
-                {imageUrl ? (
-                    <Image
-                        src={imageUrl}
-                        alt={title}
-                        fill
-                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                    />
-                ) : (
-                    <div className="flex items-center justify-center h-full">
-                        {currentStyle.icon}
-                    </div>
+        <Link href={`/${lang}/courses/${id}`} className="block h-full">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -5 }}
+                className={cn(
+                    "rounded-[2.5rem] overflow-hidden flex flex-col h-full transition-all duration-300 shadow-sm hover:shadow-xl border border-[var(--secondary)] bg-white cursor-pointer",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2",
                 )}
+            >
+                {/* Header Block with Image or Icon */}
+                <div className={cn("h-64 relative overflow-hidden bg-[var(--secondary)]", !imageUrl && currentStyle.header)}>
+                    {imageUrl ? (
+                        <Image
+                            src={imageUrl}
+                            alt={title}
+                            fill
+                            className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center h-full">
+                            {currentStyle.icon}
+                        </div>
+                    )}
 
-                {/* Overlay Tag */}
-                <div className="absolute top-4 left-6 z-10">
-                    <span className={cn(
-                        "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-lg",
-                        currentStyle.header
-                    )}>
-                        {currentStyle.tag}
-                    </span>
-                </div>
-
-                {/* Decorative overlay when image exists */}
-                {imageUrl && <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />}
-            </div>
-
-            <div className="p-8 pb-10 flex flex-col flex-1">
-                <div className="mb-6 flex-1">
-                    <h3 className="text-xl font-bold text-[var(--primary)] leading-tight mb-3">
-                        {title}
-                    </h3>
-                    <p className="text-[13px] text-[var(--primary)]/60 font-medium leading-relaxed line-clamp-3 mb-6">
-                        {description}
-                    </p>
-
-                    {/* Features checklist from screenshot */}
-                    <div className="space-y-2">
-                        {displayFeatures.length > 0 ? (
-                            displayFeatures.map((feat, idx) => (
-                                <div key={idx} className="flex items-start gap-2">
-                                    <div className="w-1 h-1 rounded-full bg-[var(--accent)] mt-1.5 shrink-0" />
-                                    <span className="text-[11px] font-bold text-[var(--primary)]/40 uppercase tracking-wide leading-tight">
-                                        {feat}
-                                    </span>
-                                </div>
-                            ))
-                        ) : (
-                            [1, 2].map((i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                    <div className="w-1 h-1 rounded-full bg-[var(--accent)]" />
-                                    <span className="text-[11px] font-bold text-[var(--primary)]/40 uppercase tracking-wide">
-                                        {lang === 'ru' ? 'Краткое описание бонуса' : 'Afzalliklari haqida qisqacha'}
-                                    </span>
-                                </div>
-                            ))
-                        )}
+                    {/* Overlay Tag */}
+                    <div className="absolute top-4 left-6 z-10">
+                        <span className={cn(
+                            "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-lg",
+                            currentStyle.header
+                        )}>
+                            {currentStyle.tag}
+                        </span>
                     </div>
+
+                    {/* Decorative overlay when image exists */}
+                    {imageUrl && <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />}
                 </div>
 
-                <div className="pt-6 border-t border-[var(--secondary)] flex items-center justify-between">
-                    <div>
-                        <div suppressHydrationWarning className="text-[16px] font-black text-[var(--primary)] tracking-tight">
-                            {new Intl.NumberFormat(lang === 'uz' ? 'uz-UZ' : 'ru-RU').format(Number(price))} UZS
+                <div className="p-8 pb-10 flex flex-col flex-1">
+                    <div className="mb-6 flex-1">
+                        <h3 className="text-xl font-bold text-[var(--primary)] leading-tight mb-3">
+                            {title}
+                        </h3>
+                        <p className="text-[13px] text-[var(--primary)]/60 font-medium leading-relaxed line-clamp-3 mb-6">
+                            {description}
+                        </p>
+
+                        {/* Features checklist from screenshot */}
+                        <div className="space-y-2">
+                            {displayFeatures.length > 0 ? (
+                                displayFeatures.map((feat, idx) => (
+                                    <div key={idx} className="flex items-start gap-2">
+                                        <div className="w-1 h-1 rounded-full bg-[var(--accent)] mt-1.5 shrink-0" />
+                                        <span className="text-[11px] font-bold text-[var(--primary)]/40 uppercase tracking-wide leading-tight">
+                                            {feat}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                [1, 2].map((i) => (
+                                    <div key={i} className="flex items-center gap-2">
+                                        <div className="w-1 h-1 rounded-full bg-[var(--accent)]" />
+                                        <span className="text-[11px] font-bold text-[var(--primary)]/40 uppercase tracking-wide">
+                                            {lang === 'ru' ? 'Краткое описание бонуса' : 'Afzalliklari haqida qisqacha'}
+                                        </span>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
 
-                    <Link
-                        href={`/${lang}/courses/${id}`}
-                        className="w-10 h-10 rounded-full bg-[var(--primary)] text-white flex items-center justify-center hover:bg-[var(--primary)] transition-all active:scale-95 shadow-lg shadow-[var(--primary)]/20"
-                    >
-                        <ChevronRight className="w-5 h-5" />
-                    </Link>
+                    <div className="pt-6 border-t border-[var(--secondary)] flex items-center justify-between">
+                        <div>
+                            <div suppressHydrationWarning className="text-[16px] font-black text-[var(--primary)] tracking-tight">
+                                {new Intl.NumberFormat(lang === 'uz' ? 'uz-UZ' : 'ru-RU').format(Number(price))} UZS
+                            </div>
+                        </div>
+
+                        <div
+                            className="w-10 h-10 rounded-full bg-[var(--primary)] text-white flex items-center justify-center transition-all shadow-lg shadow-[var(--primary)]/20"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </motion.div>
+            </motion.div>
+        </Link>
     )
 }
 

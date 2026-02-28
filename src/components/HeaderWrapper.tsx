@@ -16,11 +16,15 @@ export const HeaderWrapper = ({ isConsultationEnabled = true }: { isConsultation
         pathname?.includes("/chat") ||
         pathname?.includes("/settings") ||
         pathname?.includes("/activity") ||
+        pathname?.includes("/all-courses") ||
+        pathname?.includes("/checkout") ||
+        pathname?.includes("/body-tracking") ||
+        pathname?.includes("/community") ||
         pathname?.includes("/courses");
 
     const isMinimal = isTma || isAdmin || isUserPanel;
 
-    if (isTma || isAdmin) return null;
+    if (isTma || isAdmin || isUserPanel) return null;
 
     return <Header minimal={isMinimal} isAdmin={isAdmin} isConsultationEnabled={isConsultationEnabled} />;
 };

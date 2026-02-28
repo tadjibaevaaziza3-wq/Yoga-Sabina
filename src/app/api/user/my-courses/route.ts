@@ -112,41 +112,50 @@ export async function GET(request: NextRequest) {
             uniqueCourses.map(async (item) => {
                 const totalLessons = item.course._count.lessons;
 
-                // Get completed lessons for this specific course
-                const lessonIds = await prisma.lesson.findMany({
-                    where: { courseId: item.courseId },
-                    select: { id: true }
-                }).then(lessons => lessons.map(l => l.id));
-
-                const progressRecords = await prisma.enhancedVideoProgress.findMany({
-                    where: {
-                        userId: userId,
-                        lessonId: { in: lessonIds }
-                    },
-                    orderBy: {
-                        lastWatched: 'desc'
-                    }
-                });
-
-                const completedLessons = progressRecords.filter(p => p.completed || (p.progress > (p.duration || 0) * 0.9)).length;
-                const lastWatchedRecord = progressRecords[0]; // Already ordered by lastWatched desc
-
+                let completedLessons = 0;
                 let lastWatchedLesson = null;
-                if (lastWatchedRecord) {
-                    lastWatchedLesson = await prisma.lesson.findUnique({
-                        where: { id: lastWatchedRecord.lessonId },
-                        select: {
-                            id: true,
-                            title: true,
-                            titleRu: true
-                        }
-                    }) as any;
 
-                    if (lastWatchedLesson) {
-                        lastWatchedLesson.lastWatched = lastWatchedRecord.lastWatched;
-                        lastWatchedLesson.progress = lastWatchedRecord.progress;
-                        lastWatchedLesson.duration = lastWatchedRecord.duration;
+                try {
+                    // Get completed lessons for this specific course
+                    const lessonIds = await prisma.lesson.findMany({
+                        where: { courseId: item.courseId },
+                        select: { id: true }
+                    }).then(lessons => lessons.map(l => l.id));
+
+                    const progressRecords = await prisma.enhancedVideoProgress.findMany({
+                        where: {
+                            userId: userId,
+                            lessonId: { in: lessonIds }
+                        },
+                        orderBy: {
+                            lastWatched: 'desc'
+                        }
+                    });
+
+                    completedLessons = progressRecords.filter(p => p.completed || (p.progress > (p.duration || 0) * 0.9)).length;
+                    const lastWatchedRecord = progressRecords[0];
+
+                    if (lastWatchedRecord) {
+                        lastWatchedLesson = await prisma.lesson.findUnique({
+                            where: { id: lastWatchedRecord.lessonId },
+                            select: {
+                                id: true,
+                                title: true,
+                                titleRu: true,
+                                thumbnailUrl: true,
+                                videoUrl: true,
+                            }
+                        }) as any;
+
+                        if (lastWatchedLesson) {
+                            lastWatchedLesson.lastWatched = lastWatchedRecord.lastWatched;
+                            lastWatchedLesson.progress = lastWatchedRecord.progress;
+                            lastWatchedLesson.duration = lastWatchedRecord.duration;
+                        }
                     }
+                } catch (progressError) {
+                    console.error(`Progress fetch failed for course ${item.courseId}:`, progressError);
+                    // Continue with 0 progress rather than crashing
                 }
 
                 return {

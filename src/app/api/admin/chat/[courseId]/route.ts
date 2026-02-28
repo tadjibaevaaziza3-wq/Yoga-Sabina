@@ -27,7 +27,7 @@ export async function GET(
         const { courseId } = await params;
 
         const messages = await prisma.courseChat.findMany({
-            where: { courseId },
+            where: { courseId, isDeleted: false },
             include: {
                 user: {
                     select: {
@@ -78,7 +78,8 @@ export async function POST(
             data: {
                 courseId,
                 userId: adminUser.id,
-                message: ` тЯ║ Admin: ${message}`
+                message,
+                senderRole: 'ADMIN',
             },
             include: {
                 user: {
@@ -112,8 +113,9 @@ export async function DELETE(
 
         if (!messageId) return NextResponse.json({ error: 'Message ID required' }, { status: 400 });
 
-        await prisma.courseChat.delete({
-            where: { id: messageId }
+        await prisma.courseChat.update({
+            where: { id: messageId },
+            data: { isDeleted: true }
         });
 
         return NextResponse.json({ success: true });

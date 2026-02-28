@@ -114,6 +114,7 @@ export default function TMAPlayerPage() {
                     videoUrl={videoData.url}
                     userId={videoData.watermark.userId}
                     phone={videoData.watermark.phone}
+                    userNumber={videoData.watermark.userNumber}
                     onProgress={handleProgress}
                     onComplete={() => setShowCelebration(true)}
                 />

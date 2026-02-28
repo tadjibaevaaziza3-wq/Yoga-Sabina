@@ -209,7 +209,21 @@ Admin can approve/reject payments from two places in `UserShow`:
 
 API: `POST /api/admin/purchases` with `{ purchaseId, action: 'APPROVE' | 'REJECT' }`
 
-On APPROVE: atomic transaction marks purchase PAID + creates/extends 30-day subscription.
+On APPROVE: atomic transaction marks purchase PAID + creates/extends 30-day subscription + auto-adds user to course chat.
+
+### ⚠️ STRICT RULE: Course Chat Auto-Creation & Auto-Connect
+
+**NON-NEGOTIABLE**: Every course MUST have a chat. Every active subscriber MUST be a chat member.
+
+1. **Auto-Connect on Purchase**: When ANY payment is approved (PayMe, Click, or manual admin approval), the user is automatically added to `CourseChatMember` via `addUserToCourseChat()` from `src/lib/chat/auto-join.ts`
+2. **Admin Visibility**: The admin panel "Kurs chatlari" page (`/admin#/coursechats`) shows ALL active courses — even those with 0 messages. Admin can enter any course chat to read/reply.
+3. **Payment Activation Points** that trigger auto-join:
+   - `src/app/api/admin/users/[id]/approve-payment/route.ts` — manual payment approval
+   - `src/app/api/admin/purchases/route.ts` — admin purchase APPROVE
+   - `src/app/api/payments/payme/webhook/route.ts` — PayMe PerformTransaction
+   - `src/app/api/payments/click/webhook/route.ts` — Click action=1 complete
+4. **Chat Models**: `CourseChat` (messages), `CourseChatMember` (membership + ban tracking) in `prisma/schema.prisma`
+5. **Never** create a course without ensuring the chat infrastructure is connected
 
 ### Subscription Expiry Cron
 

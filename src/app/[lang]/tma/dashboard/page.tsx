@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useParams } from 'next/navigation';
+import AnnouncementBanner from '@/components/shared/AnnouncementBanner';
 
 export default function TMADashboard() {
     const params = useParams();
@@ -22,22 +23,6 @@ export default function TMADashboard() {
         TMA_DASHBOARD_BADGE_TEXT: "✦ Premium Yoga Platform",
         TMA_CONTACT_TELEGRAM: "@sabina_polatova",
     })
-
-    useEffect(() => {
-        const fetchBanners = async () => {
-            try {
-                const res = await fetch('/api/settings/public?keys=BANNER_TMA_DASHBOARD,FRONTEND_TRAINER_PHOTO,FRONTEND_VIDEO_BANNER,IS_CONSULTATION_ENABLED,TMA_DASHBOARD_ONLINE_IMAGE,TMA_DASHBOARD_OFFLINE_IMAGE,TMA_DASHBOARD_BADGE_TEXT,TMA_CONTACT_TELEGRAM')
-                const data = await res.json()
-                setBanners(prev => ({
-                    ...prev,
-                    ...data
-                }))
-            } catch (e) {
-                console.error("TMA banner fetch failed", e)
-            }
-        }
-        fetchBanners()
-    }, []);
     const [user, setUser] = useState<any>(null);
 
     const translations = {
@@ -54,6 +39,8 @@ export default function TMADashboard() {
             tagline: "YOGA VA SALOMATLIK",
             courses: "Kurslar",
             profile: "Profil",
+            body: "Tana",
+            community: "Jamoa",
             categories: {
                 online: "Onlayn Kurslar",
                 offline: "Offline Kurslar",
@@ -74,6 +61,8 @@ export default function TMADashboard() {
             tagline: "ЙОГА И ЗДОРОВЬЕ",
             courses: "Курсы",
             profile: "Профиль",
+            body: "Тело",
+            community: "Сообщество",
             categories: {
                 online: "Онлайн Курсы",
                 offline: "Оффлайн Курсы",
@@ -86,21 +75,30 @@ export default function TMADashboard() {
     const t = translations[lang as keyof typeof translations] || translations.uz;
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchAll = async () => {
             try {
-                const meRes = await fetch('/api/tma/me');
+                // Fetch banners and user data IN PARALLEL
+                const [bannersRes, meRes] = await Promise.all([
+                    fetch('/api/settings/public?keys=BANNER_TMA_DASHBOARD,FRONTEND_TRAINER_PHOTO,FRONTEND_VIDEO_BANNER,IS_CONSULTATION_ENABLED,TMA_DASHBOARD_ONLINE_IMAGE,TMA_DASHBOARD_OFFLINE_IMAGE,TMA_DASHBOARD_BADGE_TEXT,TMA_CONTACT_TELEGRAM'),
+                    fetch('/api/tma/me')
+                ]);
+
+                if (bannersRes.ok) {
+                    const data = await bannersRes.json();
+                    setBanners(prev => ({ ...prev, ...data }));
+                }
+
                 if (meRes.ok) {
                     const meData = await meRes.json().catch(() => null);
                     if (meData?.success) setUser(meData.user);
                 }
             } catch (err) {
-                console.error('Fetch error:', err);
+                console.error('TMA dashboard fetch error:', err);
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchData();
+        fetchAll();
     }, []);
 
     if (loading) {
@@ -144,57 +142,9 @@ export default function TMADashboard() {
                     </div>
                 </header>
 
-                {/* Continue Watching Section */}
-                {user?.recentProgress?.[0] && (
-                    <Link href={`/${lang}/tma/player/${user.recentProgress[0].lessonId}`} className="block group">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="relative bg-white p-6 rounded-[2rem] shadow-xl border border-[#114539]/10 flex items-center justify-between overflow-hidden"
-                        >
-                            <div className="relative z-10 flex flex-col gap-2 max-w-[70%]">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                    <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-[#114539]/60">
-                                        {t.continueWatching}
-                                    </h4>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-serif font-black text-[#114539] leading-tight line-clamp-1">
-                                        {user.recentProgress[0].lesson.title}
-                                    </h3>
-                                    <p className="text-[10px] font-bold text-[#114539]/40 line-clamp-1">
-                                        {user.recentProgress[0].lesson.course.title}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-3 mt-1">
-                                    <div className="px-4 py-2 bg-[#114539] text-white rounded-lg font-bold text-[9px] uppercase tracking-widest flex items-center gap-1.5 shadow-lg">
-                                        <Play className="w-2.5 h-2.5 fill-current" />
-                                        Play
-                                    </div>
-                                    <div className="text-[9px] font-bold text-[#114539]/40">
-                                        {Math.round((user.recentProgress[0].progress / user.recentProgress[0].duration) * 100)}%
-                                    </div>
-                                </div>
-                            </div>
+                {/* 📢 Announcements */}
+                <AnnouncementBanner lang={lang as string} variant="compact" maxItems={3} />
 
-                            {/* Circular Progress or Thumbnail */}
-                            <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-lg border border-white/20">
-                                {user.recentProgress[0].lesson.course.coverImage && (
-                                    <Image
-                                        src={user.recentProgress[0].lesson.course.coverImage}
-                                        alt="Cover"
-                                        fill
-                                        className="object-cover"
-                                    />
-                                )}
-                                <div className="absolute inset-0 bg-[#114539]/20 flex items-center justify-center">
-                                    <Play className="w-6 h-6 text-white drop-shadow-md" />
-                                </div>
-                            </div>
-                        </motion.div>
-                    </Link>
-                )}
 
                 {/* 2×2 Categories Grid */}
                 <section className="grid grid-cols-2 gap-3">
@@ -274,24 +224,42 @@ export default function TMADashboard() {
                         </motion.div>
                     </a>
                 )}
+
+                {/* Web User Panel link — opens login in browser */}
+                <a href={`/${lang}/login`} target="_blank" rel="noopener noreferrer" className="block">
+                    <motion.div whileTap={{ scale: 0.98 }} className="flex items-center gap-4 bg-gradient-to-r from-[#114539] to-[#1a6b54] rounded-2xl p-5 shadow-lg border border-white/10">
+                        <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                            <BookOpen className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-xs font-black text-white uppercase tracking-widest">
+                                {lang === 'uz' ? 'Shaxsiy kabinet' : 'Личный кабинет'}
+                            </p>
+                            <p className="text-[9px] text-white/50 font-bold">
+                                {lang === 'uz' ? 'Kirish va kurslarni ko\'ring' : 'Войдите и смотрите курсы'}
+                            </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-white/50" />
+                    </motion.div>
+                </a>
             </Container>
 
 
             {/* Bottom Nav Bar */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[80%] max-w-xs bg-[#0d2e28]/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl z-50 flex items-center border border-white/10 overflow-hidden">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-[#0d2e28]/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl z-50 flex items-center border border-white/10 overflow-hidden">
                 <Link href={`/${lang}/tma/dashboard`} className="flex-1 flex flex-col items-center gap-1 py-4 bg-white/10">
                     <BookOpen className="w-5 h-5" />
-                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-90">{t.dashboard}</span>
+                    <span className="text-[7px] font-bold uppercase tracking-widest opacity-90">{t.dashboard}</span>
                 </Link>
                 <div className="w-[1px] h-10 bg-white/10" />
                 <Link href={`/${lang}/tma/courses`} className="flex-1 flex flex-col items-center gap-1 py-4 opacity-50 hover:opacity-80 transition-opacity">
                     <Star className="w-5 h-5" />
-                    <span className="text-[8px] font-bold uppercase tracking-widest">{t.courses}</span>
+                    <span className="text-[7px] font-bold uppercase tracking-widest">{t.courses}</span>
                 </Link>
                 <div className="w-[1px] h-10 bg-white/10" />
                 <Link href={`/${lang}/tma/profile`} className="flex-1 flex flex-col items-center gap-1 py-4 opacity-50 hover:opacity-80 transition-opacity">
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>
-                    <span className="text-[8px] font-bold uppercase tracking-widest">{t.profile}</span>
+                    <span className="text-[7px] font-bold uppercase tracking-widest">{t.profile}</span>
                 </Link>
             </div>
         </main >

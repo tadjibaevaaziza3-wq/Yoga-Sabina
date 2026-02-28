@@ -16,6 +16,8 @@ export const FooterWrapper = ({ isConsultationEnabled = true }: { isConsultation
         pathname?.includes("/chat") ||
         pathname?.includes("/settings") ||
         pathname?.includes("/activity") ||
+        pathname?.includes("/all-courses") ||
+        pathname?.includes("/checkout") ||
         pathname?.includes("/courses");
 
     if (isTma || isAdmin || isUserPanel) return null;

@@ -8,10 +8,15 @@ export async function GET() {
     const admin = await getAdminFromSession()
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Get action count
-    const actionCount = await prisma.adminActionLog.count({
-        where: { adminId: admin.id }
-    })
+    // Get action count (non-critical — don't fail the profile endpoint if this errors)
+    let actionCount = 0
+    try {
+        actionCount = await prisma.adminActionLog.count({
+            where: { adminId: admin.id }
+        })
+    } catch (e) {
+        console.error('Failed to get action count:', e)
+    }
 
     return NextResponse.json({
         id: admin.id,

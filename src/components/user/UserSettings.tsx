@@ -168,14 +168,14 @@ export function UserSettings({ lang, userId, avatar, name, email, gender, birthD
                     {lang === 'uz' ? "Maxfiylik va xavfsizlik" : 'Конфиденциальность и безопасность'}
                 </h3>
                 <div className="space-y-2">
-                    <Link href={`/${lang}/cookie-settings`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--background)] transition-all">
+                    <a href={`/${lang}/cookie-settings`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--background)] transition-all">
                         <Cookie className="w-4 h-4 text-[var(--primary)]/30" />
                         <span className="text-sm font-medium text-[var(--foreground)]">{lang === 'uz' ? 'Cookie sozlamalari' : 'Настройки cookie'}</span>
-                    </Link>
-                    <Link href={`/${lang}/privacy`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--background)] transition-all">
+                    </a>
+                    <a href={`/${lang}/privacy`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--background)] transition-all">
                         <Shield className="w-4 h-4 text-[var(--primary)]/30" />
                         <span className="text-sm font-medium text-[var(--foreground)]">{lang === 'uz' ? 'Maxfiylik siyosati' : 'Политика конфиденциальности'}</span>
-                    </Link>
+                    </a>
                 </div>
             </div>
 

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json()
-        const { name, email, phone, location, healthIssues, password } = body
+        const { name, email, phone, telegramUsername, location, healthIssues, password } = body
 
         if (!phone || !password) {
             return NextResponse.json({ success: false, error: 'Phone and password are required' }, { status: 400 })
@@ -50,6 +50,7 @@ export async function POST(request: Request) {
                 email,
                 password: hashedPassword,
                 phone,
+                telegramUsername: telegramUsername || undefined,
                 firstName: name.split(' ')[0],
                 lastName: name.split(' ').slice(1).join(' '),
                 profile: {

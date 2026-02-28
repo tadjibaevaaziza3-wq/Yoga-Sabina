@@ -38,7 +38,10 @@ export async function GET(
                         isFree: true,
                         videoUrl: true,
                         audioUrl: true,
+                        pdfUrl: true,
                         thumbnailUrl: true,
+                        content: true,
+                        searchKeywords: true,
                         createdAt: true,
                     }
                 }

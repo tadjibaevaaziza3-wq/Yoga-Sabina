@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { createOrExtendSubscription } from '@/lib/payments/subscription'
 import { getPaymeConfig } from '@/lib/payments/payme'
 import { sendSubscriptionNotification } from '@/lib/telegram-bot'
+import { addUserToCourseChat } from '@/lib/chat/auto-join'
 
 /**
  * Payme Webhook Handler
@@ -153,6 +154,9 @@ export async function POST(request: Request) {
                     link: `/courses/${purchase.courseId}`,
                 }
             })
+
+            // Auto-add user to course chat
+            await addUserToCourseChat(purchase.userId, purchase.courseId)
 
             return NextResponse.json({
                 result: {

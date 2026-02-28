@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth/server'
 import { cookies } from 'next/headers'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
     let lang = 'uz'
     try {
         const body = await request.json()
-        const { telegramId, telegramUsername, firstName, lastName, fullName, phone, location, healthGoals } = body
+        const { telegramId, telegramUsername, firstName, lastName, fullName, phone, password, location, healthGoals } = body
         lang = body.lang || 'uz'
 
         if (!telegramId) {
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
                     where: { id: user.id },
                     data: {
                         telegramId: String(telegramId),
+                        telegramUsername: telegramUsername || user.telegramUsername,
                         firstName: firstName || user.firstName,
                         lastName: lastName || user.lastName,
                     }
@@ -75,6 +77,8 @@ export async function POST(request: Request) {
                     firstName: firstName || user.firstName,
                     lastName: lastName || user.lastName,
                     phone: phone || user.phone,
+                    telegramUsername: telegramUsername || user.telegramUsername,
+                    ...(password && !user.password ? { password: await bcrypt.hash(password, 10) } : {}),
                     ...(user.profile ? {
                         profile: {
                             update: {
@@ -97,9 +101,11 @@ export async function POST(request: Request) {
                 data: {
                     email: `${telegramId}@tma.local`,
                     telegramId: String(telegramId),
+                    telegramUsername: telegramUsername || null,
                     firstName: firstName || null,
                     lastName: lastName || null,
                     phone: phone || null,
+                    password: password ? await bcrypt.hash(password, 10) : null,
                     profile: {
                         create: {
                             name: fullName || `${firstName || ''} ${lastName || ''}`.trim(),

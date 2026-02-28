@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 export async function GET(req: NextRequest) {
     try {
@@ -45,6 +46,14 @@ export async function POST(req: NextRequest) {
             update: { value, isSecret, updatedBy: "admin" },
             create: { key, value, isSecret, updatedBy: "admin" }
         });
+
+        // Invalidate the landing page cache so changes appear immediately
+        try {
+            revalidatePath('/uz');
+            revalidatePath('/ru');
+        } catch (e) {
+            // revalidatePath may fail in dev mode, not critical
+        }
 
         return NextResponse.json({ success: true, setting });
     } catch (e: any) {

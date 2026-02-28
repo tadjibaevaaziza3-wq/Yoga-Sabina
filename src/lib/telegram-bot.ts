@@ -125,11 +125,14 @@ export async function sendSubscriptionNotification(
 }
 
 /**
- * Send a video to a Telegram user
+ * Helper: Generate a temporary public signed URL from GCS for Telegram to fetch
+ * For non-GCS URLs, Telegram will fetch directly if public, otherwise this method will fail.
  */
-export async function sendTelegramVideo(
+async function uploadMediaToTelegram(
+    method: string,
     chatId: string | number,
-    videoUrl: string,
+    mediaUrl: string,
+    mediaField: string,
     caption?: string
 ): Promise<boolean> {
     if (!BOT_TOKEN) {
@@ -138,29 +141,107 @@ export async function sendTelegramVideo(
     }
 
     try {
-        const response = await fetch(`${API_BASE}/sendVideo`, {
+        let telegramMediaUrl = mediaUrl
+
+        // If it's a GCS URL, generate a signed URL that Telegram can access
+        if (mediaUrl.includes('storage.googleapis.com')) {
+            try {
+                const { storage } = await import('@/lib/gcs/config')
+                const bucketName = process.env.GCS_BUCKET_NAME || 'antigravity-videos-aziza'
+
+                // Extract file path from GCS URL
+                // URL format: https://storage.googleapis.com/BUCKET/PATH
+                const urlObj = new URL(mediaUrl)
+                let filePath = urlObj.pathname
+                // Remove leading /BUCKET/ from path
+                if (filePath.startsWith(`/${bucketName}/`)) {
+                    filePath = filePath.substring(`/${bucketName}/`.length)
+                } else if (filePath.startsWith('/')) {
+                    filePath = filePath.substring(1)
+                }
+                filePath = decodeURIComponent(filePath)
+
+                const bucket = storage.bucket(bucketName)
+                const file = bucket.file(filePath)
+
+                // Check if file exists
+                const [exists] = await file.exists()
+                if (!exists) {
+                    console.error(`[Telegram Bot] File does not exist in GCS: ${filePath}`)
+                    return false
+                }
+
+                // Get file metadata to check size
+                const [metadata] = await file.getMetadata()
+                const fileSizeMB = Math.round(Number(metadata.size) / 1024 / 1024)
+                console.log(`[Telegram Bot] File: ${filePath}, size: ${fileSizeMB}MB`)
+
+                const [signedUrl] = await file.getSignedUrl({
+                    version: 'v4',
+                    action: 'read',
+                    expires: Date.now() + 60 * 60 * 1000, // 1 hour
+                })
+
+                telegramMediaUrl = signedUrl
+                console.log(`[Telegram Bot] Signed URL generated, length: ${signedUrl.length} chars`)
+
+                // Telegram Bot API can only fetch files up to ~20MB by URL
+                // For larger files, send as a text message with a clickable link
+                if (fileSizeMB > 20) {
+                    console.log(`[Telegram Bot] File is ${fileSizeMB}MB (>20MB limit), sending as link message`)
+                    const emoji = mediaField === 'video' ? '🎥' : mediaField === 'audio' ? '🎵' : '📎'
+                    const label = mediaField === 'video' ? 'Videoni ko\'rish' : mediaField === 'audio' ? 'Audioni tinglash' : 'Faylni yuklab olish'
+                    let linkMessage = `${emoji} <b>${label}</b>\n\n`
+                    if (caption) linkMessage += `${caption}\n\n`
+                    linkMessage += `👉 <a href="${telegramMediaUrl}">Ochish / Ko'rish</a>`
+
+                    return sendTelegramMessage(chatId, linkMessage)
+                }
+            } catch (gcsError) {
+                console.error('[Telegram Bot] Failed to generate signed URL:', gcsError)
+                return false
+            }
+        }
+
+        // Send via URL for small files (Telegram fetches from the signed URL)
+        const requestBody: any = {
+            chat_id: chatId,
+            [mediaField]: telegramMediaUrl,
+            parse_mode: 'HTML'
+        }
+        if (caption) requestBody.caption = caption
+
+        console.log(`[Telegram Bot] Sending ${method} to chat ${chatId}, file is small enough for direct send`)
+
+        const response = await fetch(`${API_BASE}/${method}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                video: videoUrl,
-                caption: caption || '',
-                parse_mode: 'HTML'
-            })
+            body: JSON.stringify(requestBody)
         })
 
         const data: TelegramResponse = await response.json()
 
         if (!data.ok) {
-            console.error('[Telegram Bot] Video send failed:', data.description)
+            console.error(`[Telegram Bot] ${method} failed:`, data.description)
             return false
         }
 
         return true
     } catch (error) {
-        console.error('[Telegram Bot] Error sending video:', error)
+        console.error(`[Telegram Bot] Error in ${method}:`, error)
         return false
     }
+}
+
+/**
+ * Send a video to a Telegram user
+ */
+export async function sendTelegramVideo(
+    chatId: string | number,
+    videoUrl: string,
+    caption?: string
+): Promise<boolean> {
+    return uploadMediaToTelegram('sendVideo', chatId, videoUrl, 'video', caption)
 }
 
 /**
@@ -171,35 +252,7 @@ export async function sendTelegramAudio(
     audioUrl: string,
     caption?: string
 ): Promise<boolean> {
-    if (!BOT_TOKEN) {
-        console.error('[Telegram Bot] No bot token configured')
-        return false
-    }
-
-    try {
-        const response = await fetch(`${API_BASE}/sendAudio`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                audio: audioUrl,
-                caption: caption || '',
-                parse_mode: 'HTML'
-            })
-        })
-
-        const data: TelegramResponse = await response.json()
-
-        if (!data.ok) {
-            console.error('[Telegram Bot] Audio send failed:', data.description)
-            return false
-        }
-
-        return true
-    } catch (error) {
-        console.error('[Telegram Bot] Error sending audio:', error)
-        return false
-    }
+    return uploadMediaToTelegram('sendAudio', chatId, audioUrl, 'audio', caption)
 }
 
 /**
@@ -210,34 +263,6 @@ export async function sendTelegramPhoto(
     photoUrl: string,
     caption?: string
 ): Promise<boolean> {
-    if (!BOT_TOKEN) {
-        console.error('[Telegram Bot] No bot token configured')
-        return false
-    }
-
-    try {
-        const response = await fetch(`${API_BASE}/sendPhoto`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                photo: photoUrl,
-                caption: caption || '',
-                parse_mode: 'HTML'
-            })
-        })
-
-        const data: TelegramResponse = await response.json()
-
-        if (!data.ok) {
-            console.error('[Telegram Bot] Photo send failed:', data.description)
-            return false
-        }
-
-        return true
-    } catch (error) {
-        console.error('[Telegram Bot] Error sending photo:', error)
-        return false
-    }
+    return uploadMediaToTelegram('sendPhoto', chatId, photoUrl, 'photo', caption)
 }
 

@@ -104,16 +104,25 @@ Utilize a clean white grid layout.
 
 **Required Features:**
 *   Full screen.
-*   Cast to TV.
+*   Cast to TV (Remote Playback API — Chromecast/AirPlay).
 *   Resume playback.
 *   Autoplay next.
+*   **Background Audio**: If admin attached audio to a lesson, show a looping audio control bar below the video (not as a file). Audio loops for the entire video duration even if shorter. User can toggle on/off and adjust volume. Defaults to 30% volume.
+*   **Video Completion Celebration**: When user finishes watching a video (90%+ watched), show a luxury celebration modal with confetti, motivational messages (UZ/RU), XP earned, watch time, completed count, streak, and a "Next Lesson" button. Must feel premium and encouraging.
+*   **Auto-Thumbnail**: If admin didn't add a cover photo for the lesson, show the first frame of the video as thumbnail (like YouTube). The video player auto-generates a poster from the video data.
 
-## 7) Advanced Video Protection
+## 7) User Panel Isolation
+
+*   **No App Navigation**: The user panel must NOT show the main app header, footer, or top menu. It is a private panel, not the main site.
+*   **Sidebar Only**: Navigation is handled by the `UserSidebar` component — no duplicate navigation elements.
+*   **All Routes Covered**: `/account`, `/all-courses`, `/my-courses`, `/learn`, `/profile`, `/activity`, `/chat`, `/settings`, `/kpi` — all render inside the user panel layout without app chrome.
+
+## 8) Advanced Video Protection
 
 *   **Dynamic moving watermark**: Displays User ID, Email, Date, Time. Semi-transparent dark green text, changes position periodically, visible in full screen.
 *   **Security Restrictions**: Disable right-click, prevent download, blur video when tab is inactive, prevent multi-device streaming.
 
-## 8) My Activity Page
+## 9) My Activity Page
 
 **Statistics to Show:**
 *   Courses enrolled, Courses completed.
@@ -123,7 +132,7 @@ Utilize a clean white grid layout.
 
 **UI Component**: Add a clean milestone timeline in a dark green accent.
 
-## 9) Profile Settings
+## 10) Profile Settings
 
 User capabilities:
 *   Upload photo
@@ -132,3 +141,8 @@ User capabilities:
 *   View subscription
 *   Manage devices
 *   Logout
+
+## 11) Dashboard Statistics
+
+*   **Data Source**: Dashboard stats (videos watched, watch time, XP, streak) must come from `enhancedVideoProgress` table, NOT the legacy `progress` or `profile.totalYogaTime` fields.
+*   **Real-Time**: Stats update when the user navigates back to the dashboard after watching.

@@ -47,11 +47,44 @@ export async function getAdminFromSession(): Promise<AdminUser | null> {
         const adminId = verifyToken(token)
         if (!adminId || adminId === 'admin-master-account') return null
 
-        const admin = await prisma.adminUser.findUnique({
-            where: { id: adminId, isActive: true }
-        })
+        // Try DB lookup with retry for pgBouncer resilience
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const admin = await prisma.adminUser.findUnique({
+                    where: { id: adminId, isActive: true }
+                })
+                if (admin) return admin
+                break // Found null (not a DB error), stop retrying
+            } catch (dbError) {
+                if (attempt < 2) {
+                    await new Promise(r => setTimeout(r, 500))
+                    continue
+                }
+                console.error('DB lookup failed after retries in getAdminFromSession:', dbError)
+            }
+        }
 
-        return admin
+        // ENV fallback: if token is valid but DB is down, create minimal admin
+        // This prevents logout during transient pgBouncer failures
+        if (adminId === 'env-admin' || adminId === process.env.ADMIN_USERNAME) {
+            return {
+                id: adminId,
+                username: process.env.ADMIN_USERNAME || 'admin',
+                displayName: 'Super Admin',
+                role: 'SUPER_ADMIN',
+                permissions: [],
+                isActive: true,
+                email: null,
+                avatar: null,
+                passwordHash: '',
+                lastLoginAt: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                createdById: null,
+            } as unknown as AdminUser
+        }
+
+        return null
     } catch {
         return null
     }
@@ -150,11 +183,15 @@ export async function createAdminSession(adminId: string) {
         sameSite: 'lax'
     })
 
-    // Update last login
-    await prisma.adminUser.update({
-        where: { id: adminId },
-        data: { lastLoginAt: new Date() }
-    })
+    // Update last login (non-critical - don't fail login if this fails)
+    try {
+        await prisma.adminUser.update({
+            where: { id: adminId },
+            data: { lastLoginAt: new Date() }
+        })
+    } catch (e) {
+        console.error('Failed to update lastLoginAt:', e)
+    }
 
     return token
 }

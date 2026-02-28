@@ -7,6 +7,17 @@ description: Master Agent for the Secure User Panel on the Baxtli Men platform. 
 
 This skill defines the architectural standards and implementation workflows for the **Baxtli Men** User Panel (TMA - Therapeutic Mobile Application). It ensures a premium, secure, and personalized experience for yoga therapy students.
 
+> [!CAUTION]
+> ## ⚠️ USER PANEL CONTAINMENT RULE (MANDATORY)
+> **ALL user panel actions MUST stay within the `(user)` route group.** The user panel is a self-contained experience — users should NEVER be redirected to landing page routes or see the landing page header/footer while inside the panel.
+>
+> **Rules:**
+> - Checkout, course details, settings, chat — everything MUST have a page inside `src/app/[lang]/(user)/`
+> - NEVER use `router.push(\`/\${lang}/checkout\`)` from user panel components — use `router.push(\`/\${lang}/checkout\`)` which resolves to the `(user)/checkout` route
+> - The `(user)/layout.tsx` provides the sidebar and user panel theme — all child pages inherit this
+> - If a feature needs a new page, create it inside `(user)/` route group, NOT at the root
+> - Back buttons should navigate back to user panel pages (e.g., `/all-courses`), not landing pages
+
 ## 1. Authentication & Session
 - **Methods**: Support both `user_id` (internal/TMA) and JWT-based authentication.
 - **Workflow**:
@@ -14,6 +25,18 @@ This skill defines the architectural standards and implementation workflows for 
   2. Check `subscription_status` (Prisma).
   3. Initialize session tracking (EventLog: `session_start`).
   4. Redirect to Dashboard if authorized.
+
+### TMA Registration & Telegram Data
+When a user registers via TMA (`/api/tma/register`), the following Telegram data is automatically captured and saved to the `User` model:
+- `telegramId` — unique Telegram user ID
+- `telegramUsername` — Telegram @username
+- `firstName`, `lastName` — from Telegram profile
+
+This data is:
+1. **Stored** in the `User` model fields: `telegramId`, `telegramUsername`
+2. **Displayed** in `ProfileSettings.tsx` as a read-only Telegram badge (blue themed, showing @username and ID)
+3. **Linked** when an existing web-registered user logs in via TMA — their `telegramId` is linked to the existing account
+4. **Used** for Telegram bot notifications (password reset, OTP)
 
 ## 1.1 Password Reset System
 - **User-Initiated Reset** (`POST /api/auth/reset-password`):

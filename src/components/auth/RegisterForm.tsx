@@ -14,7 +14,11 @@ import { PublicOfferModal } from "./PublicOfferModal"
 const registerSchema = z.object({
     name: z.string().min(2, "Name is too short"),
     email: z.string().email("Invalid email"),
-    phone: z.string().min(7, "Invalid phone number"),
+    phone: z.string()
+        .min(12, "Telefon raqam juda qisqa")
+        .max(13, "Telefon raqam juda uzun")
+        .regex(/^\+998\d{9}$/, "Telefon raqam +998XXXXXXXXX formatida bo'lishi kerak"),
+    telegramUsername: z.string().optional(),
     location: z.string().min(2, "Location is required"),
     healthIssues: z.string().optional(),
     password: z.string().min(6, "Password must be at least 6 characters"),
@@ -40,6 +44,7 @@ export function RegisterForm({ lang, dictionary }: RegisterFormProps) {
             name: "",
             email: "",
             phone: "",
+            telegramUsername: "",
             location: "",
             healthIssues: "",
             password: "",
@@ -124,6 +129,20 @@ export function RegisterForm({ lang, dictionary }: RegisterFormProps) {
                         )}
                     />
                 </div>
+            </div>
+
+            <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)]/40 ml-4">
+                    {lang === 'uz' ? 'Telegram username yoki ID' : 'Telegram имя или ID'}
+                </label>
+                <Input
+                    {...form.register("telegramUsername")}
+                    placeholder="@username yoki 123456789"
+                    className="rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6"
+                />
+                <p className="text-[9px] font-bold text-[var(--primary)]/30 ml-4 uppercase tracking-wider">
+                    {lang === 'uz' ? 'Ixtiyoriy — parolni tiklash uchun kerak' : 'Необязательно — для восстановления пароля'}
+                </p>
             </div>
 
             <div className="space-y-2">

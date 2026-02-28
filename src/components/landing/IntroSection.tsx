@@ -6,7 +6,7 @@ import { Play } from "lucide-react"
 import { useState } from "react"
 import { useDictionary } from "../providers/DictionaryProvider"
 
-export function IntroSection({ videoUrl = "/intro-video.mp4", bannerUrl = "/images/hero.png" }: { videoUrl?: string, bannerUrl?: string }) {
+export function IntroSection({ videoUrl = "/intro-video.mp4", bannerUrl = "/images/hero.png", introTitle, introSubtitle }: { videoUrl?: string, bannerUrl?: string, introTitle?: string, introSubtitle?: string }) {
     const { dictionary } = useDictionary()
     const [isPlaying, setIsPlaying] = useState(false)
 
@@ -26,7 +26,7 @@ export function IntroSection({ videoUrl = "/intro-video.mp4", bannerUrl = "/imag
                         className="inline-block"
                     >
                         <h2 className="text-6xl md:text-[8rem] font-editorial font-bold text-[var(--primary)] mb-8 tracking-[-0.03em] leading-[0.9]">
-                            {dictionary.landing.introTitle || "Kurs haqida video-tanishtiruv"}
+                            {introTitle || dictionary.landing.introTitle || "Kurs haqida video-tanishtiruv"}
                         </h2>
                     </motion.div>
 
@@ -37,7 +37,7 @@ export function IntroSection({ videoUrl = "/intro-video.mp4", bannerUrl = "/imag
                         transition={{ delay: 0.15 }}
                         className="text-xl md:text-3xl text-[var(--primary)]/60 font-light tracking-wide max-w-3xl mx-auto leading-relaxed font-sans"
                     >
-                        {dictionary.landing.introSubtitle}
+                        {introSubtitle || dictionary.landing.introSubtitle}
                     </motion.p>
                 </div>
 

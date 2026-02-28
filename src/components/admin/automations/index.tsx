@@ -25,12 +25,13 @@ const triggerLabels: Record<string, string> = {
     INACTIVE_3_DAYS: '3 kun nofaol',
     INACTIVE_10_DAYS: '10 kun nofaol',
     SUB_EXPIRING_SOON: 'Obuna tugashiga yaqin',
+    NEW_MODULE_ADDED: '📚 Yangi modul qo\'shildi (faol obunachilarga)',
     WATCHED_50_PERCENT: "50% ko'rdi",
     OPENED_TG_NO_CLICK: 'Telegram ochdi, bosmadi',
     CUSTOM: 'Maxsus',
 };
 const toneLabels: Record<string, string> = { soft: '🕊️ Yumshoq', motivational: '🔥 Motivatsion', strict: '⚡ Qat\'iy', friendly: '😊 Do\'stona' };
-const goalLabels: Record<string, string> = { return: '🔄 Qaytarish', resubscribe: '🔑 Qayta obuna', purchase: '💳 Xarid qildirish' };
+const goalLabels: Record<string, string> = { return: '🔄 Qaytarish', resubscribe: '🔑 Qayta obuna', purchase: '💳 Xarid qildirish', new_module: '📚 Yangi modul haqida xabar' };
 
 // ── List ──
 export const AutomationList = () => (
@@ -70,6 +71,8 @@ const AutomationShowContent = () => {
     const record = useRecordContext();
     const { data: steps } = useGetList('automationsteps', { filter: { triggerId: record?.id }, sort: { field: 'stepOrder', order: 'ASC' }, pagination: { page: 1, perPage: 100 } });
     const [stats, setStats] = useState<any>(null);
+    const [firing, setFiring] = useState(false);
+    const [fireResult, setFireResult] = useState<string | null>(null);
 
     useEffect(() => {
         if (record?.id) {
@@ -77,16 +80,55 @@ const AutomationShowContent = () => {
         }
     }, [record?.id]);
 
+    const handleFireNow = async () => {
+        if (!record?.id) return;
+        setFiring(true);
+        setFireResult(null);
+        try {
+            const res = await fetch('/api/admin/automations/fire', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ triggerId: record.id, force: true }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setFireResult(`✅ ${data.sent} ta obunachiga yuborildi (${data.failed || 0} xatolik)`);
+            } else {
+                setFireResult(`❌ Xatolik: ${data.error}`);
+            }
+        } catch (err: any) {
+            setFireResult(`❌ ${err.message}`);
+        }
+        setFiring(false);
+    };
+
     if (!record) return null;
 
     return (
         <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
             <Paper sx={{ p: 3, borderRadius: 4 }}>
                 <Typography variant="h5" sx={{ color: '#114539', fontWeight: 700 }} gutterBottom>{record.name}</Typography>
-                <Box display="flex" gap={1} mb={2}>
+                <Box display="flex" gap={1} mb={2} flexWrap="wrap">
                     <Chip label={record.isActive ? 'Faol' : 'Nofaol'} color={record.isActive ? 'success' : 'default'} size="small" />
                     <Chip label={triggerLabels[record.conditionType] || record.conditionType} size="small" variant="outlined" />
                 </Box>
+
+                {/* 🚀 Fire Now Button */}
+                {record.conditionType === 'NEW_MODULE_ADDED' && (
+                    <Box sx={{ mb: 2 }}>
+                        <Button
+                            variant="contained"
+                            disabled={firing}
+                            onClick={handleFireNow}
+                            sx={{ bgcolor: '#114539', '&:hover': { bgcolor: '#0a8069' }, fontWeight: 700, borderRadius: 3 }}
+                        >
+                            {firing ? <><CircularProgress size={16} sx={{ mr: 1, color: '#fff' }} /> Yuborilmoqda...</> : '🚀 Hozir yuborish'}
+                        </Button>
+                        {fireResult && (
+                            <Alert severity={fireResult.startsWith('✅') ? 'success' : 'error'} sx={{ mt: 1, borderRadius: 2 }}>{fireResult}</Alert>
+                        )}
+                    </Box>
+                )}
+
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="h6" sx={{ color: '#114539', fontWeight: 600, mb: 2 }}>Qadamlar ({steps?.length || 0})</Typography>
                 {steps?.map((step: any, idx: number) => (
@@ -164,6 +206,18 @@ const AutomationForm = ({ isEdit }: { isEdit?: boolean }) => {
     const [loadingSteps, setLoadingSteps] = useState(false);
     const [uploadingStep, setUploadingStep] = useState<number | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [courses, setCourses] = useState<Array<{ id: string; title: string }>>([]);
+
+    // Fetch courses list for dropdown
+    useEffect(() => {
+        fetch('/api/courses')
+            .then(r => r.json())
+            .then(data => {
+                const list = data.courses || data;
+                if (Array.isArray(list)) setCourses(list.map((c: any) => ({ id: c.id, title: c.title })));
+            })
+            .catch(() => { });
+    }, []);
 
     const handleFileUpload = async (index: number, file: File) => {
         setUploadingStep(index);
@@ -244,12 +298,15 @@ const AutomationForm = ({ isEdit }: { isEdit?: boolean }) => {
     const handleSave = async (values: any) => {
         try {
             let triggerId = record?.id;
-            const triggerData = { name: values.name, conditionType: values.conditionType, isActive: values.isActive ?? false, channel: 'TELEGRAM', messageTemplate: { text: '', buttons: [] }, delayMinutes: 0 };
+            const isNewModule = values.conditionType === 'NEW_MODULE_ADDED';
+            const name = values.name || triggerLabels[values.conditionType] || `Avtomatizatsiya ${new Date().toLocaleDateString()}`;
+            const triggerData = { name, conditionType: values.conditionType, courseId: values.courseId || null, isActive: values.isActive ?? false, channel: 'TELEGRAM', messageTemplate: { text: '', buttons: [] }, delayMinutes: 0 };
 
             if (isEdit && triggerId) {
                 await fetch(`/api/admin/ra/triggers/${triggerId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(triggerData) });
             } else {
                 const res = await fetch('/api/admin/ra/triggers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(triggerData) });
+                if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Trigger saqlashda xatolik'); }
                 const t = await res.json(); triggerId = t.id;
             }
 
@@ -259,24 +316,43 @@ const AutomationForm = ({ isEdit }: { isEdit?: boolean }) => {
             }
 
             for (const step of steps) {
+                // Force 0 delay for NEW_MODULE_ADDED — immediate delivery
+                const stepDelay = isNewModule ? 0 : step.delayDays;
                 await fetch('/api/admin/ra/automationsteps', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        triggerId, stepOrder: step.stepOrder, delayDays: step.delayDays,
+                        triggerId, stepOrder: step.stepOrder, delayDays: stepDelay,
                         contentType: step.contentType, contentText: step.contentText || null, contentUrl: step.contentUrl || null,
                         aiEnabled: step.aiEnabled, basePrompt: step.basePrompt || null, tone: step.tone, goal: step.goal, variant: step.variant || null,
                     }),
                 });
             }
 
-            notify('Saqlandi!', { type: 'success' }); refresh();
+            // For NEW_MODULE_ADDED: fire immediately after save
+            if (isNewModule && values.isActive && triggerId) {
+                notify('Saqlandi! Xabarlar yuborilmoqda...', { type: 'info' });
+                const fireRes = await fetch('/api/admin/automations/fire', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ triggerId }),
+                });
+                const fireData = await fireRes.json();
+                if (fireData.success) {
+                    notify(`✅ ${fireData.sent} ta obunachiga xabar yuborildi!`, { type: 'success' });
+                } else {
+                    notify(`⚠️ Saqlandi, lekin yuborishda xatolik: ${fireData.error}`, { type: 'warning' });
+                }
+            } else {
+                notify('Saqlandi!', { type: 'success' });
+            }
+
+            refresh();
             if (!isEdit && triggerId) window.location.hash = `#/automations/${triggerId}/show`;
         } catch (err: any) { notify(`Xatolik: ${err.message}`, { type: 'error' }); }
     };
 
     return (
         <SimpleForm
-            toolbar={<Toolbar><SaveButton label="Saqlash" />{isEdit && <DeleteButton label="O'chirish" sx={{ ml: 'auto' }} />}</Toolbar>}
+            toolbar={<Toolbar><SaveButton label="Saqlash" alwaysEnable />{isEdit && <DeleteButton label="O'chirish" sx={{ ml: 'auto' }} />}</Toolbar>}
             onSubmit={handleSave}
             sx={{ maxWidth: 960, '& .MuiPaper-root': { bgcolor: 'background.paper', borderRadius: '14px', p: 4, boxShadow: '0 1px 3px rgba(17,69,57,0.06)' } }}
         >
@@ -284,6 +360,14 @@ const AutomationForm = ({ isEdit }: { isEdit?: boolean }) => {
             <Divider sx={{ mb: 3 }} />
             <TextInput source="name" label="Nomi" fullWidth />
             <SelectInput source="conditionType" label="Trigger turi" fullWidth choices={Object.entries(triggerLabels).map(([id, name]) => ({ id, name }))} />
+            <SelectInput
+                source="courseId"
+                label="📚 Kurs tanlang"
+                fullWidth
+                emptyText="Barchasi (kurs tanlanmagan)"
+                choices={courses.map(c => ({ id: c.id, name: c.title }))}
+                helperText="Avtomatizatsiya qaysi kursga tegishli?"
+            />
             <BooleanInput source="isActive" label="Faol" defaultValue={false} />
 
             <Box mt={4} width="100%">

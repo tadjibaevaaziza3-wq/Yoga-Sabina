@@ -134,6 +134,21 @@ async function findMatchingUsers(conditionType: string) {
                 select: { id: true, telegramId: true, firstName: true },
             })
 
+        case 'NEW_MODULE_ADDED':
+            // Find all users with active subscriptions — they should be notified about new content
+            return prisma.user.findMany({
+                where: {
+                    telegramId: { not: null },
+                    isBlocked: false,
+                    subscriptions: {
+                        some: {
+                            status: 'ACTIVE',
+                        },
+                    },
+                },
+                select: { id: true, telegramId: true, firstName: true },
+            })
+
         default:
             return []
     }

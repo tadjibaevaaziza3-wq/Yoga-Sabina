@@ -13,10 +13,15 @@ export default async function OnlineCoursesPage({
     const { lang } = await params
     const dictionary = await getDictionary(lang)
 
-    const setting = await prisma.systemSetting.findUnique({
-        where: { key: 'BANNER_ONLINE_COURSES' }
-    })
-    const bannerUrl = setting?.value || "/images/hero-sabina.png"
+    let bannerUrl = "/images/hero-sabina.png"
+    try {
+        const setting = await prisma.systemSetting.findUnique({
+            where: { key: 'BANNER_ONLINE_COURSES' }
+        })
+        if (setting?.value) bannerUrl = setting.value
+    } catch (e) {
+        // SystemSetting table may not exist yet
+    }
 
     return (
         <main className="min-h-screen bg-[var(--background)]">

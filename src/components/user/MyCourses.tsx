@@ -16,7 +16,12 @@ interface CourseProgress {
         id: string;
         startsAt: string;
         endsAt: string;
-    };
+    } | null;
+    purchase?: {
+        id: string;
+        amount: number;
+        createdAt: string;
+    } | null;
     course: {
         id: string;
         title: string;
@@ -42,6 +47,8 @@ interface CourseProgress {
         lastWatched: string;
         progress: number;
         duration: number;
+        thumbnailUrl?: string;
+        videoUrl?: string;
     } | null;
 }
 
@@ -80,18 +87,25 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
         loadData();
     }, []);
 
-    const fetchMyCourses = async () => {
+    const fetchMyCourses = async (retries = 3) => {
         try {
             const response = await fetch('/api/user/my-courses');
             const data = await response.json();
 
             if (data.success) {
                 setCourses(data.courses);
+            } else if (retries > 1) {
+                await new Promise(r => setTimeout(r, 1000));
+                return fetchMyCourses(retries - 1);
             } else {
                 setError(data.error);
             }
         } catch (err) {
             console.error('Error fetching courses:', err);
+            if (retries > 1) {
+                await new Promise(r => setTimeout(r, 1000));
+                return fetchMyCourses(retries - 1);
+            }
             setError('Failed to load courses');
         }
     };
@@ -185,30 +199,65 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
 
     return (
         <div className="space-y-12">
-            {/* 1. Quick Resume Section (Hero) */}
+            {/* 1. Quick Resume Section (Hero) with Video Thumbnail */}
             {mostRecent && (
-                <section className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary)]/80 rounded-2xl p-8 text-white shadow-xl shadow-[var(--primary)]/20">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="space-y-2">
-                            <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                                {lang === 'uz' ? 'O\'qishni davom ettirish' : 'Продолжить обучение'}
+                <section
+                    className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary)]/80 rounded-2xl overflow-hidden shadow-xl shadow-[var(--primary)]/20 cursor-pointer group"
+                    onClick={() => router.push(`/${lang}/learn/${mostRecent.course.id}?lesson=${mostRecent.lesson.id}`)}
+                >
+                    <div className="flex flex-col md:flex-row items-stretch">
+                        {/* Video thumbnail */}
+                        <div className="relative w-full md:w-80 aspect-video md:aspect-auto flex-shrink-0 bg-black/30">
+                            {mostRecent.lesson.thumbnailUrl ? (
+                                <Image
+                                    src={mostRecent.lesson.thumbnailUrl}
+                                    alt={getText(mostRecent.lesson.title, mostRecent.lesson.titleRu)}
+                                    fill
+                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                            ) : mostRecent.lesson.videoUrl ? (
+                                <video
+                                    src={mostRecent.lesson.videoUrl + '#t=1'}
+                                    muted
+                                    preload="metadata"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Play size={48} className="text-white/30" />
+                                </div>
+                            )}
+                            {/* Play overlay */}
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-all">
+                                <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-xl opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                                    <Play size={24} className="text-[var(--primary)] fill-current ml-1" />
+                                </div>
+                            </div>
+                            {/* Progress bar */}
+                            {mostRecent.lesson.duration > 0 && (
+                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+                                    <div className="h-full bg-white" style={{ width: `${Math.min((mostRecent.lesson.progress / mostRecent.lesson.duration) * 100, 100)}%` }} />
+                                </div>
+                            )}
+                        </div>
+                        {/* Text info */}
+                        <div className="flex-1 p-8 text-white flex flex-col justify-center gap-3">
+                            <span className="inline-block self-start px-3 py-1 bg-white/20 rounded-full text-xs font-bold uppercase tracking-wider">
+                                {lang === 'uz' ? 'Davom ettirish' : 'Продолжить'}
                             </span>
-                            <h3 className="text-3xl font-serif font-black">
+                            <h3 className="text-2xl md:text-3xl font-serif font-black leading-tight">
                                 {getText(mostRecent.lesson.title, mostRecent.lesson.titleRu)}
                             </h3>
-                            <p className="opacity-80">
+                            <p className="opacity-70 text-sm">
                                 {getText(mostRecent.course.title, mostRecent.course.titleRu)}
                             </p>
+                            <button
+                                className="mt-2 self-start px-6 py-3 bg-white text-[var(--primary)] rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-lg flex items-center gap-2 text-sm"
+                            >
+                                <Play fill="currentColor" size={16} />
+                                {lang === 'uz' ? 'Hozir ko\'rish' : 'Смотреть сейчас'}
+                            </button>
                         </div>
-                        <button
-                            onClick={() => {
-                                router.push(`/${lang}/learn/${mostRecent.course.id}?lesson=${mostRecent.lesson.id}`);
-                            }}
-                            className="px-8 py-4 bg-white text-[var(--primary)] rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-lg flex items-center gap-2"
-                        >
-                            <Play fill="currentColor" size={20} />
-                            {lang === 'uz' ? 'Hozir ko\'rish' : 'Смотреть сейчас'}
-                        </button>
                     </div>
                 </section>
             )}
@@ -219,13 +268,13 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                     {lang === 'uz' ? 'Kurslarim' : 'Мои курсы'}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courses.map(({ subscription, course, progress }) => {
-                        const daysRemaining = getDaysRemaining(subscription.endsAt);
-                        const isUrgent = daysRemaining < 7;
+                    {courses.map(({ subscription, purchase, course, progress }) => {
+                        const daysRemaining = subscription?.endsAt ? getDaysRemaining(subscription.endsAt) : null;
+                        const isUrgent = daysRemaining !== null && daysRemaining < 7;
 
                         return (
                             <div
-                                key={subscription.id}
+                                key={subscription?.id || (purchase as any)?.id || course.id}
                                 className="bg-[var(--card-bg)] rounded-2xl border border-[var(--border)] overflow-hidden hover:shadow-2xl hover:shadow-[var(--primary)]/10 hover:-translate-y-1 transition-all cursor-pointer group"
                                 onClick={() => router.push(`/${lang}/learn/${course.id}`)}
                             >
@@ -288,10 +337,13 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                                         <span>{progress.percentage}%</span>
                                     </div>
 
-                                    {/* Days remaining */}
+                                    {/* Days remaining / Purchase status */}
                                     <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${isUrgent ? 'text-red-500' : 'text-[var(--foreground)]/40'}`}>
                                         <Clock size={12} />
-                                        {daysRemaining} {lang === 'uz' ? 'kun qoldi' : 'дней осталось'}
+                                        {daysRemaining !== null
+                                            ? `${daysRemaining} ${lang === 'uz' ? 'kun qoldi' : 'дней осталось'}`
+                                            : (lang === 'uz' ? 'Sotib olingan' : 'Куплено')
+                                        }
                                     </div>
 
                                     {/* Continue button */}

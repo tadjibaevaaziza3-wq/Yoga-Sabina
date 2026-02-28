@@ -23,12 +23,9 @@ export function CourseHeader({ title, description, type, lang }: CourseHeaderPro
                         : (lang === 'ru' ? '🏢 ОФЛАЙН ПРОГРАММА' : '🏢 OFLAYN PROGRAMMA')
                     }
                 </span>
-                <h1 className="text-5xl md:text-7xl font-serif font-black text-[var(--primary)] mb-8 leading-tight">
+                <h1 className="text-3xl md:text-5xl font-serif font-black text-[var(--primary)] mb-8 leading-tight">
                     {title}
                 </h1>
-                <p className="text-xl text-[var(--primary)]/60 font-medium leading-relaxed max-w-3xl mx-auto italic">
-                    {description}
-                </p>
             </motion.div>
         </div>
     );

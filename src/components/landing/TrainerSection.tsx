@@ -5,7 +5,13 @@ import { motion } from "framer-motion"
 import { useDictionary } from "../providers/DictionaryProvider"
 import Image from "next/image"
 
-export function TrainerSection({ photoUrl = "/images/trainer-sabina.png" }: { photoUrl?: string }) {
+interface TrainerSectionProps {
+    photoUrl?: string;
+    trainerName?: string;
+    trainerBio?: string;
+}
+
+export function TrainerSection({ photoUrl = "/images/trainer-sabina.png", trainerName, trainerBio }: TrainerSectionProps) {
     const { dictionary } = useDictionary()
 
     return (
@@ -23,7 +29,7 @@ export function TrainerSection({ photoUrl = "/images/trainer-sabina.png" }: { ph
                         >
                             <Image
                                 src={photoUrl}
-                                alt="Sabina Polatova"
+                                alt={trainerName || 'Sabina Polatova'}
                                 fill
                                 className="object-cover"
                                 style={{ objectPosition: 'center top' }}
@@ -57,8 +63,8 @@ export function TrainerSection({ photoUrl = "/images/trainer-sabina.png" }: { ph
                                     transition={{ delay: 0.1 }}
                                     className="text-6xl md:text-8xl font-editorial font-bold text-[var(--primary)] leading-none tracking-tight mb-8"
                                 >
-                                    {dictionary.landing.trainerName.split(' ')[0]} <br />
-                                    <span className="text-[var(--accent)] italic font-light">{dictionary.landing.trainerName.split(' ')[1]}</span>
+                                    {(trainerName || dictionary.landing.trainerName || 'Sabina Polatova').split(' ')[0]} <br />
+                                    <span className="text-[var(--accent)] italic font-light">{(trainerName || dictionary.landing.trainerName || 'Sabina Polatova').split(' ')[1]}</span>
                                 </motion.h3>
                             </div>
 
@@ -68,7 +74,7 @@ export function TrainerSection({ photoUrl = "/images/trainer-sabina.png" }: { ph
                                 transition={{ delay: 0.2 }}
                                 className="text-xl md:text-2xl text-[var(--primary)]/70 font-light leading-relaxed font-sans max-w-2xl"
                             >
-                                <p className="mb-6">{dictionary.landing.trainerBio1}</p>
+                                <p className="mb-6">{trainerBio || dictionary.landing.trainerBio1}</p>
                             </motion.div>
 
                             {/* Magazine Pull Quote */}
@@ -98,7 +104,7 @@ export function TrainerSection({ photoUrl = "/images/trainer-sabina.png" }: { ph
                                     ))}
                                 </div>
                                 <div className="h-px bg-[var(--primary)]/10 flex-1"></div>
-                                <span className="italic text-2xl text-[var(--accent)]" style={{ fontFamily: 'var(--font-playfair)' }}>Sabina P.</span>
+                                <span className="italic text-2xl text-[var(--accent)]" style={{ fontFamily: 'var(--font-playfair)' }}>{(trainerName || 'Sabina Polatova').split(' ')[0].charAt(0)}. {(trainerName || 'Sabina Polatova').split(' ').pop()?.charAt(0)}.</span>
                             </motion.div>
                         </div>
                     </div>

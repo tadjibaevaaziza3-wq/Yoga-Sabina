@@ -28,21 +28,43 @@ const requestSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
-        // Get authenticated user
-        const supabase = await createServerClient();
-        const { data, error: authError } = await supabase.auth.getUser();
-        let user: { id: string, email?: string | null } | null = data?.user || null;
+        // Get authenticated user (with retry for pgBouncer errors)
+        let user: { id: string, email?: string | null } | null = null;
 
-        if (authError || !user) {
-            const localUser = await getLocalUser();
-            if (localUser) {
-                user = { id: localUser.id, email: localUser.email };
-            } else {
-                return NextResponse.json(
-                    { error: 'Unauthorized' },
-                    { status: 401 }
-                );
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const supabase = await createServerClient();
+                const { data, error: authError } = await supabase.auth.getUser();
+                if (!authError && data?.user) {
+                    user = { id: data.user.id, email: data.user.email };
+                    break;
+                }
+            } catch (e) {
+                console.warn(`[get-signed-url] Supabase auth attempt ${attempt + 1} failed:`, e instanceof Error ? e.message : e);
             }
+
+            if (!user) {
+                try {
+                    const localUser = await getLocalUser();
+                    if (localUser) {
+                        user = { id: localUser.id, email: localUser.email };
+                        break;
+                    }
+                } catch (e) {
+                    console.warn(`[get-signed-url] Local auth attempt ${attempt + 1} failed:`, e instanceof Error ? e.message : e);
+                }
+            }
+
+            if (!user && attempt < 1) {
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+
+        if (!user) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
         }
 
         // Check concurrent session limit (max 2 devices) — skip if DB unavailable

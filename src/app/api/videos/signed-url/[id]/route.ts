@@ -92,7 +92,8 @@ export async function GET(
             url,
             watermark: {
                 userId: user.id,
-                phone: user.phone || 'N/A'
+                phone: user.phone || 'N/A',
+                userNumber: user.userNumber || null
             }
         });
 

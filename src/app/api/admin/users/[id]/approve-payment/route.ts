@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth/server';
+import { addUserToCourseChat } from '@/lib/chat/auto-join';
 
 async function isAdmin(): Promise<boolean> {
     const cookieStore = await cookies();
@@ -67,6 +68,9 @@ export async function POST(
                 },
             }),
         ]);
+
+        // Auto-add user to course chat
+        await addUserToCourseChat(userId, pendingPurchase.courseId);
 
         return NextResponse.json({
             success: true,

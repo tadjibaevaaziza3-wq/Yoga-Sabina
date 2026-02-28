@@ -6,7 +6,13 @@ import { useDictionary } from "../providers/DictionaryProvider"
 import { CheckCircle2, Sparkles, Heart, Activity } from "lucide-react"
 import { StructuredData } from "../seo/StructuredData"
 
-export function AboutSection() {
+interface AboutSectionProps {
+    aboutText?: string;
+    heroTitle?: string;
+    missionText?: string;
+}
+
+export function AboutSection({ aboutText, heroTitle, missionText }: AboutSectionProps) {
     const { dictionary } = useDictionary()
 
     const features = [
@@ -53,14 +59,14 @@ export function AboutSection() {
                     >
                         <div className="space-y-8">
                             <h2 className="text-6xl md:text-8xl font-editorial font-bold text-[var(--primary)] leading-[0.9] tracking-tight">
-                                {dictionary.landing.heroTitle}
+                                {heroTitle || dictionary.landing.heroTitle}
                             </h2>
                             <div className="w-20 h-1 bg-[var(--accent)]/20 rounded-full" />
                         </div>
 
                         <div className="space-y-10">
                             <p className="text-2xl text-[var(--primary)]/60 font-medium leading-relaxed tracking-wide">
-                                {dictionary.landing.programDesc1 || dictionary.landing.heroSubtitle}
+                                {aboutText || dictionary.landing.programDesc1 || dictionary.landing.heroSubtitle}
                             </p>
                             <p className="text-lg text-[var(--primary)]/50 leading-relaxed font-serif italic bg-white p-12 rounded-[5rem] border border-[var(--accent)]/5 shadow-soft">
                                 {dictionary.landing.programDesc2}
@@ -74,7 +80,7 @@ export function AboutSection() {
                             <div className="relative z-10">
                                 <div className="text-[10px] font-bold uppercase tracking-[0.5em] text-[var(--accent)]/60 mb-3">Missiya</div>
                                 <div className="text-2xl font-serif italic text-white/90 leading-tight">
-                                    Sog’lom ideal qomat, aqliy etuklik va ruhiy hotirjamlikka erishish.
+                                    {missionText || "Sog'lom ideal qomat, aqliy etuklik va ruhiy hotirjamlikka erishish."}
                                 </div>
                             </div>
                             {/* Decorative background shape */}
@@ -131,9 +137,9 @@ export function AboutSection() {
                             ))}
                         </motion.div>
                     </div>
-                </div>
-            </Container>
-        </section>
+                </div >
+            </Container >
+        </section >
     )
 }
 

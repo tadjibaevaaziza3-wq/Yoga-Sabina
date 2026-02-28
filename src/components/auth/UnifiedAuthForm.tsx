@@ -11,7 +11,8 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, AlertCircle } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 const loginSchema = z.object({
     login: z.string().min(3, "Login is too short"),
@@ -20,7 +21,11 @@ const loginSchema = z.object({
 
 const registerSchema = z.object({
     name: z.string().min(2, "Name is too short"),
-    phone: z.string().min(7, "Invalid phone number"),
+    phone: z.string()
+        .min(12, "Telefon raqam juda qisqa")
+        .max(13, "Telefon raqam juda uzun")
+        .regex(/^\+998\d{9}$/, "Telefon raqam +998XXXXXXXXX formatida bo'lishi kerak"),
+    telegramUsername: z.string().optional(),
     location: z.string().min(2, "Location is required"),
     healthIssues: z.string().optional(),
     password: z.string().min(6, "Password must be at least 6 characters"),
@@ -46,6 +51,9 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
     const [resetPhone, setResetPhone] = useState('')
     const [resetLoading, setResetLoading] = useState(false)
     const [resetResult, setResetResult] = useState<{ success: boolean; message: string; tempPassword?: string } | null>(null)
+    const searchParams = useSearchParams()
+    const returnTo = searchParams?.get('returnTo')
+    const isFromCheckout = returnTo?.includes('checkout')
 
     const loginForm = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
@@ -57,6 +65,7 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
         defaultValues: {
             name: "",
             phone: "",
+            telegramUsername: "",
             location: "",
             healthIssues: "",
             password: "",
@@ -78,7 +87,7 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
                 window.location.href = `/${lang}/change-password`
                 return
             }
-            window.location.href = `/${lang}/account`
+            window.location.href = returnTo || `/${lang}/account`
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -97,7 +106,7 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
             })
             const result = await res.json()
             if (!result.success) throw new Error(result.error || "Registration failed")
-            window.location.href = `/${lang}/account`
+            window.location.href = returnTo || `/${lang}/account`
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -151,6 +160,18 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
             {error && (
                 <div className="p-4 rounded-xl bg-red-100 text-red-600 text-xs font-bold mb-6">
                     {error}
+                </div>
+            )}
+
+            {/* Purchase redirect info banner */}
+            {isFromCheckout && mode === 'register' && (
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 mb-6 flex items-start gap-3">
+                    <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                    <div className="text-[11px] text-blue-700 font-medium leading-relaxed">
+                        {lang === 'uz'
+                            ? "Kurs sotib olish uchun ro'yxatdan o'ting. To'g'ri telefon raqam va Telegram username kiriting — bu sizga kursni tezda olish imkonini beradi."
+                            : "Зарегистрируйтесь для покупки курса. Укажите правильный номер телефона и Telegram username — это позволит быстро получить доступ к курсу."}
+                    </div>
                 </div>
             )}
 
@@ -298,6 +319,22 @@ export function UnifiedAuthForm({ lang, dictionary, initialMode = 'login' }: Uni
                                 id="register-phone"
                                 className="rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6"
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)]/40 ml-4">
+                                {lang === 'uz' ? 'Telegram username' : 'Telegram username'}
+                            </label>
+                            <Input
+                                {...registerForm.register("telegramUsername")}
+                                placeholder="@username"
+                                id="register-telegram"
+                                className="rounded-2xl border-[var(--primary)]/5 bg-[var(--secondary)]/30 focus:bg-white focus:border-[var(--primary)]/50 transition-all py-6"
+                            />
+                            <p className="text-[9px] text-[var(--primary)]/25 font-medium ml-4">
+                                {lang === 'uz'
+                                    ? "Telegram orqali parolni tiklash va bildirishnomalar uchun"
+                                    : "Для восстановления пароля и уведомлений через Telegram"}
+                            </p>
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)]/40 ml-4">{dictionary.auth.location}</label>

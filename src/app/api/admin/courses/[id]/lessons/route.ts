@@ -58,11 +58,15 @@ export async function POST(
                 titleRu: body.titleRu || null,
                 description: body.description || null,
                 descriptionRu: body.descriptionRu || null,
-                videoUrl: body.videoUrl,
-                duration: body.duration,
+                videoUrl: body.videoUrl || null,
+                audioUrl: body.audioUrl || null,
+                pdfUrl: body.pdfUrl || null,
+                thumbnailUrl: body.thumbnailUrl || null,
+                duration: body.duration || null,
                 isFree: body.isFree || false,
                 order: body.order || newOrder,
-                content: body.content,
+                content: body.content || null,
+                searchKeywords: body.searchKeywords || null,
                 assets: body.assets ? {
                     create: body.assets.map((a: any) => ({
                         type: a.type,
@@ -99,7 +103,14 @@ export async function PUT(
                 titleRu: body.titleRu || null,
                 description: body.description || null,
                 descriptionRu: body.descriptionRu || null,
+                videoUrl: body.videoUrl ?? undefined,
+                audioUrl: body.audioUrl ?? undefined,
+                pdfUrl: body.pdfUrl ?? undefined,
+                thumbnailUrl: body.thumbnailUrl ?? undefined,
+                duration: body.duration ?? undefined,
                 isFree: body.isFree ?? false,
+                content: body.content ?? undefined,
+                searchKeywords: body.searchKeywords ?? undefined,
             },
         })
 
