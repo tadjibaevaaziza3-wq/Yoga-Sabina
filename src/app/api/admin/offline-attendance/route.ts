@@ -14,7 +14,7 @@ async function getAdmin() {
 function parseScheduleDays(schedule: string | null): number[] {
     if (!schedule) return []
     const dayMap: Record<string, number> = {
-        // Uzbek
+        // Uzbek (Latin)
         'du': 1, 'dush': 1, 'dushanba': 1,
         'se': 2, 'sesh': 2, 'seshanba': 2,
         'chor': 3, 'chorshanba': 3, 'cho': 3,
@@ -22,6 +22,14 @@ function parseScheduleDays(schedule: string | null): number[] {
         'ju': 5, 'juma': 5,
         'sha': 6, 'shanba': 6,
         'yak': 0, 'yakshanba': 0,
+        // Uzbek (Cyrillic)
+        'душанба': 1, 'ду': 1, 'душ': 1,
+        'сешанба': 2, 'се': 2, 'сеш': 2,
+        'чоршанба': 3, 'чор': 3,
+        'пайшанба': 4, 'пай': 4,
+        'жума': 5, 'жу': 5,
+        'шанба': 6,
+        'якшанба': 0, 'як': 0,
         // Russian
         'пн': 1, 'понедельник': 1,
         'вт': 2, 'вторник': 2,
