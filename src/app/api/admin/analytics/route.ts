@@ -292,8 +292,10 @@ export async function GET(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Analytics API error:', error);
+        const errMsg = error?.message || 'Unknown error';
+        const errCode = error?.code || '';
         return NextResponse.json(
-            { error: process.env.NODE_ENV === 'production' ? 'Analytics failed' : `Analytics failed: ${error.message}` },
+            { error: `Analytics failed: ${errCode ? errCode + ' — ' : ''}${errMsg}` },
             { status: 500 }
         );
     }
