@@ -139,6 +139,29 @@ export async function DELETE(
             return NextResponse.json({ error: `Resource '${resource}' (mapped to Prisma '${String(modelName)}') not found` }, { status: 404 });
         }
 
+        // Special handling for users — cascade delete related records
+        if (resource === 'users') {
+            await prisma.$transaction(async (tx) => {
+                // Delete all related records first
+                await tx.videoProgress.deleteMany({ where: { userId: id } });
+                await tx.enhancedVideoProgress.deleteMany({ where: { userId: id } }).catch(() => { });
+                await tx.like.deleteMany({ where: { userId: id } });
+                await tx.favoriteLesson.deleteMany({ where: { userId: id } }).catch(() => { });
+                await tx.comment.deleteMany({ where: { userId: id } });
+                await tx.chatMessage.deleteMany({ where: { userId: id } });
+                await tx.checkIn.deleteMany({ where: { userId: id } });
+                await tx.purchase.deleteMany({ where: { userId: id } });
+                await tx.subscription.deleteMany({ where: { userId: id } });
+                await tx.notification.deleteMany({ where: { userId: id } }).catch(() => { });
+                await tx.userAutomationQueue.deleteMany({ where: { userId: id } }).catch(() => { });
+                await tx.userDevice.deleteMany({ where: { userId: id } }).catch(() => { });
+                await tx.profile.deleteMany({ where: { userId: id } });
+                // Finally delete the user
+                await tx.user.delete({ where: { id } });
+            });
+            return NextResponse.json({ id });
+        }
+
         const data = await delegate.delete({
             where: { id }
         });

@@ -131,10 +131,14 @@ export async function POST(request: NextRequest) {
         const allowedOrigins = [
             process.env.NEXT_PUBLIC_SUPABASE_URL,
             process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+            process.env.NEXT_PUBLIC_APP_URL,
+            'https://yoga-sabina.vercel.app',
             'http://localhost:3000',
         ].filter(Boolean);
 
-        if (referer && !allowedOrigins.some(origin => referer.startsWith(origin!))) {
+        // Also allow any *.vercel.app preview deployments
+        const isVercelPreview = referer && /https:\/\/[a-z0-9-]+\.vercel\.app/.test(referer);
+        if (referer && !isVercelPreview && !allowedOrigins.some(origin => referer.startsWith(origin!))) {
             return NextResponse.json(
                 { error: 'Invalid referer' },
                 { status: 403 }
