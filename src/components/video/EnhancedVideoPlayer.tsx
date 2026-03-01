@@ -54,6 +54,7 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [audioVolume, setAudioVolume] = useState(0.3);
     const [isMouseOnControls, setIsMouseOnControls] = useState(false);
+    const [isScrubbing, setIsScrubbing] = useState(false);
 
     // Expose seekTo
     useImperativeHandle(ref, () => ({
@@ -98,9 +99,11 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
         if (!video) return;
         if (video.paused) {
             video.play().catch(err => console.error('Play error:', err));
+            setIsPlaying(true);
             flashIcon('play');
         } else {
             video.pause();
+            setIsPlaying(false);
             flashIcon('pause');
         }
     }, [flashIcon]);
@@ -124,14 +127,47 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
     }, []);
 
     // Click-to-seek on progress bar
-    const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const seekToPosition = useCallback((clientX: number) => {
         const bar = progressBarRef.current;
         const video = videoRef.current;
-        if (!bar || !video) return;
+        if (!bar || !video || !video.duration) return;
         const rect = bar.getBoundingClientRect();
-        const ratio = (e.clientX - rect.left) / rect.width;
+        const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
         video.currentTime = ratio * video.duration;
+        setCurrentTime(video.currentTime);
     }, []);
+
+    const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        seekToPosition(e.clientX);
+    }, [seekToPosition]);
+
+    // Drag/scrub support for progress bar
+    const handleScrubStart = useCallback((e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsScrubbing(true);
+
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        seekToPosition(clientX);
+
+        const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+            const moveX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+            seekToPosition(moveX);
+        };
+
+        const handleEnd = () => {
+            setIsScrubbing(false);
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('mouseup', handleEnd);
+            document.removeEventListener('touchmove', handleMove);
+            document.removeEventListener('touchend', handleEnd);
+        };
+
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('mouseup', handleEnd);
+        document.addEventListener('touchmove', handleMove, { passive: false });
+        document.addEventListener('touchend', handleEnd);
+    }, [seekToPosition]);
 
     const toggleFullscreen = useCallback(() => {
         const container = containerRef.current;
@@ -615,6 +651,8 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                         ref={progressBarRef}
                         className="relative h-2 bg-white/20 rounded-full cursor-pointer group hover:h-3 transition-all"
                         onClick={handleProgressClick}
+                        onMouseDown={handleScrubStart}
+                        onTouchStart={handleScrubStart}
                     >
                         {/* Buffered */}
                         <div
@@ -628,8 +666,8 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                         />
                         {/* Scrubber thumb — always visible */}
                         <div
-                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg ring-2 ring-[var(--accent,#ff7d52)] transition-transform group-hover:scale-125"
-                            style={{ left: `${progress}%` }}
+                            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg ring-2 ring-[var(--accent,#ff7d52)] transition-transform group-hover:scale-125 ${isScrubbing ? 'scale-150' : ''}`}
+                            style={{ left: `${progress}%`, pointerEvents: 'none' }}
                         />
                     </div>
 
