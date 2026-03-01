@@ -53,10 +53,24 @@ export async function POST(request: Request) {
             }, { status: 403 })
         }
 
-        // Verify password with bcrypt only
+        // Verify password: try bcrypt first, then SHA-256 fallback for legacy passwords
         let passwordValid = false
         if (user.password.startsWith('$2')) {
+            // Bcrypt hash
             passwordValid = await bcrypt.compare(password, user.password)
+        } else {
+            // Legacy SHA-256 hash fallback
+            const sha256Hash = crypto.createHash('sha256').update(password).digest('hex')
+            passwordValid = sha256Hash === user.password
+
+            // Auto-migrate to bcrypt on successful SHA-256 login
+            if (passwordValid) {
+                const bcryptHash = await bcrypt.hash(password, 12)
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: { password: bcryptHash }
+                }).catch(err => console.error('Failed to migrate password to bcrypt:', err))
+            }
         }
         if (!passwordValid) {
             return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
