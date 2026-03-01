@@ -150,12 +150,11 @@ export function AIAgent({ lang }: AIAgentProps) {
             {/* Floating Chat Button */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-8 right-8 w-20 h-20 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-3xl hover:scale-110 active:scale-95 transition-all z-50 premium-shadow border-4 border-white/20 group"
+                className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-50 border-2 border-white/20 group"
             >
                 <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-10 transition-opacity" />
-                <MessageCircle className="w-10 h-10" />
-                {/* Pulse indicator */}
-                <span className="absolute top-0 right-0 w-5 h-5 bg-[var(--accent)] rounded-full animate-pulse border-2 border-white" />
+                <MessageCircle className="w-6 h-6" />
+                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[var(--accent)] rounded-full animate-pulse border border-white" />
             </button>
 
             <AnimatePresence>
@@ -164,10 +163,10 @@ export function AIAgent({ lang }: AIAgentProps) {
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="fixed bottom-28 right-8 w-[360px] md:w-[420px] h-[540px] bg-white rounded-[2.5rem] shadow-2xl z-[60] flex flex-col overflow-hidden border border-primary/5"
+                        className="fixed inset-4 sm:inset-auto sm:bottom-24 sm:right-6 sm:w-[340px] sm:h-[420px] bg-white rounded-2xl sm:rounded-[2rem] shadow-2xl z-[60] flex flex-col overflow-hidden border border-primary/5"
                     >
                         {/* Header */}
-                        <div className="p-6 bg-[var(--primary)] text-white flex items-center justify-between">
+                        <div className="p-4 bg-[var(--primary)] text-white flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white/10 rounded-xl">
                                     <Sparkles className="w-5 h-5 text-[var(--accent)]" />

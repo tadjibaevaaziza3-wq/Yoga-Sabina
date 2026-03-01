@@ -188,7 +188,27 @@ export const Dashboard = () => {
     }
 
     if (!data || data.error) {
-        return <Typography color="error">Analitika yuklanmadi: {data?.error}</Typography>;
+        return (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography color="error" sx={{ mb: 2 }}>
+                    Analitika yuklanmadi: {data?.error || 'Server javob bermadi'}
+                </Typography>
+                <button
+                    onClick={() => fetchAnalytics()}
+                    style={{
+                        padding: '8px 24px',
+                        background: '#114539',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                    }}
+                >
+                    Qayta yuklash
+                </button>
+            </Box>
+        );
     }
 
     const { totals, timeSeries, courseKPIs, mostWatched, mostFavorited, dateRange } = data;
