@@ -5,7 +5,7 @@ import crypto from 'crypto'
 import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
 
-const AUTH_SECRET = process.env.AUTH_SECRET || 'baxtli-men-secret-key-2024'
+// AUTH_SECRET is validated at startup in lib/auth/server.ts
 
 import { generateToken } from '@/lib/auth/server'
 import { checkRateLimit, getResetTime } from '@/lib/security/rate-limit'
@@ -30,47 +30,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Login and password are required' }, { status: 400 })
         }
 
-        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex')
         const userAgent = request.headers.get('user-agent') || 'Unknown'
-
-        // 2. Admin Bootstrap Check
-        if (login === 'admin123123' && password === '123123') {
-            const adminUser = await prisma.user.upsert({
-                where: { email: 'admin123123' },
-                update: {
-                    password: hashedPassword,
-                    role: 'ADMIN'
-                },
-                create: {
-                    email: 'admin123123',
-                    phone: 'admin123123',
-                    password: hashedPassword,
-                    role: 'ADMIN',
-                    firstName: 'Admin',
-                    lastName: 'User'
-                }
-            })
-
-            const token = generateToken(adminUser.id)
-            const cookieStore = await cookies()
-            cookieStore.set('auth_token', token, {
-                path: '/',
-                maxAge: 60 * 60 * 24 * 30,
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax'
-            })
-            cookieStore.set('admin_session', token, {
-                path: '/',
-                maxAge: 60 * 60 * 24 * 30,
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax'
-            })
-
-            const { password: _, ...userWithoutPassword } = adminUser
-            return NextResponse.json({ success: true, user: userWithoutPassword })
-        }
 
         const user = await prisma.user.findFirst({
             where: {
@@ -93,10 +53,9 @@ export async function POST(request: Request) {
             }, { status: 403 })
         }
 
-        // Check password — support both SHA-256 (legacy) and bcrypt
-        const sha256Hash = crypto.createHash('sha256').update(password).digest('hex')
-        let passwordValid = sha256Hash === user.password
-        if (!passwordValid && user.password.startsWith('$2')) {
+        // Verify password with bcrypt only
+        let passwordValid = false
+        if (user.password.startsWith('$2')) {
             passwordValid = await bcrypt.compare(password, user.password)
         }
         if (!passwordValid) {
@@ -134,7 +93,7 @@ export async function POST(request: Request) {
         const cookieStore = await cookies()
         cookieStore.set('auth_token', token, {
             path: '/',
-            maxAge: 60 * 60 * 24 * 30,
+            maxAge: 60 * 60 * 24 * 7,
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
@@ -143,7 +102,7 @@ export async function POST(request: Request) {
         if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
             cookieStore.set('admin_session', token, {
                 path: '/',
-                maxAge: 60 * 60 * 24 * 30,
+                maxAge: 60 * 60 * 24 * 7,
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax'
@@ -157,8 +116,9 @@ export async function POST(request: Request) {
             forcePasswordChange: user.forcePasswordChange || false,
         })
     } catch (error: any) {
+        console.error('Login error:', error)
         return NextResponse.json(
-            { success: false, error: error.message || 'Login failed' },
+            { success: false, error: process.env.NODE_ENV === 'production' ? 'Login failed' : (error.message || 'Login failed') },
             { status: 500 }
         )
     }

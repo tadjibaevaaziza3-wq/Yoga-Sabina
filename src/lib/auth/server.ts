@@ -2,7 +2,15 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 
-const AUTH_SECRET = process.env.AUTH_SECRET || 'baxtli-men-secret-key-2024'
+function getAuthSecret(): string {
+    const secret = process.env.AUTH_SECRET
+    if (!secret) {
+        throw new Error('FATAL: AUTH_SECRET environment variable is not set. Server cannot start without it.')
+    }
+    return secret
+}
+
+const AUTH_SECRET: string = getAuthSecret()
 
 export function generateToken(userId: string) {
     const data = `${userId}:${Date.now()}`
@@ -27,9 +35,9 @@ export function verifyToken(token: string): string | null {
             return null
         }
 
-        // Check if token is too old (e.g., 30 days)
+        // Check if token is too old (7 days for users)
         const tokenAge = Date.now() - parseInt(timestamp)
-        if (tokenAge > 30 * 24 * 60 * 60 * 1000) {
+        if (tokenAge > 7 * 24 * 60 * 60 * 1000) {
             console.error('Token expired')
             return null
         }

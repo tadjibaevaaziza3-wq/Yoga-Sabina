@@ -57,6 +57,17 @@ export async function POST(request: Request) {
                 })
             }
 
+            // Validate amount matches (Payme sends amount in tiyin = UZS * 100)
+            const expectedAmount = purchase.amount.toNumber() * 100
+            if (params.amount && Number(params.amount) !== expectedAmount) {
+                return NextResponse.json({
+                    error: {
+                        code: -31001,
+                        message: 'Incorrect amount'
+                    }
+                })
+            }
+
             return NextResponse.json({
                 result: {
                     allow: true
@@ -111,6 +122,17 @@ export async function POST(request: Request) {
                     error: {
                         code: -31003,
                         message: 'Transaction not found'
+                    }
+                })
+            }
+
+            // Idempotency: if already paid, return success without re-processing
+            if (purchase.status === 'PAID') {
+                return NextResponse.json({
+                    result: {
+                        transaction: String(id),
+                        perform_time: purchase.performTime?.getTime() || Date.now(),
+                        state: 2
                     }
                 })
             }
@@ -208,7 +230,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             error: {
                 code: -32400,
-                message: error.message
+                message: 'Internal payment processing error'
             }
         }, { status: 500 })
     }

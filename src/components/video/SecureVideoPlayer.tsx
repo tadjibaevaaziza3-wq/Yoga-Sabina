@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, Shield } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, Shield, Tv2, X, MonitorSmartphone, Airplay, Cast, PictureInPicture2, ExternalLink } from "lucide-react"
 import OTPVerificationModal from "./OTPVerificationModal"
 
 interface SecureVideoPlayerProps {
@@ -21,6 +21,8 @@ export function SecureVideoPlayer({ videoUrl, userId, userPhone, courseTitle, le
     const [isMuted, setIsMuted] = useState(false)
     const [progress, setProgress] = useState(0)
     const [currentTime, setCurrentTime] = useState("")
+    const [showTvModal, setShowTvModal] = useState(false)
+    const [castStatus, setCastStatus] = useState<'idle' | 'connecting' | 'connected'>('idle')
 
     // Signed URL state
     const [signedSrc, setSignedSrc] = useState<string>("")
@@ -187,14 +189,48 @@ export function SecureVideoPlayer({ videoUrl, userId, userPhone, courseTitle, le
         }
     };
 
-    const handleCast = () => {
+    const handleCast = async () => {
         const video = videoRef.current as any;
-        if (video && video.remote && video.remote.state !== 'disconnected') {
-            video.remote.prompt().catch(console.error);
-        } else {
-            alert("Casting qurilma tomonidan qo'llab quvvatlanmaydi.");
+        // Try Remote Playback API (Chromecast)
+        if (video?.remote) {
+            try {
+                setCastStatus('connecting');
+                await video.remote.prompt();
+                setCastStatus('connected');
+                setShowTvModal(false);
+                return;
+            } catch (e) {
+                setCastStatus('idle');
+            }
+        }
+        // Fallback: show TV modal
+        setShowTvModal(true);
+    };
+
+    const handlePiP = async () => {
+        const video = videoRef.current;
+        if (!video) return;
+        try {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            } else {
+                await video.requestPictureInPicture();
+            }
+        } catch (e) {
+            console.error('PiP failed:', e);
         }
     };
+
+    const handleAirPlay = () => {
+        const video = videoRef.current as any;
+        if (video?.webkitShowPlaybackTargetPicker) {
+            video.webkitShowPlaybackTargetPicker();
+        } else {
+            setShowTvModal(true);
+        }
+    };
+
+    const tvBrowserUrl = typeof window !== 'undefined' ? window.location.href : '';
 
     const formatDuration = (seconds: number) => {
         if (!seconds || isNaN(seconds)) return "0:00";
@@ -295,9 +331,18 @@ export function SecureVideoPlayer({ videoUrl, userId, userPhone, courseTitle, le
                             {courseTitle}
                         </p>
 
-                        {/* Cast / AirPlay Button */}
-                        <button onClick={handleCast} className="text-white/80 hover:text-white transition-colors" title="TV orqali ko'rish">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+                        {/* PiP Button */}
+                        <button onClick={handlePiP} className="text-white/80 hover:text-white transition-colors" title="Kichik oynada ko'rish">
+                            <PictureInPicture2 className="w-5 h-5" />
+                        </button>
+
+                        {/* Watch on TV Button */}
+                        <button
+                            onClick={() => setShowTvModal(true)}
+                            className={`transition-colors ${castStatus === 'connected' ? 'text-[var(--accent)]' : 'text-white/80 hover:text-white'}`}
+                            title="TV orqali ko'rish"
+                        >
+                            <Tv2 className="w-5 h-5" />
                         </button>
 
                         {/* Fullscreen */}
@@ -313,6 +358,135 @@ export function SecureVideoPlayer({ videoUrl, userId, userPhone, courseTitle, le
                     </div>
                 </div>
             </div>
+
+            {/* TV Modal */}
+            <AnimatePresence>
+                {showTvModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4"
+                        onClick={() => setShowTvModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-[#1a1a2e] rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center">
+                                        <Tv2 className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-white font-bold text-sm">
+                                            {lang === 'uz' ? 'TV orqali ko\'rish' : 'Смотреть на ТВ'}
+                                        </h3>
+                                        <p className="text-white/40 text-[10px]">
+                                            {lang === 'uz' ? 'Qurilmangizni tanlang' : 'Выберите устройство'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowTvModal(false)} className="text-white/40 hover:text-white transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Options */}
+                            <div className="space-y-3">
+                                {/* Chromecast */}
+                                <button
+                                    onClick={handleCast}
+                                    className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors text-left"
+                                >
+                                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                                        <Cast className="w-5 h-5 text-blue-400" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-white font-semibold text-sm">Chromecast</p>
+                                        <p className="text-white/40 text-[10px]">
+                                            {lang === 'uz' ? 'Google Chromecast orqali translatsiya' : 'Транслировать через Chromecast'}
+                                        </p>
+                                    </div>
+                                    {castStatus === 'connecting' && (
+                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                    )}
+                                    {castStatus === 'connected' && (
+                                        <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full font-bold">ULANDI</span>
+                                    )}
+                                </button>
+
+                                {/* AirPlay */}
+                                <button
+                                    onClick={handleAirPlay}
+                                    className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors text-left"
+                                >
+                                    <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                                        <Airplay className="w-5 h-5 text-purple-400" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-white font-semibold text-sm">AirPlay</p>
+                                        <p className="text-white/40 text-[10px]">
+                                            {lang === 'uz' ? 'Apple TV yoki AirPlay qurilma' : 'Apple TV или AirPlay устройство'}
+                                        </p>
+                                    </div>
+                                </button>
+
+                                {/* Picture-in-Picture */}
+                                <button
+                                    onClick={() => { handlePiP(); setShowTvModal(false); }}
+                                    className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors text-left"
+                                >
+                                    <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                                        <PictureInPicture2 className="w-5 h-5 text-amber-400" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-white font-semibold text-sm">{lang === 'uz' ? 'Kichik oyna' : 'Картинка в картинке'}</p>
+                                        <p className="text-white/40 text-[10px]">
+                                            {lang === 'uz' ? 'Video kichik oynada ko\'rinadi' : 'Видео в маленьком окне'}
+                                        </p>
+                                    </div>
+                                </button>
+
+                                {/* Open on Smart TV browser */}
+                                <div className="pt-2 border-t border-white/10">
+                                    <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-2">
+                                        {lang === 'uz' ? 'Smart TV brauzerda ochish' : 'Открыть в браузере Smart TV'}
+                                    </p>
+                                    <div className="bg-white/5 rounded-2xl p-4">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <MonitorSmartphone className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                                            <p className="text-white/60 text-[10px]">
+                                                {lang === 'uz'
+                                                    ? 'Smart TV brauzerda quyidagi havolani oching:'
+                                                    : 'Откройте ссылку в браузере Smart TV:'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-black/30 rounded-xl px-3 py-2 flex items-center gap-2">
+                                            <code className="text-emerald-400 text-[10px] flex-1 truncate">{tvBrowserUrl}</code>
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(tvBrowserUrl);
+                                                    const btn = document.getElementById('copy-tv-btn');
+                                                    if (btn) { btn.textContent = '✓'; setTimeout(() => btn.textContent = lang === 'uz' ? 'Nusxa' : 'Копия', 1500); }
+                                                }}
+                                                id="copy-tv-btn"
+                                                className="text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg font-bold hover:bg-emerald-500/30 transition-colors flex-shrink-0"
+                                            >
+                                                {lang === 'uz' ? 'Nusxa' : 'Копия'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <style jsx global>{`
                 .slider-thumb-primary::-webkit-slider-thumb {

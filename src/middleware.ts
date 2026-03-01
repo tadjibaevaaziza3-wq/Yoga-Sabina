@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { match as matchLocale } from '@formatjs/intl-localematcher'
 import Negotiator from 'negotiator'
+import { verifyTokenEdge } from '@/lib/auth/edge-verify'
 
 const locales = ['uz', 'ru']
 const defaultLocale = 'uz'
@@ -40,7 +41,7 @@ export async function middleware(request: NextRequest) {
 
     // Protect Admin routes
     if (pathname.includes('/admin') && !pathname.includes('/admin/login')) {
-        const isValidAdmin = adminSession && adminSession.length > 50; // Simple check for signed token length
+        const isValidAdmin = adminSession ? !!(await verifyTokenEdge(adminSession)) : false;
         if (!isValidAdmin) {
             const locale = getLocale(request) || defaultLocale
             const url = new URL(`/${locale}/admin/login`, request.url)
@@ -50,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
     // Protect User Account routes
     if (pathname.includes('/account')) {
-        const isValidUser = token && token.length > 50;
+        const isValidUser = token ? !!(await verifyTokenEdge(token)) : false;
         if (!isValidUser) {
             const locale = getLocale(request) || defaultLocale
             const url = new URL(`/${locale}/login`, request.url)
@@ -78,8 +79,8 @@ export async function middleware(request: NextRequest) {
     // Add security headers
     const response = NextResponse.next();
 
-    // Brand header
-    response.headers.set('X-Powered-By', process.env.NEXT_PUBLIC_BRAND_NAME || 'Yoga Baxtli Men');
+    // Remove server signature
+    response.headers.delete('X-Powered-By');
 
     // Security headers
     response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -92,11 +93,13 @@ export async function middleware(request: NextRequest) {
     }
 
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
     // Content Security Policy
     const csp = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://telegram.org https://vercel.live",
+        "script-src 'self' 'unsafe-inline' https://telegram.org https://vercel.live",
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https: blob: https://storage.googleapis.com",
         "font-src 'self' data:",

@@ -179,6 +179,9 @@ model User {
   passwordResetTokens PasswordResetToken[]
   automationQueue     UserAutomationQueue[]
   offlineAttendances  OfflineAttendance[]
+
+  @@index([role])
+  @@index([createdAt])
 }
 
 model Profile {
@@ -324,6 +327,9 @@ model Lesson {
   videoComments    VideoComment[]
   enhancedProgress EnhancedVideoProgress[]
   favoritedBy      FavoriteLesson[]
+
+  @@index([courseId])
+  @@index([moduleId])
 }
 
 model Asset {
@@ -362,6 +368,10 @@ model Purchase {
   reason             Int? // PayMe cancellation reason code
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+
+  @@index([userId, courseId])
+  @@index([status])
+  @@index([providerTxnId])
 }
 
 model Subscription {
@@ -376,6 +386,10 @@ model Subscription {
   timeSlot  String?            // For offline courses: "10:00", "11:00", etc.
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@index([courseId])
+  @@index([endsAt])
 }
 
 model VideoProgress {

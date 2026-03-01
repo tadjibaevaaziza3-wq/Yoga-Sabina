@@ -177,7 +177,7 @@ export async function createAdminSession(adminId: string) {
 
     cookieStore.set('admin_session', token, {
         path: '/',
-        maxAge: 60 * 60 * 24 * 30,
+        maxAge: 60 * 60 * 8, // 8 hours for admin sessions
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'

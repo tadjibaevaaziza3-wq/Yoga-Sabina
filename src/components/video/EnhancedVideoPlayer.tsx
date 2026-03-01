@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, PictureInPicture, RotateCcw, RotateCw, Monitor, Music, Music2 } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, PictureInPicture, RotateCcw, RotateCw, Monitor, Music, Music2, Tv2, X, MonitorSmartphone, Airplay, Cast } from 'lucide-react';
 import { DynamicWatermark } from './DynamicWatermark';
 
 interface EnhancedVideoPlayerProps {
@@ -49,6 +49,7 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
     const [showCenterIcon, setShowCenterIcon] = useState<'play' | 'pause' | 'seekBack' | 'seekForward' | null>(null);
     const [tapSide, setTapSide] = useState<'left' | 'right' | null>(null);
     const [castSupported, setCastSupported] = useState(false);
+    const [showTvModal, setShowTvModal] = useState(false);
     const [bgAudioUrl, setBgAudioUrl] = useState<string | null>(null);
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [audioVolume, setAudioVolume] = useState(0.3);
@@ -564,7 +565,7 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                 src={videoUrl || undefined}
                 crossOrigin="anonymous"
                 className="w-full h-full"
-                controlsList="nodownload nofullscreen noremoteplayback"
+                controlsList="nodownload nofullscreen"
                 preload="auto"
                 playsInline
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
@@ -722,20 +723,13 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                             <button onClick={togglePictureInPicture} className="text-white/70 hover:text-white transition-colors p-1" title="Picture in Picture">
                                 <PictureInPicture size={18} />
                             </button>
-                            {castSupported && (
-                                <button
-                                    onClick={() => {
-                                        const video = videoRef.current;
-                                        if (video && (video as any).remote) {
-                                            (video as any).remote.prompt().catch((e: any) => console.warn('Cast prompt error:', e));
-                                        }
-                                    }}
-                                    className="text-white/70 hover:text-white transition-colors p-1"
-                                    title="Cast to TV"
-                                >
-                                    <Monitor size={18} />
-                                </button>
-                            )}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setShowTvModal(true); }}
+                                className="text-white/70 hover:text-white transition-colors p-1"
+                                title="TV orqali ko'rish"
+                            >
+                                <Tv2 size={18} />
+                            </button>
                             <button onClick={toggleFullscreen} className="text-white/70 hover:text-white transition-colors p-1" title="Fullscreen">
                                 <Maximize size={18} />
                             </button>
@@ -743,6 +737,118 @@ const EnhancedVideoPlayer = forwardRef<EnhancedVideoPlayerRef, EnhancedVideoPlay
                     </div>
                 </div>
             </div>
+
+            {/* TV Modal */}
+            {showTvModal && (
+                <div
+                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+                    onClick={(e) => { e.stopPropagation(); setShowTvModal(false); }}
+                >
+                    <div
+                        className="bg-[#1a1a2e] rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center">
+                                    <Tv2 className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-bold text-sm">TV orqali ko&apos;rish</h3>
+                                    <p className="text-white/40 text-[10px]">Qurilmangizni tanlang</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowTvModal(false)} className="text-white/40 hover:text-white transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {/* Chromecast */}
+                            <button
+                                onClick={() => {
+                                    const video = videoRef.current;
+                                    if (video && (video as any).remote) {
+                                        (video as any).remote.prompt().catch(console.error);
+                                    } else {
+                                        alert("Chromecast qurilmangizda qo'llab quvvatlanmaydi");
+                                    }
+                                }}
+                                className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors text-left"
+                            >
+                                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                                    <Cast className="w-5 h-5 text-blue-400" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-white font-semibold text-sm">Chromecast</p>
+                                    <p className="text-white/40 text-[10px]">Google Chromecast orqali translatsiya</p>
+                                </div>
+                            </button>
+
+                            {/* AirPlay */}
+                            <button
+                                onClick={() => {
+                                    const video = videoRef.current as any;
+                                    if (video?.webkitShowPlaybackTargetPicker) {
+                                        video.webkitShowPlaybackTargetPicker();
+                                    } else {
+                                        alert("AirPlay faqat Safari brauzerda ishlaydi");
+                                    }
+                                }}
+                                className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors text-left"
+                            >
+                                <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                                    <Airplay className="w-5 h-5 text-purple-400" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-white font-semibold text-sm">AirPlay</p>
+                                    <p className="text-white/40 text-[10px]">Apple TV yoki AirPlay qurilma</p>
+                                </div>
+                            </button>
+
+                            {/* PiP */}
+                            <button
+                                onClick={() => { togglePictureInPicture(); setShowTvModal(false); }}
+                                className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors text-left"
+                            >
+                                <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                                    <PictureInPicture className="w-5 h-5 text-amber-400" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-white font-semibold text-sm">Kichik oyna</p>
+                                    <p className="text-white/40 text-[10px]">Video kichik oynada ko&apos;rinadi</p>
+                                </div>
+                            </button>
+
+                            {/* Smart TV browser */}
+                            <div className="pt-2 border-t border-white/10">
+                                <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-2">Smart TV brauzerda ochish</p>
+                                <div className="bg-white/5 rounded-2xl p-4">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <MonitorSmartphone className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                                        <p className="text-white/60 text-[10px]">Smart TV brauzerda quyidagi havolani oching:</p>
+                                    </div>
+                                    <div className="bg-black/30 rounded-xl px-3 py-2 flex items-center gap-2">
+                                        <code className="text-emerald-400 text-[10px] flex-1 truncate">{typeof window !== 'undefined' ? window.location.href : ''}</code>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(window.location.href);
+                                                const btn = document.getElementById('evp-copy-tv');
+                                                if (btn) { btn.textContent = '✓'; setTimeout(() => btn.textContent = 'Nusxa', 1500); }
+                                            }}
+                                            id="evp-copy-tv"
+                                            className="text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg font-bold hover:bg-emerald-500/30 transition-colors flex-shrink-0"
+                                        >
+                                            Nusxa
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Keyframe styles */}
             <style jsx>{`
