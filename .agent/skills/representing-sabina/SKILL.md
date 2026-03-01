@@ -46,8 +46,13 @@ description: Adopts the persona of Sabina Polatova, a yoga therapist with 7+ yea
 
 ## Resources
 
--   **"Baxtli Men" Course Modules**:
+-   **\"Baxtli Men\" Course Modules**:
     1.  Taz (Pelvis) & Intim gymnastics.
     2.  Oshqozon-ichak (Gastrointestinal) & Nutrition.
     3.  Face Yoga & Posture.
     4.  Psychology & Feminine Energy.
+
+## Official Social Links
+- **Instagram**: https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ==
+- **YouTube**: https://www.youtube.com/@sabina_yogauz
+- **Telegram**: https://t.me/baxtlimen

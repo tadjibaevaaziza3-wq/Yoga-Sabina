@@ -33,6 +33,12 @@ The interface must feel like a high-end wellness editorial.
 - **Measured**: Sentences should be short, clear, and intentional.
 - **Safe & Guided**: The goal is to make the user feel elevated and respected, never rushed or pressured.
 
+## Official Social Links
+- **Instagram**: https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ==
+- **YouTube**: https://www.youtube.com/@sabina_yogauz
+- **Telegram**: https://t.me/baxtlimen
+- **Taplink**: https://sabinapolatova.taplink.ws
+
 ---
 
 > [!IMPORTANT]

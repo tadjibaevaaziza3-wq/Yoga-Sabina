@@ -365,7 +365,7 @@ export default function AboutPage() {
                             ©2026 Baxtli Men. Barcha huquqlar himoyalangan.
                         </p>
                         <div className="flex gap-8 text-[11px] font-black uppercase tracking-widest text-[var(--primary)]">
-                            <a href="https://instagram.com/sabinapolatova" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--accent)] transition-colors">Instagram</a>
+                            <a href="https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ==" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--accent)] transition-colors">Instagram</a>
                             <a href="https://t.me/sabinapolatova" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--accent)] transition-colors">Telegram</a>
                             <a href="https://facebook.com/sabinapolatova" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--accent)] transition-colors">Facebook</a>
                         </div>

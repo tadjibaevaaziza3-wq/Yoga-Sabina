@@ -11,28 +11,28 @@ const MOCK_INSTAGRAM_POSTS = [
         imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600&h=600&auto=format&fit=crop",
         likes: "1.2K",
         comments: "42",
-        link: "https://instagram.com/sabinapolatova"
+        link: "https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ=="
     },
     {
         id: "2",
         imageUrl: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&h=600&auto=format&fit=crop",
         likes: "856",
         comments: "18",
-        link: "https://instagram.com/sabinapolatova"
+        link: "https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ=="
     },
     {
         id: "3",
         imageUrl: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?q=80&w=600&h=600&auto=format&fit=crop",
         likes: "2.3K",
         comments: "64",
-        link: "https://instagram.com/sabinapolatova"
+        link: "https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ=="
     },
     {
         id: "4",
         imageUrl: "https://images.unsplash.com/photo-1508672019048-805c876b67e2?q=80&w=600&h=600&auto=format&fit=crop",
         likes: "1.1K",
         comments: "29",
-        link: "https://instagram.com/sabinapolatova"
+        link: "https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ=="
     }
 ]
 
@@ -82,7 +82,7 @@ export function InstagramSection({
                     </div>
 
                     <motion.a
-                        href="https://instagram.com/sabinapolatova"
+                        href="https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ=="
                         target="_blank"
                         initial={{ opacity: 0, x: 20 }}
                         whileInView={{ opacity: 1, x: 0 }}

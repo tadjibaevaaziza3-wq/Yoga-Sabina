@@ -31,7 +31,7 @@ export function Footer({ isConsultationEnabled = true }: { isConsultationEnabled
                         </p>
                         <div className="flex gap-6">
                             {[
-                                { icon: <Instagram className="w-5 h-5" />, href: "https://instagram.com/sabinapolatova", label: "Instagram" },
+                                { icon: <Instagram className="w-5 h-5" />, href: "https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ==", label: "Instagram" },
                                 { icon: <Send className="w-5 h-5" />, href: dictionary.common.telegramBot, label: "Telegram" },
                                 { icon: <Youtube className="w-5 h-5" />, href: "https://www.youtube.com/@sabina_yogauz", label: "YouTube" },
                                 { icon: <LinkIcon className="w-5 h-5" />, href: "https://sabinapolatova.taplink.ws", label: "Taplink" },

@@ -127,7 +127,7 @@ export default async function RootLayout({
       "name": "Sabina Polatova"
     },
     "sameAs": [
-      "https://instagram.com/sabinapolatova",
+      "https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ==",
       "https://t.me/baxtlimen",
       "https://www.youtube.com/@sabina_yogauz",
       "https://sabinapolatova.taplink.ws"

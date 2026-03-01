@@ -36,7 +36,7 @@ export function AboutSection({ aboutText, heroTitle, missionText }: AboutSection
         "image": "https://baxtli-men.uz/images/hero-sabina.png",
         "description": "Сабина Полатова — сертифицированный йога-тренер и йога-терапевт с 7-летним стажем. Специалист по оздоровлению и внутреннему балансу для всех.",
         "sameAs": [
-            "https://instagram.com/sabinapolatova",
+            "https://www.instagram.com/sabina_yogatrener?igsh=MXg2bXI0bXpkcnNzcQ==",
             "https://t.me/baxtlimen"
         ],
         "worksFor": {
