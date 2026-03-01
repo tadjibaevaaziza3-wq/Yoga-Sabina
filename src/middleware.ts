@@ -35,8 +35,40 @@ function getLocale(request: NextRequest): string | undefined {
 
 export async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname
-    const token = request.cookies.get('auth_token')?.value
 
+    // ── TMA FAST PATH: skip all auth checks, just add headers ──
+    if (pathname.includes('/tma')) {
+        // Check locale (TMA always has locale in URL from Telegram link)
+        const pathnameIsMissingLocale = locales.every(
+            (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
+        )
+        if (pathnameIsMissingLocale) {
+            return NextResponse.redirect(
+                new URL(`/uz${pathname.startsWith('/') ? '' : '/'}${pathname}`, request.url)
+            )
+        }
+
+        const response = NextResponse.next();
+        response.headers.delete('X-Powered-By');
+        response.headers.set('X-Content-Type-Options', 'nosniff');
+        response.headers.set('X-Frame-Options', 'ALLOWALL');
+        response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        // Minimal CSP for TMA (faster parsing)
+        response.headers.set('Content-Security-Policy', [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' https://telegram.org",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: https: blob: https://storage.googleapis.com",
+            "font-src 'self' data:",
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://storage.googleapis.com",
+            "media-src 'self' https://*.supabase.co blob: https://storage.googleapis.com",
+            "frame-ancestors 'self' https://t.me https://web.telegram.org",
+        ].join('; '));
+        return response;
+    }
+
+    const token = request.cookies.get('auth_token')?.value
     const adminSession = request.cookies.get('admin_session')?.value
 
     // Protect Admin routes
