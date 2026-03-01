@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 
 import { generateToken } from '@/lib/auth/server'
@@ -41,8 +41,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: `Account with this ${field} already exists` }, { status: 400 })
         }
 
-        // Hash password
-        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex')
+        // Hash password with bcrypt
+        const hashedPassword = await bcrypt.hash(password, 12)
 
         // Create user
         const user = await prisma.user.create({
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         const cookieStore = await cookies()
         cookieStore.set('auth_token', token, {
             path: '/',
-            maxAge: 60 * 60 * 24 * 30, // 30 days
+            maxAge: 60 * 60 * 24 * 7, // 7 days
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     } catch (error: any) {
         console.error('Registration error:', error)
         return NextResponse.json(
-            { success: false, error: error.message || 'Registration failed' },
+            { success: false, error: process.env.NODE_ENV === 'production' ? 'Registration failed' : (error.message || 'Registration failed') },
             { status: 500 }
         )
     }

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth/server'
-import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
@@ -19,8 +18,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Password must be at least 6 characters' }, { status: 400 })
         }
 
-        // Hash with SHA-256 for consistency with existing system
-        const hashedPassword = crypto.createHash('sha256').update(newPassword).digest('hex')
+        // Hash with bcrypt
+        const hashedPassword = await bcrypt.hash(newPassword, 12)
 
         await prisma.user.update({
             where: { id: userId },
@@ -32,6 +31,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true })
     } catch (error: any) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+        console.error('Change password error:', error)
+        return NextResponse.json({ success: false, error: process.env.NODE_ENV === 'production' ? 'Password change failed' : error.message }, { status: 500 })
     }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateClickUrl } from '@/lib/payments/click'
 import { getLocalUser } from '@/lib/auth/server'
+import { checkRateLimit, getResetTime } from '@/lib/security/rate-limit'
 
 export async function POST(request: Request) {
     try {
@@ -11,6 +12,15 @@ export async function POST(request: Request) {
         }
 
         const { courseId, amount, type, provider, couponId } = await request.json()
+
+        // Rate limiting — 5 per minute per user
+        if (!checkRateLimit(`payment:${user.id}`)) {
+            return NextResponse.json({
+                success: false,
+                error: 'Too many payment attempts. Please try again later.',
+                retryAfter: getResetTime(`payment:${user.id}`)
+            }, { status: 429 })
+        }
 
         // Sync/Find user in Prisma
         let dbUser = await prisma.user.findUnique({ where: { id: user.id } })
@@ -45,7 +55,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, paymentUrl })
 
     } catch (e) {
-        console.error(e)
-        return NextResponse.json({ success: false }, { status: 500 })
+        console.error('Click create error:', e)
+        return NextResponse.json({ success: false, error: 'Payment creation failed' }, { status: 500 })
     }
 }

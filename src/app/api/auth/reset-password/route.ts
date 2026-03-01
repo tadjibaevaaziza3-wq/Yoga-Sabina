@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { sendTelegramMessage } from '@/lib/telegram-bot'
+import { checkRateLimit, getResetTime } from '@/lib/security/rate-limit'
 
 /**
  * User-facing password reset.
@@ -10,6 +11,15 @@ import { sendTelegramMessage } from '@/lib/telegram-bot'
  */
 export async function POST(request: NextRequest) {
     try {
+        // Rate limiting — 3 attempts per minute per IP
+        const ip = request.headers.get('x-forwarded-for') || 'unknown'
+        if (!checkRateLimit(`reset:${ip}`)) {
+            return NextResponse.json({
+                error: 'too_many_attempts',
+                retryAfter: getResetTime(`reset:${ip}`)
+            }, { status: 429 })
+        }
+
         const { phone } = await request.json()
 
         if (!phone || phone.trim().length < 5) {

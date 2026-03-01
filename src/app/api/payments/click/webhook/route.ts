@@ -148,7 +148,7 @@ export async function POST(request: Request) {
         console.error('Click webhook error:', error)
         return NextResponse.json({
             error: -8,
-            error_note: error.message
+            error_note: 'Internal payment processing error'
         }, { status: 500 })
     }
 }
