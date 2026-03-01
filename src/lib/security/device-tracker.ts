@@ -109,7 +109,7 @@ export async function checkAndRegisterDevice(
             const recentAttempts = await prisma.eventLog.count({
                 where: {
                     userId,
-                    eventType: 'DEVICE_LIMIT_EXCEEDED',
+                    event: 'DEVICE_LIMIT_EXCEEDED',
                     createdAt: { gte: new Date(Date.now() - FRAUD_WINDOW_HOURS * 60 * 60 * 1000) }
                 }
             });
@@ -130,7 +130,7 @@ export async function checkAndRegisterDevice(
             await prisma.eventLog.create({
                 data: {
                     userId,
-                    eventType: 'DEVICE_LIMIT_EXCEEDED',
+                    event: 'DEVICE_LIMIT_EXCEEDED',
                     metadata: { fingerprint, deviceName, ipAddress, deviceCount }
                 }
             });

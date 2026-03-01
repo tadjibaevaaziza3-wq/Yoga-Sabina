@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
             isActive: true,
             OR: [
                 { subscriptions: { some: { userId: user.id, status: 'ACTIVE' } } },
-                { purchases: { some: { userId: user.id, status: 'APPROVED' } } },
+                { purchases: { some: { userId: user.id, status: 'PAID' } } },
             ],
         },
         select: {

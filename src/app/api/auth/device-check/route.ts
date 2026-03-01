@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
         }
 
-        const payload = verifyToken(token)
+        const payload = verifyToken(token) as any
         if (!payload?.userId) {
             return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
         }

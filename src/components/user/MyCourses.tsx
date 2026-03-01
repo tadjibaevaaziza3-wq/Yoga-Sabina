@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Play, Clock, MessageSquare, MapPin } from 'lucide-react';
 import Image from 'next/image';
+import DavomatSection from './DavomatSection';
 
 interface CourseProgress {
     subscription: {
@@ -71,6 +72,7 @@ interface MyCoursesProps {
 export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
     const router = useRouter();
     const [courses, setCourses] = useState<CourseProgress[]>([]);
+    const [offlineCourses, setOfflineCourses] = useState<any[]>([]);
     const [recommendations, setRecommendations] = useState<RecommendedCourse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,8 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
             setLoading(true);
             await Promise.all([
                 fetchMyCourses(),
-                fetchRecommendations()
+                fetchRecommendations(),
+                fetchOfflineCourses()
             ]);
             setLoading(false);
         };
@@ -107,6 +110,18 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                 return fetchMyCourses(retries - 1);
             }
             setError('Failed to load courses');
+        }
+    };
+
+    const fetchOfflineCourses = async () => {
+        try {
+            const res = await fetch('/api/user/davomat');
+            const data = await res.json();
+            if (data.success) {
+                setOfflineCourses(data.offlineCourses);
+            }
+        } catch (err) {
+            console.error('Error fetching offline courses:', err);
         }
     };
 
@@ -272,6 +287,9 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                         const daysRemaining = subscription?.endsAt ? getDaysRemaining(subscription.endsAt) : null;
                         const isUrgent = daysRemaining !== null && daysRemaining < 7;
 
+                        // Davomat for offline course
+                        const offlineCourse = course.type === 'OFFLINE' ? offlineCourses.find(oc => oc.courseId === course.id) : null;
+
                         return (
                             <div
                                 key={subscription?.id || (purchase as any)?.id || course.id}
@@ -349,20 +367,49 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                                         </div>
                                     )}
                                     {course.type === 'OFFLINE' && (
-                                        <div className="flex items-center gap-1.5 text-[11px] text-amber-600 font-semibold">
-                                            <MapPin size={12} />
-                                            {lang === 'uz' ? 'Oflayn mashg\'ulot' : 'Офлайн занятие'}
+                                        <div className="space-y-2 mt-1">
+                                            <div className="flex items-center gap-1.5 text-[11px] text-amber-600 font-semibold">
+                                                <MapPin size={12} />
+                                                {lang === 'uz' ? `Oflayn qatnov: ${offlineCourse?.stats?.attended || 0} kelgan / ${offlineCourse?.stats?.totalClasses || 0} dars` : `Офлайн посещаемость: ${offlineCourse?.stats?.attended || 0} был / ${offlineCourse?.stats?.totalClasses || 0} занятий`}
+                                            </div>
+
+                                            {offlineCourse && offlineCourse.attendances?.length > 0 && (
+                                                <div className="flex gap-1 overflow-x-auto pb-1 max-w-full">
+                                                    {offlineCourse.attendances.map((a: Record<string, any>, i: number) => (
+                                                        <div
+                                                            key={i}
+                                                            title={`${new Date(a.date).toLocaleDateString()} - ${a.status === 'PRESENT' ? 'Keldi' : a.status === 'ABSENT' ? 'Kelmadi' : a.status}`}
+                                                            className={`w-3.5 h-3.5 rounded-full flex-shrink-0 border border-black/10 ${a.status === 'PRESENT' || a.status === 'LATE' ? 'bg-emerald-500' : a.status === 'ABSENT' ? 'bg-red-500' : 'bg-gray-400'}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
-                                    {/* Days remaining / Purchase status */}
-                                    <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${isUrgent ? 'text-red-500' : 'text-[var(--foreground)]/40'}`}>
-                                        <Clock size={12} />
-                                        {daysRemaining !== null
-                                            ? `${daysRemaining} ${lang === 'uz' ? 'kun qoldi' : 'дней осталось'}`
-                                            : (lang === 'uz' ? 'Sotib olingan' : 'Куплено')
-                                        }
-                                    </div>
+                                    {/* Subscription dates */}
+                                    {subscription && (
+                                        <div className="flex flex-col gap-1.5 text-[10.5px] text-[var(--foreground)]/70 bg-[var(--foreground)]/5 p-2 rounded-lg mt-2">
+                                            <div className="flex justify-between items-center">
+                                                <span>{lang === 'uz' ? 'Obuna boshlangan:' : 'Подписка начата:'}</span>
+                                                <b className="text-[var(--foreground)]">{formatDate(subscription.startsAt)}</b>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className={isUrgent ? 'text-red-500 font-bold' : ''}>
+                                                    {course.type === 'OFFLINE' ? (lang === 'uz' ? 'Keyingi to\'lov:' : 'След. оплата:') : (lang === 'uz' ? 'Obuna tugaydi:' : 'Подписка до:')}
+                                                </span>
+                                                <b className={isUrgent ? 'text-red-500' : 'text-[var(--foreground)]'}>{formatDate(subscription.endsAt)}</b>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Purchase status if not subbed */}
+                                    {!subscription && purchase && (
+                                        <div className="flex justify-between items-center text-[11px] font-semibold text-[var(--foreground)]/40 mt-1">
+                                            <span className="flex items-center gap-1.5"><Clock size={12} /> {lang === 'uz' ? 'Cheksiz to\'lov' : 'Единоразово'}</span>
+                                            <span>✅ {lang === 'uz' ? 'Sotib olingan' : 'Куплено'}</span>
+                                        </div>
+                                    )}
 
                                     {/* Action button */}
                                     {course.type === 'OFFLINE' ? (
@@ -391,6 +438,11 @@ export default function MyCourses({ lang = 'uz' }: MyCoursesProps) {
                     })}
                 </div>
             </div>
+
+            {/* 2.5 Davomat Section — Offline Attendance Table + Chart */}
+            {offlineCourses.length > 0 && (
+                <DavomatSection offlineCourses={offlineCourses} lang={lang} />
+            )}
 
             {/* 3. Recommendations Section */}
             {recommendations.length > 0 && (

@@ -254,6 +254,7 @@ model Course {
   scheduleRu String?
   times      String?
   timesRu    String?
+  maxCapacity Int?    // Max students per time slot for offline courses
 
   features   Json? // [] of strings
   featuresRu Json? // [] of strings

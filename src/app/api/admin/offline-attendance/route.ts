@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
         const purchases = await prisma.purchase.findMany({
             where: {
                 courseId,
-                status: { in: ['APPROVED', 'PAID'] },
+                status: 'PAID',
                 user: { subscriptions: { none: { courseId } } },
             },
             select: {

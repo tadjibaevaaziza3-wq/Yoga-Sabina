@@ -22,6 +22,8 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ImageIcon from '@mui/icons-material/Image';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const ShowTitle = () => <span>Foydalanuvchi tafsilotlari</span>;
 
@@ -85,6 +87,195 @@ const AddSubscriptionDialog = ({ open, onClose, userId }: { open: boolean; onClo
                 <Button onClick={() => onClose()} color="inherit">Bekor qilish</Button>
                 <Button onClick={handleSave} disabled={saving} variant="contained" sx={{ bgcolor: '#114539', '&:hover': { bgcolor: '#0a2e26' } }}>
                     {saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Saqlash'}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+// ── Edit Subscription Dialog ──
+const EditSubscriptionDialog = ({ open, onClose, subscription }: { open: boolean; onClose: (refresh?: boolean) => void; subscription: any }) => {
+    const notify = useNotify();
+    const [startsAt, setStartsAt] = useState('');
+    const [endsAt, setEndsAt] = useState('');
+    const [status, setStatus] = useState('ACTIVE');
+    const [timeSlot, setTimeSlot] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (subscription && open) {
+            setStartsAt(subscription.startsAt ? new Date(subscription.startsAt).toISOString().split('T')[0] : '');
+            setEndsAt(subscription.endsAt ? new Date(subscription.endsAt).toISOString().split('T')[0] : '');
+            setStatus(subscription.status || 'ACTIVE');
+            setTimeSlot(subscription.timeSlot || '');
+        }
+    }, [subscription, open]);
+
+    const handleSave = async () => {
+        if (!endsAt) { notify("Tugash sanasini kiritish majburiy", { type: 'warning' }); return; }
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/admin/subscriptions/${subscription.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ startsAt, endsAt, status, timeSlot: timeSlot || null }),
+            });
+            if (res.ok) {
+                notify('Obuna muvaffaqiyatli saqlandi!', { type: 'success' });
+                onClose(true);
+            } else {
+                notify('Saqlashda xatolik yuz berdi', { type: 'error' });
+            }
+        } catch { notify('Server bilan bog\'lanishda xatolik', { type: 'error' }); }
+        setSaving(false);
+    };
+
+    if (!subscription) return null;
+    const availableTimes = subscription.courseTimes ? subscription.courseTimes.split(/[,;\/]+/).map((t: string) => t.replace(/\s*-\s*\d{1,2}:\d{2}/, '').trim()).filter((t: string) => /^\d{1,2}:\d{2}$/.test(t)) : [];
+
+    return (
+        <Dialog open={open} onClose={() => onClose()} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#114539', color: '#fff' }}>
+                <span>✏️ Obunani tahrirlash</span>
+                <IconButton onClick={() => onClose()} sx={{ color: '#fff' }}><CloseIcon /></IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ pt: '24px !important', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box display="flex" gap={2}>
+                    <MuiTextField label="Boshlanish sanasi" type="date" value={startsAt} onChange={e => setStartsAt(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
+                    <MuiTextField label="Tugash sanasi" type="date" value={endsAt} onChange={e => setEndsAt(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
+                </Box>
+                <FormControl fullWidth>
+                    <InputLabel>Holat</InputLabel>
+                    <Select value={status} label="Holat" onChange={e => setStatus(e.target.value)}>
+                        <MenuItem value="ACTIVE">Faol (ACTIVE)</MenuItem>
+                        <MenuItem value="EXPIRED">Tugagan (EXPIRED)</MenuItem>
+                        <MenuItem value="CANCELLED">Bekor qilingan (CANCELLED)</MenuItem>
+                    </Select>
+                </FormControl>
+                {subscription.courseType === 'OFFLINE' && (
+                    <FormControl fullWidth>
+                        <InputLabel>Darss vaqti</InputLabel>
+                        <Select value={timeSlot} label="Darss vaqti" onChange={e => setTimeSlot(e.target.value)}>
+                            <MenuItem value=""><em>Belgilanmagan</em></MenuItem>
+                            {availableTimes.map((t: string) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                )}
+            </DialogContent>
+            <DialogActions sx={{ p: 3 }}>
+                <Button onClick={() => onClose()} color="inherit">Bekor qilish</Button>
+                <Button onClick={handleSave} disabled={saving} variant="contained" sx={{ bgcolor: '#114539', '&:hover': { bgcolor: '#0a2e26' } }}>
+                    {saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Saqlash'}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+// ── Edit Time Slot Dialog ──
+const EditTimeDialog = ({ open, onClose, subscriptionId, currentSlot, availableTimes }: { open: boolean; onClose: (refresh?: boolean) => void; subscriptionId: string; currentSlot: string | null; availableTimes: string[] }) => {
+    const notify = useNotify();
+    const [timeSlot, setTimeSlot] = useState(currentSlot || '');
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => { setTimeSlot(currentSlot || ''); }, [currentSlot, open]);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/admin/subscriptions/${subscriptionId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ timeSlot: timeSlot || null }),
+            });
+            if (res.ok) {
+                notify('Vaqt o\'zgartirildi!', { type: 'success' });
+                onClose(true);
+            } else {
+                notify('Saqlashda xatolik yuz berdi', { type: 'error' });
+            }
+        } catch { notify('Server bilan bog\'lanishda xatolik', { type: 'error' }); }
+        setSaving(false);
+    };
+
+    return (
+        <Dialog open={open} onClose={() => onClose()} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#114539', color: '#fff', fontSize: '1rem', p: 2 }}>
+                <span>🕐 Mashg'ulot vaqtini tanlang</span>
+                <IconButton onClick={() => onClose()} sx={{ color: '#fff', p: 0.5 }}><CloseIcon /></IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ pt: '24px !important', pb: 1 }}>
+                <FormControl fullWidth size="small">
+                    <InputLabel>Vaqt</InputLabel>
+                    <Select value={timeSlot} label="Vaqt" onChange={e => setTimeSlot(e.target.value)}>
+                        <MenuItem value=""><em>Belgilanmagan</em></MenuItem>
+                        {availableTimes.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                    </Select>
+                </FormControl>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={() => onClose()} color="inherit" size="small">Bekor qilish</Button>
+                <Button onClick={handleSave} disabled={saving} variant="contained" size="small" sx={{ bgcolor: '#114539', '&:hover': { bgcolor: '#0a2e26' } }}>
+                    {saving ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null} Saqlash
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+// ── Send Message Dialog ──
+const SendMessageDialog = ({ open, onClose, userId }: { open: boolean; onClose: (refresh?: boolean) => void; userId: string }) => {
+    const notify = useNotify();
+    const [message, setMessage] = useState('');
+    const [sending, setSending] = useState(false);
+
+    useEffect(() => {
+        if (open) setMessage('');
+    }, [open]);
+
+    const handleSend = async () => {
+        if (!message.trim()) { notify("Xabar matnini kiriting", { type: 'warning' }); return; }
+        setSending(true);
+        try {
+            const res = await fetch(`/api/admin/users/${userId}/message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message }),
+            });
+            if (res.ok) {
+                notify('Xabar yuborildi!', { type: 'success' });
+                onClose(true);
+            } else {
+                notify('Yuborishda xatolik yuz berdi', { type: 'error' });
+            }
+        } catch { notify('Server bilan bog\'lanishda xatolik', { type: 'error' }); }
+        setSending(false);
+    };
+
+    return (
+        <Dialog open={open} onClose={() => onClose()} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#114539', color: '#fff' }}>
+                <span>💬 Xabar yuborish</span>
+                <IconButton onClick={() => onClose()} sx={{ color: '#fff' }}><CloseIcon /></IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ pt: '24px !important' }}>
+                <Typography variant="body2" sx={{ mb: 2, color: '#6b7280' }}>
+                    Bu xabar mijozning platformadagi bildirishnomalar qismiga va agarda ular Telegram orqali ulangan bo'lsa bot orqali to'g'ridan-to'g'ri yuboriladi.
+                </Typography>
+                <MuiTextField
+                    label="Xabar matni"
+                    multiline
+                    rows={4}
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    fullWidth
+                    placeholder="Mijozga xabar yozing..."
+                />
+            </DialogContent>
+            <DialogActions sx={{ p: 3 }}>
+                <Button onClick={() => onClose()} color="inherit">Bekor qilish</Button>
+                <Button onClick={handleSend} disabled={sending} variant="contained" sx={{ bgcolor: '#114539', '&:hover': { bgcolor: '#0a2e26' } }}>
+                    {sending ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Yuborish'}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -199,6 +390,10 @@ const UserShowContent = () => {
     const [details, setDetails] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [subDialogOpen, setSubDialogOpen] = useState(false);
+    const [sendMessageDialog, setSendMessageDialog] = useState(false);
+    const [editSubDialog, setEditSubDialog] = useState<{ open: boolean, sub: any }>({ open: false, sub: null });
+    const [deleteSubDialog, setDeleteSubDialog] = useState<{ open: boolean, subId: string }>({ open: false, subId: '' });
+    const [editTimeDialog, setEditTimeDialog] = useState<{ open: boolean, subId: string, current: string | null, times: string[] }>({ open: false, subId: '', current: null, times: [] });
     const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
     const notify = useNotify();
 
@@ -232,6 +427,22 @@ const UserShowContent = () => {
             }
         } catch {
             notify('Xatolik yuz berdi', { type: 'error' });
+        }
+    };
+
+    // Handle delete subscription
+    const handleDeleteSubscription = async () => {
+        try {
+            const res = await fetch(`/api/admin/subscriptions/${deleteSubDialog.subId}`, { method: 'DELETE' });
+            if (res.ok) {
+                notify("Obuna o'chirildi", { type: 'success' });
+                setDeleteSubDialog({ open: false, subId: '' });
+                fetchDetails();
+            } else {
+                notify("O'chirishda xatolik yuz berdi", { type: 'error' });
+            }
+        } catch {
+            notify("Server xatosi", { type: 'error' });
         }
     };
 
@@ -312,23 +523,41 @@ const UserShowContent = () => {
                                     return <Chip label={`Segment: ${seg.toUpperCase()}`} sx={{ bgcolor: `${segColors[seg]}15`, color: segColors[seg], fontWeight: 700 }} />;
                                 }}
                             />
-                            <Button
-                                variant="outlined"
-                                size="small"
-                                onClick={handleResetPassword}
-                                disabled={resetPasswordLoading}
-                                sx={{
-                                    mt: 1,
-                                    borderColor: '#114539',
-                                    color: '#114539',
-                                    fontWeight: 700,
-                                    fontSize: '0.75rem',
-                                    borderRadius: 2,
-                                    '&:hover': { bgcolor: '#11453910' }
-                                }}
-                            >
-                                {resetPasswordLoading ? <CircularProgress size={16} /> : '🔑 Parolni tiklash'}
-                            </Button>
+                            <Box display="flex" gap={1.5} mt={1}>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => setSendMessageDialog(true)}
+                                    sx={{
+                                        flex: 1,
+                                        borderColor: '#3b82f6',
+                                        color: '#3b82f6',
+                                        fontWeight: 700,
+                                        fontSize: '0.75rem',
+                                        borderRadius: 2,
+                                        '&:hover': { bgcolor: '#3b82f610' }
+                                    }}
+                                >
+                                    💬 Xabar yuborish
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={handleResetPassword}
+                                    disabled={resetPasswordLoading}
+                                    sx={{
+                                        flex: 1,
+                                        borderColor: '#114539',
+                                        color: '#114539',
+                                        fontWeight: 700,
+                                        fontSize: '0.75rem',
+                                        borderRadius: 2,
+                                        '&:hover': { bgcolor: '#11453910' }
+                                    }}
+                                >
+                                    {resetPasswordLoading ? <CircularProgress size={16} /> : '🔑 Parolni tiklash'}
+                                </Button>
+                            </Box>
                         </Box>
                     </Paper>
 
@@ -377,6 +606,7 @@ const UserShowContent = () => {
                                                 <th style={{ textAlign: 'center', padding: '10px 8px', color: '#114539', fontWeight: 700 }}>Boshlanish</th>
                                                 <th style={{ textAlign: 'center', padding: '10px 8px', color: '#114539', fontWeight: 700 }}>Tugash</th>
                                                 <th style={{ textAlign: 'center', padding: '10px 8px', color: '#114539', fontWeight: 700 }}>Holat</th>
+                                                <th style={{ textAlign: 'center', padding: '10px 8px', color: '#114539', fontWeight: 700 }}>Amallar</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -392,7 +622,25 @@ const UserShowContent = () => {
                                                         }}
                                                     >
                                                         <td style={{ padding: '10px 8px', fontWeight: 600, color: '#1a2e1a' }}>
-                                                            {s.courseTitle}
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                {s.courseTitle}
+                                                                {s.courseType === 'OFFLINE' && (
+                                                                    <Chip
+                                                                        label={s.timeSlot ? `🕐 ${s.timeSlot}` : 'Vaqt belgilanmagan'}
+                                                                        size="small"
+                                                                        onClick={() => {
+                                                                            const times = (s.courseTimes || '').split(/[,;\/]+/).map((t: string) => t.replace(/\s*-\s*\d{1,2}:\d{2}/, '').trim()).filter((t: string) => /^\d{1,2}:\d{2}$/.test(t));
+                                                                            setEditTimeDialog({ open: true, subId: s.id, current: s.timeSlot, times: times.length ? times : [] });
+                                                                        }}
+                                                                        sx={{
+                                                                            height: 20, fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer',
+                                                                            bgcolor: s.timeSlot ? '#e8f5e9' : '#f3f4f6', color: s.timeSlot ? '#2e7d32' : '#9ca3af',
+                                                                            '&:hover': { bgcolor: s.timeSlot ? '#c8e6c9' : '#e5e7eb' }
+                                                                        }}
+                                                                        icon={<EditIcon sx={{ fontSize: '12px !important', ml: 0.5 }} />}
+                                                                    />
+                                                                )}
+                                                            </Box>
                                                         </td>
                                                         <td style={{ padding: '10px 8px', textAlign: 'center', color: '#5a6b5a' }}>
                                                             <CalendarMonthIcon sx={{ fontSize: 13, mr: 0.3, verticalAlign: 'middle', opacity: 0.6 }} />
@@ -413,6 +661,16 @@ const UserShowContent = () => {
                                                                     color: isActive ? '#16a34a' : isExpired ? '#dc2626' : '#6b7280',
                                                                 }}
                                                             />
+                                                        </td>
+                                                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                                            <Box display="flex" justifyContent="center" gap={0.5}>
+                                                                <IconButton size="small" onClick={() => setEditSubDialog({ open: true, sub: s })} sx={{ color: '#114539' }}>
+                                                                    <EditIcon fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton size="small" onClick={() => setDeleteSubDialog({ open: true, subId: s.id })} sx={{ color: '#dc2626' }}>
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Box>
                                                         </td>
                                                     </tr>
                                                 );
@@ -516,6 +774,39 @@ const UserShowContent = () => {
             <AddSubscriptionDialog
                 open={subDialogOpen}
                 onClose={(refresh) => { setSubDialogOpen(false); if (refresh) fetchDetails(); }}
+                userId={record?.id as string}
+            />
+
+            {/* Edit Subscription Dialog */}
+            <EditSubscriptionDialog
+                open={editSubDialog.open}
+                onClose={(refresh) => { setEditSubDialog({ open: false, sub: null }); if (refresh) fetchDetails(); }}
+                subscription={editSubDialog.sub}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteSubDialog.open} onClose={() => setDeleteSubDialog({ open: false, subId: '' })} PaperProps={{ sx: { borderRadius: 3 } }}>
+                <DialogTitle sx={{ color: '#dc2626', fontWeight: 700 }}>Obunani o'chirish</DialogTitle>
+                <DialogContent>Rostdan ham ushbu obunani o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.</DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setDeleteSubDialog({ open: false, subId: '' })} color="inherit">Bekor qilish</Button>
+                    <Button onClick={handleDeleteSubscription} variant="contained" color="error">O'chirish</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Time Dialog */}
+            <EditTimeDialog
+                open={editTimeDialog.open}
+                onClose={(refresh) => { setEditTimeDialog(prev => ({ ...prev, open: false })); if (refresh) fetchDetails(); }}
+                subscriptionId={editTimeDialog.subId}
+                currentSlot={editTimeDialog.current}
+                availableTimes={editTimeDialog.times}
+            />
+
+            {/* Send Message Dialog */}
+            <SendMessageDialog
+                open={sendMessageDialog}
+                onClose={(refresh) => { setSendMessageDialog(false); if (refresh) fetchDetails(); }}
                 userId={record?.id as string}
             />
         </Box>

@@ -14,7 +14,7 @@ export async function GET() {
             return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
         }
 
-        const payload = verifyToken(token)
+        const payload = verifyToken(token) as any
         if (!payload?.userId) {
             return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
         }
@@ -38,7 +38,7 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
         }
 
-        const payload = verifyToken(token)
+        const payload = verifyToken(token) as any
         if (!payload?.userId) {
             return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
         }

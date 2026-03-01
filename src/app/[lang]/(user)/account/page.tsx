@@ -116,7 +116,7 @@ export default async function DashboardPage({
         // Fetch offline course KPI data
         try {
             const offlineAttendances = await prisma.offlineAttendance.findMany({
-                where: { userId: user.id },
+                where: { userId: user?.id || '' },
                 select: { status: true, session: { select: { courseId: true } } }
             })
             const offlineCourseSet = new Set(offlineAttendances.map(a => a.session.courseId))

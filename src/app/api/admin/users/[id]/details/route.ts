@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 orderBy: { createdAt: 'desc' },
             },
             subscriptions: {
-                include: { course: { select: { id: true, title: true } } },
+                include: { course: { select: { id: true, title: true, type: true, times: true } } },
                 orderBy: { endsAt: 'desc' },
             },
         },
@@ -67,6 +67,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             id: s.id,
             courseId: s.courseId,
             courseTitle: s.course.title,
+            courseType: (s.course as any).type,
+            courseTimes: (s.course as any).times,
+            timeSlot: s.timeSlot,
             startsAt: s.startsAt,
             endsAt: s.endsAt,
             status: s.status,
@@ -75,6 +78,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             id: s.id,
             courseId: s.courseId,
             courseTitle: s.course.title,
+            courseType: (s.course as any).type,
+            courseTimes: (s.course as any).times,
+            timeSlot: s.timeSlot,
             startsAt: s.startsAt,
             endsAt: s.endsAt,
             status: s.status,
@@ -98,7 +104,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!await isAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { id } = await params
-    const { courseId, startsAt, endsAt } = await request.json()
+    const { courseId, startsAt, endsAt, status, timeSlot } = await request.json()
 
     if (!courseId || !endsAt) {
         return NextResponse.json({ error: 'courseId and endsAt required' }, { status: 400 })
@@ -110,7 +116,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             courseId,
             startsAt: startsAt ? new Date(startsAt) : new Date(),
             endsAt: new Date(endsAt),
-            status: 'ACTIVE',
+            status: status || 'ACTIVE',
+            timeSlot: timeSlot || null,
         },
         include: { course: { select: { title: true } } },
     })

@@ -266,7 +266,6 @@ export async function POST(request: NextRequest) {
                     courseId: course.id,
                     userId: 'system', // System message
                     message: `🎉 "${course.title}" kursi uchun chat yaratildi! Obunachilarga xush kelibsiz.`,
-                    isAdmin: true,
                 },
             });
             console.log(`✅ Auto-created chat for course: ${course.title}`);

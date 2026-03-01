@@ -214,6 +214,23 @@ export default function OfflineAttendanceManager() {
     const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1) } else setMonth(m => m - 1) }
     const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1) } else setMonth(m => m + 1) }
 
+    // ─── Computations for Absences Report ───
+    const absences: { user: UserData, session: SessionData, timeSlot: string }[] = [];
+    if (!loading && Object.keys(groups).length > 0) {
+        Object.values(groups).forEach(group => {
+            group.sessions.forEach(session => {
+                session.attendances.forEach(att => {
+                    if (att.status === 'ABSENT') {
+                        const user = group.users.find(u => u.id === att.userId);
+                        if (user) absences.push({ user, session, timeSlot: group.timeSlot });
+                    }
+                });
+            });
+        });
+        // Sort absences by date descending
+        absences.sort((a, b) => new Date(b.session.date).getTime() - new Date(a.session.date).getTime());
+    }
+
     // ─── RENDER ───
     return (
         <Box sx={{ maxWidth: 1600 }}>
@@ -476,6 +493,52 @@ export default function OfflineAttendanceManager() {
                             </Box>
                         </Paper>
                     ))}
+
+                    {/* ═══ ABSENCES REPORT ═══ */}
+                    {!loading && absences.length > 0 && (
+                        <Paper sx={{ mt: 4, borderRadius: 3, overflow: 'hidden', border: '1px solid #fee2e2', mb: 4 }}>
+                            <Box sx={{ px: 3, py: 2, bgcolor: '#fef2f2', borderBottom: '1px solid #fee2e2', display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <WarningIcon sx={{ color: '#dc2626' }} />
+                                <Typography variant="h6" sx={{ fontWeight: 800, color: '#991b1b' }}>
+                                    Yo'qlamalar (Kelmadi)
+                                </Typography>
+                                <Chip label={`${absences.length} ta`} size="small" sx={{ bgcolor: '#dc2626', color: 'white', fontWeight: 700 }} />
+                            </Box>
+                            <TableContainer sx={{ maxHeight: 400 }}>
+                                <Table size="small" stickyHeader>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 700, color: '#991b1b', bgcolor: '#fff5f5' }}>Sana</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, color: '#991b1b', bgcolor: '#fff5f5' }}>Vaqt</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, color: '#991b1b', bgcolor: '#fff5f5' }}>Talaba</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, color: '#991b1b', bgcolor: '#fff5f5' }}>Telefon</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {absences.map((abs, idx) => {
+                                            const d = new Date(abs.session.date);
+                                            return (
+                                                <TableRow key={`${abs.session.id}-${abs.user.id}-${idx}`} sx={{ '&:last-child td': { border: 0 }, '&:hover td': { bgcolor: '#fefcfc' } }}>
+                                                    <TableCell sx={{ fontWeight: 600 }}>
+                                                        {d.toLocaleDateString('uz-UZ')} ({DAY_ABBR[d.getDay()]})
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip label={abs.timeSlot === 'default' ? 'Umumiy' : `🕐 ${abs.timeSlot}`} size="small" sx={{ fontWeight: 700, fontSize: '0.7rem' }} />
+                                                    </TableCell>
+                                                    <TableCell sx={{ fontWeight: 700 }}>
+                                                        {abs.user.firstName} {abs.user.lastName}
+                                                    </TableCell>
+                                                    <TableCell sx={{ color: '#666' }}>
+                                                        {abs.user.phone || '—'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Paper>
+                    )}
                 </>
             )}
         </Box>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Users, CreditCard, Activity, TrendingUp } from 'lucide-react';
+import OfflineStudioDashboard from './OfflineStudioDashboard';
 
 export default function AdminDashboard() {
     const [data, setData] = useState<any>(null);
@@ -108,6 +109,9 @@ export default function AdminDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Offline Studio Analytics */}
+            <OfflineStudioDashboard />
         </div>
     );
 }
