@@ -91,13 +91,26 @@ export async function GET(request: NextRequest) {
             })
         ]);
 
-        // Combine and unique by courseId
+        // Get ALL subscriptions (including expired) to know which courses are subscription-based
+        const allSubscriptions = await prisma.subscription.findMany({
+            where: { userId: userId },
+            select: { courseId: true, status: true, endsAt: true }
+        });
+
+        // Courses that have/had a subscription (regardless of status)
+        const subscriptionCourseIds = new Set(allSubscriptions.map(s => s.courseId));
+
+        // Filter out purchases for courses that are subscription-based
+        // (If a course uses subscriptions, only show it via active subscription, not via purchase)
+        const filteredPurchases = purchases.filter(p => !subscriptionCourseIds.has(p.courseId));
+
+        // Combine: subscriptions (already filtered to active + not expired) + purchases (non-subscription courses only)
         const activeCourses = [
             ...subscriptions.map(s => ({ ...s, isSubscription: true })),
-            ...purchases.map(p => ({ ...p, isSubscription: false }))
+            ...filteredPurchases.map(p => ({ ...p, isSubscription: false }))
         ];
 
-        // Deduplicate: if a user has both a subscription and a purchase for the same course
+        // Deduplicate by courseId
         const uniqueCourses = activeCourses.reduce((acc, current) => {
             const x = acc.find(item => item.courseId === current.courseId);
             if (!x) {
